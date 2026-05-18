@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — EmagreSer</title>
+<style>
+:root{
+  --sidebar:#111827;--sidebar-text:#9ca3af;--sidebar-active:#f9fafb;
+  --bg:#f3f4f6;--white:#fff;--border:#e5e7eb;
+  --cta:#e8773a;--cta-d:#c4591e;--green:#10b981;--red:#ef4444;
+  --text:#111827;--text2:#374151;--text3:#6b7280;
+  --r:8px;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+button{cursor:pointer;border:none;background:none;font-family:inherit}
+input,textarea,select{font-family:inherit}
+a{color:inherit;text-decoration:none}
+.hidden{display:none!important}
+
+/* LOGIN */
+#login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--sidebar)}
+.login-card{background:var(--white);border-radius:16px;padding:48px 40px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-logo{font-size:1.5rem;font-weight:700;color:var(--cta);margin-bottom:4px}
+.login-sub{font-size:.82rem;color:var(--text3);margin-bottom:32px}
+.inp-group{margin-bottom:14px}
+.inp-group label{display:block;font-size:.8rem;font-weight:600;color:var(--text2);margin-bottom:5px}
+.inp-group input{width:100%;border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;font-size:.92rem;transition:border-color .2s}
+.inp-group input:focus{outline:none;border-color:var(--cta)}
+.btn-login{width:100%;background:var(--cta);color:#fff;font-weight:700;font-size:.88rem;letter-spacing:.05em;padding:13px;border-radius:var(--r);margin-top:8px;transition:background .2s}
+.btn-login:hover{background:var(--cta-d)}
+.login-error{color:var(--red);font-size:.8rem;margin-top:10px;text-align:center}
+
+/* LAYOUT */
+#app{display:flex;flex:1;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:240px;min-width:240px;background:var(--sidebar);color:#fff;display:flex;flex-direction:column;padding:0}
+.sidebar-header{padding:24px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-brand{font-size:1.1rem;font-weight:700;color:var(--cta)}
+.sidebar-user{font-size:.75rem;color:var(--sidebar-text);margin-top:4px}
+.sidebar-nav{flex:1;padding:16px 0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:.85rem;color:var(--sidebar-text);cursor:pointer;transition:all .15s;border-left:3px solid transparent}
+.nav-item:hover{color:var(--sidebar-active);background:rgba(255,255,255,.04)}
+.nav-item.active{color:var(--sidebar-active);background:rgba(255,255,255,.06);border-left-color:var(--cta)}
+.nav-item-icon{font-size:1rem;width:20px;text-align:center}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08)}
+.btn-logout{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--sidebar-text);transition:color .2s;padding:0}
+.btn-logout:hover{color:var(--red)}
+@media(max-width:768px){.sidebar{width:200px;min-width:200px}}
+
+/* MAIN */
+.main{flex:1;overflow:auto;padding:32px}
+.page-title{font-size:1.3rem;font-weight:700;margin-bottom:4px}
+.page-sub{font-size:.82rem;color:var(--text3);margin-bottom:28px}
+
+/* CARD */
+.card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px}
+.card-title{font-size:.95rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title span{background:rgba(232,119,58,.1);color:var(--cta);padding:2px 8px;border-radius:20px;font-size:.72rem;font-weight:600}
+
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+thead th{text-align:left;padding:10px 12px;background:var(--bg);font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);border-bottom:1px solid var(--border)}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:last-child{border-bottom:none}
+tbody td{padding:10px 12px;vertical-align:top}
+.key-cell{font-weight:600;color:var(--text);font-family:monospace;font-size:.8rem;white-space:nowrap}
+.val-cell{color:var(--text2);max-width:400px}
+
+/* INLINE EDIT */
+.inline-val{cursor:pointer;padding:4px 6px;border-radius:4px;transition:background .15s;white-space:pre-wrap;word-break:break-word;font-size:.83rem;line-height:1.5}
+.inline-val:hover{background:rgba(232,119,58,.08)}
+.inline-val.editing{display:none}
+.inline-input{width:100%;border:1px solid var(--cta);border-radius:4px;padding:6px 8px;font-size:.83rem;font-family:inherit;line-height:1.5;resize:vertical;min-height:36px}
+.inline-input:focus{outline:none}
+.inline-actions{display:flex;gap:6px;margin-top:4px}
+.inline-save{background:var(--cta);color:#fff;font-size:.75rem;font-weight:600;padding:5px 12px;border-radius:4px;transition:background .15s}
+.inline-save:hover{background:var(--cta-d)}
+.inline-cancel{font-size:.75rem;color:var(--text3);padding:5px 8px;transition:color .15s}
+.inline-cancel:hover{color:var(--text)}
+
+/* FORM SECTION */
+.field-group{margin-bottom:16px}
+.field-group label{display:block;font-size:.8rem;font-weight:600;color:var(--text2);margin-bottom:5px}
+.field-group input,.field-group textarea,.field-group select{width:100%;border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:.88rem;transition:border-color .2s;color:var(--text)}
+.field-group input:focus,.field-group textarea:focus{outline:none;border-color:var(--cta)}
+.field-group textarea{min-height:100px;resize:vertical;line-height:1.55}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.btn-save{background:var(--cta);color:#fff;font-weight:700;font-size:.82rem;padding:10px 20px;border-radius:var(--r);transition:background .2s}
+.btn-save:hover{background:var(--cta-d)}
+.btn-save:disabled{opacity:.5;cursor:default}
+.btn-danger{background:var(--red);color:#fff;font-weight:700;font-size:.78rem;padding:8px 14px;border-radius:var(--r);transition:opacity .15s}
+.btn-danger:hover{opacity:.85}
+.btn-add{background:var(--green);color:#fff;font-weight:700;font-size:.82rem;padding:10px 20px;border-radius:var(--r);transition:opacity .15s;margin-bottom:20px}
+.btn-add:hover{opacity:.9}
+
+/* STATUS */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:12px 20px;border-radius:10px;font-size:.85rem;z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;max-width:300px}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{background:#065f46}
+.toast.error{background:#991b1b}
+
+/* DASHBOARD STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+@media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.stats-grid{grid-template-columns:1fr}}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px}
+.stat-num{font-size:1.75rem;font-weight:700;color:var(--text)}
+.stat-label{font-size:.78rem;color:var(--text3);margin-top:4px}
+
+/* QUIZ EDITOR */
+.q-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px}
+.q-num{font-size:.75rem;font-weight:700;color:var(--cta);margin-bottom:8px}
+.q-text-display{font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:12px}
+.q-opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:500px){.q-opts-grid{grid-template-columns:1fr}}
+.q-opt-item{font-size:.8rem;color:var(--text2);background:var(--bg);border-radius:6px;padding:8px 10px;cursor:pointer;transition:background .15s}
+.q-opt-item:hover{background:#e5e7eb}
+.q-opt-label{font-weight:700;color:var(--text);margin-right:6px}
+.btn-edit-q{font-size:.75rem;color:var(--cta);font-weight:600;margin-top:10px;transition:opacity .15s}
+.btn-edit-q:hover{opacity:.75}
+
+/* LEADS TABLE */
+.lead-sabotador{display:inline-block;background:rgba(232,119,58,.1);color:var(--cta);font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:10px}
+.search-bar{width:100%;border:1px solid var(--border);border-radius:var(--r);padding:9px 14px;font-size:.88rem;margin-bottom:16px}
+.search-bar:focus{outline:none;border-color:var(--cta)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="login-page">
+  <div class="login-card">
+    <div class="login-logo">EmagreSer</div>
+    <div class="login-sub">Painel Administrativo</div>
+    <div class="inp-group">
+      <label>Usuário</label>
+      <input type="text" id="login-user" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="inp-group">
+      <label>Senha</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-login" onclick="doLogin()" id="login-btn">Entrar</button>
+    <div class="login-error hidden" id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP LAYOUT -->
+<div id="app" class="hidden">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">EmagreSer</div>
+      <div class="sidebar-user" id="sidebar-user">admin</div>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <div class="nav-item active" data-page="dashboard" onclick="goPage('dashboard')"><span class="nav-item-icon">📊</span> Dashboard</div>
+      <div class="nav-item" data-page="textos" onclick="goPage('textos')"><span class="nav-item-icon">✏️</span> Textos da LP</div>
+      <div class="nav-item" data-page="quiz" onclick="goPage('quiz')"><span class="nav-item-icon">❓</span> Perguntas do Quiz</div>
+      <div class="nav-item" data-page="resultados" onclick="goPage('resultados')"><span class="nav-item-icon">🎯</span> Resultados / Perfis</div>
+      <div class="nav-item" data-page="depoimentos" onclick="goPage('depoimentos')"><span class="nav-item-icon">🎬</span> Depoimentos</div>
+      <div class="nav-item" data-page="mentoras" onclick="goPage('mentoras')"><span class="nav-item-icon">👩</span> Mentoras</div>
+      <div class="nav-item" data-page="config" onclick="goPage('config')"><span class="nav-item-icon">⚙️</span> Configurações</div>
+      <div class="nav-item" data-page="leads" onclick="goPage('leads')"><span class="nav-item-icon">👥</span> Leads</div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="doLogout()">🚪 Sair</button>
+    </div>
+  </aside>
+
+  <main class="main" id="main-content">
+    <div style="text-align:center;padding:60px;color:var(--text3)">Carregando...</div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://drgrwpmhmrrhxuwxabow.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyZ3J3cG1obXJyaHh1d3hhYm93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg0OTcsImV4cCI6MjA5MzA1NDQ5N30._cjH7sFNaEVNf6cmp4f05x9UE-mfX2RT84BYdhy-9dQ';
+const PROXY = 'admin_proxy.php';
+
+let currentUser = null;
+let currentPage = 'dashboard';
+let allConfig = {};
+
+/* ── AUTH ─────────────────────────── */
+async function doLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  err.classList.add('hidden');
+  btn.textContent = 'Verificando...';
+  btn.disabled = true;
+  try {
+    const fd = new FormData();
+    fd.append('action', 'login');
+    fd.append('username', user);
+    fd.append('password', pass);
+    const r = await fetch(PROXY, { method: 'POST', body: fd, credentials: 'same-origin' });
+    const data = await r.json();
+    if (data.ok) {
+      currentUser = data.user;
+      document.getElementById('login-page').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      document.getElementById('sidebar-user').textContent = currentUser.username;
+      goPage('dashboard');
+    } else {
+      err.textContent = data.error || 'Credenciais inválidas';
+      err.classList.remove('hidden');
+    }
+  } catch(e) {
+    err.textContent = 'Erro de conexão. Verifique se admin_proxy.php está disponível.';
+    err.classList.remove('hidden');
+  }
+  btn.textContent = 'Entrar';
+  btn.disabled = false;
+}
+
+async function doLogout() {
+  const fd = new FormData();
+  fd.append('action', 'logout');
+  await fetch(PROXY, { method: 'POST', body: fd, credentials: 'same-origin' });
+  location.reload();
+}
+
+async function checkSession() {
+  try {
+    const fd = new FormData();
+    fd.append('action', 'check');
+    const r = await fetch(PROXY, { method: 'POST', body: fd, credentials: 'same-origin' });
+    const data = await r.json();
+    if (data.ok) {
+      currentUser = data.user;
+      document.getElementById('login-page').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      document.getElementById('sidebar-user').textContent = currentUser.username;
+      goPage('dashboard');
+    }
+  } catch(e) { /* proxy not available, show login */ }
+}
+
+/* ── NAVIGATION ───────────────────── */
+function goPage(name) {
+  currentPage = name;
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === name);
+  });
+  const pages = { dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras, config: configPage, leads };
+  if (pages[name]) pages[name]();
+}
+
+/* ── SUPABASE READ ──────────────── */
+async function sb(table, params = '') {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
+    headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` }
+  });
+  return r.json();
+}
+
+/* ── PROXY WRITE ─────────────────── */
+async function proxyWrite(data) {
+  const fd = new FormData();
+  Object.entries(data).forEach(([k, v]) => fd.append(k, v));
+  const r = await fetch(PROXY, { method: 'POST', body: fd, credentials: 'same-origin' });
+  return r.json();
+}
+
+/* ── TOAST ─────────────────────── */
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  setTimeout(() => { el.className = 'toast'; }, 3000);
+}
+
+/* ── PAGES ─────────────────────── */
+async function dashboard() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `<div style="text-align:center;padding:40px"><div style="width:30px;height:30px;border:3px solid #e5e7eb;border-top-color:var(--cta);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto"></div></div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+  try {
+    const [leadsData, cfgData] = await Promise.all([
+      sb('leads', 'select=id,created_at,sabotador&order=created_at.desc&limit=5'),
+      sb('site_config', 'select=key,value')
+    ]);
+    cfgData.forEach(r => { allConfig[r.key] = r.value; });
+    const totalLeads = leadsData.length;
+    const today = new Date().toISOString().slice(0,10);
+    const todayLeads = leadsData.filter(l => l.created_at?.startsWith(today)).length;
+    const sabCounts = {};
+    leadsData.forEach(l => { if(l.sabotador) sabCounts[l.sabotador] = (sabCounts[l.sabotador]||0)+1; });
+    const topSab = Object.entries(sabCounts).sort((a,b)=>b[1]-a[1])[0];
+    const masterclass = allConfig['masterclass_data'] || '—';
+    main.innerHTML = `
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub">Visão geral do Programa EmagreSer</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-num">${totalLeads}</div><div class="stat-label">Leads (últimos 5 do sistema)</div></div>
+        <div class="stat-card"><div class="stat-num">${todayLeads}</div><div class="stat-label">Leads hoje</div></div>
+        <div class="stat-card"><div class="stat-num">${topSab ? topSab[0].split(' ')[0] : '—'}</div><div class="stat-label">Perfil mais comum</div></div>
+        <div class="stat-card"><div class="stat-num">📅</div><div class="stat-label">Masterclass: ${masterclass}</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Últimos 5 leads</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Perfil</th><th>Data</th></tr></thead>
+            <tbody>
+              ${leadsData.map(l => `
+                <tr>
+                  <td style="font-family:monospace;font-size:.75rem">${l.id?.slice(0,8)}...</td>
+                  <td><span class="lead-sabotador">${l.sabotador || '—'}</span></td>
+                  <td style="font-size:.78rem;color:var(--text3)">${l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '—'}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  } catch(e) {
+    main.innerHTML = `<div class="page-title">Dashboard</div><div class="card" style="color:var(--red)">Erro ao carregar dados: ${e.message}</div>`;
+  }
+}
+
+/* ── TEXTOS (site_config editor) ─── */
+const TEXT_KEYS = [
+  { group: 'Hero', keys: ['hero_headline','hero_subheadline','hero_cta_principal','hero_cta_sub'] },
+  { group: 'Isso é Você', keys: ['issovce_titulo','issovce_lead','issovce_cta'] },
+  { group: 'Problema', keys: ['problema_label','problema_titulo','problema_texto','problema_cta'] },
+  { group: 'Quiz CTA', keys: ['quiz_cta_label','quiz_cta_titulo','quiz_cta_desc','quiz_cta_btn','quiz_cta_tags'] },
+  { group: 'Depoimentos', keys: ['depo_secao_label','depo_secao_titulo','depo_secao_sub','depo_frase_pre_cta','depo_cta'] },
+  { group: 'Processo', keys: ['processo_p1_titulo','processo_p1_desc','processo_p2_titulo','processo_p2_desc','processo_p3_titulo','processo_p3_desc'] },
+  { group: 'Mentoras', keys: ['mentoras_label','mentoras_titulo'] },
+  { group: 'Sobre', keys: ['sobre_label','sobre_titulo','sobre_texto','sobre_item1','sobre_item2','sobre_item3','sobre_item4'] },
+  { group: 'Incluso', keys: ['incluso_label','incluso_titulo','incluso_item1','incluso_item2','incluso_item3','incluso_item4','incluso_item5'] },
+  { group: 'Confiar', keys: ['confiar_label','confiar_titulo','confiar_texto','confiar_tags'] },
+  { group: 'Masterclass', keys: ['masterclass_label','masterclass_nome','masterclass_data','masterclass_desc','masterclass_item1','masterclass_item2','masterclass_item3','masterclass_cta'] },
+  { group: 'CTA Final', keys: ['cta_final_label','cta_final_titulo','cta_final_desc','cta_final_btn','cta_final_tags','cta_final_nota'] },
+  { group: 'Anúncio / Rodapé', keys: ['anuncio_bar','footer_nome','footer_creditos'] },
+];
+
+async function textos() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `<div class="page-title">Textos da Landing Page</div><div class="page-sub">Clique em qualquer valor para editar. Salva direto no banco.</div><div id="textos-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  const rows = await sb('site_config', 'select=key,value&order=key');
+  const cfgMap = {};
+  rows.forEach(r => { cfgMap[r.key] = r.value; allConfig[r.key] = r.value; });
+
+  let html = '';
+  TEXT_KEYS.forEach(group => {
+    const existingKeys = group.keys.filter(k => cfgMap.hasOwnProperty(k) || true);
+    html += `<div class="card"><div class="card-title">${group.group}</div><div class="table-wrap"><table>
+      <thead><tr><th>Chave</th><th>Valor</th><th></th></tr></thead>
+      <tbody>
+        ${existingKeys.map(k => `
+          <tr>
+            <td class="key-cell">${k}</td>
+            <td class="val-cell">
+              <div class="inline-val" id="val-${k}" onclick="startEdit('${k}')">${escHtml(cfgMap[k] || '—')}</div>
+              <textarea class="inline-input hidden" id="inp-${k}" rows="3">${cfgMap[k] || ''}</textarea>
+              <div class="inline-actions hidden" id="act-${k}">
+                <button class="inline-save" onclick="saveConfig('${k}')">Salvar</button>
+                <button class="inline-cancel" onclick="cancelEdit('${k}')">Cancelar</button>
+              </div>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table></div></div>`;
+  });
+  document.getElementById('textos-body').innerHTML = html;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function startEdit(key) {
+  document.getElementById(`val-${key}`).classList.add('editing', 'hidden');
+  document.getElementById(`inp-${key}`).classList.remove('hidden');
+  document.getElementById(`act-${key}`).classList.remove('hidden');
+  document.getElementById(`inp-${key}`).focus();
+}
+
+function cancelEdit(key) {
+  document.getElementById(`val-${key}`).classList.remove('editing', 'hidden');
+  document.getElementById(`inp-${key}`).classList.add('hidden');
+  document.getElementById(`act-${key}`).classList.add('hidden');
+}
+
+async function saveConfig(key) {
+  const val = document.getElementById(`inp-${key}`).value;
+  try {
+    const res = await proxyWrite({ action: 'update_config', key, value: val });
+    if (res.ok) {
+      document.getElementById(`val-${key}`).textContent = val || '—';
+      allConfig[key] = val;
+      cancelEdit(key);
+      toast('Salvo com sucesso!');
+    } else {
+      toast(res.error || 'Erro ao salvar', 'error');
+    }
+  } catch(e) { toast('Erro de conexão', 'error'); }
+}
+
+/* ── QUIZ EDITOR ─────────────────── */
+async function quizPage() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `<div class="page-title">Perguntas do Quiz</div><div class="page-sub">Edite o texto das perguntas e opções.</div><div id="quiz-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  const rows = await sb('quiz_questions', 'select=id,order_index,question_text,option_a,option_b,option_c,option_d,weight_a,weight_b,weight_c,weight_d&order=order_index');
+  document.getElementById('quiz-body').innerHTML = rows.map((q,i) => `
+    <div class="q-card" id="q-${q.id}">
+      <div class="q-num">Pergunta ${q.order_index || i+1}</div>
+      <div class="q-text-display" id="qtext-${q.id}">${escHtml(q.question_text)}</div>
+      <div class="q-opts-grid">
+        <div class="q-opt-item"><span class="q-opt-label">A:</span>${escHtml(q.option_a)}</div>
+        <div class="q-opt-item"><span class="q-opt-label">B:</span>${escHtml(q.option_b)}</div>
+        <div class="q-opt-item"><span class="q-opt-label">C:</span>${escHtml(q.option_c)}</div>
+        <div class="q-opt-item"><span class="q-opt-label">D:</span>${escHtml(q.option_d)}</div>
+      </div>
+      <button class="btn-edit-q" onclick="editQuizQ('${q.id}', ${escHtml(JSON.stringify(q))})">✏️ Editar pergunta</button>
+      <div id="qform-${q.id}" class="hidden" style="margin-top:16px"></div>
+    </div>`).join('');
+}
+
+function editQuizQ(id, q) {
+  if (typeof q === 'string') q = JSON.parse(q.replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'));
+  const el = document.getElementById(`qform-${id}`);
+  el.classList.remove('hidden');
+  el.innerHTML = `
+    <div class="field-group"><label>Pergunta</label><textarea id="qf-text-${id}" rows="2">${q.question_text||''}</textarea></div>
+    <div class="grid2">
+      <div class="field-group"><label>Opção A (perfil ${q.weight_a||'A'})</label><textarea id="qf-a-${id}" rows="2">${q.option_a||''}</textarea></div>
+      <div class="field-group"><label>Opção B (perfil ${q.weight_b||'B'})</label><textarea id="qf-b-${id}" rows="2">${q.option_b||''}</textarea></div>
+      <div class="field-group"><label>Opção C (perfil ${q.weight_c||'C'})</label><textarea id="qf-c-${id}" rows="2">${q.option_c||''}</textarea></div>
+      <div class="field-group"><label>Opção D (perfil ${q.weight_d||'D'})</label><textarea id="qf-d-${id}" rows="2">${q.option_d||''}</textarea></div>
+    </div>
+    <button class="btn-save" onclick="saveQuizQ('${id}')">Salvar pergunta</button>
+    <button class="inline-cancel" style="margin-left:12px" onclick="document.getElementById('qform-${id}').classList.add('hidden')">Cancelar</button>`;
+}
+
+async function saveQuizQ(id) {
+  const data = {
+    action: 'update_quiz_question', id,
+    question_text: document.getElementById(`qf-text-${id}`).value,
+    option_a: document.getElementById(`qf-a-${id}`).value,
+    option_b: document.getElementById(`qf-b-${id}`).value,
+    option_c: document.getElementById(`qf-c-${id}`).value,
+    option_d: document.getElementById(`qf-d-${id}`).value,
+  };
+  try {
+    const res = await proxyWrite(data);
+    if (res.ok) {
+      document.getElementById(`qtext-${id}`).textContent = data.question_text;
+      document.getElementById(`qform-${id}`).classList.add('hidden');
+      toast('Pergunta salva!');
+    } else { toast(res.error || 'Erro', 'error'); }
+  } catch(e) { toast('Erro de conexão', 'error'); }
+}
+
+/* ── RESULTADOS / PERFIS ─────────── */
+const RESULT_KEYS = [
+  { label: 'Perfil A — A Recompensadora', prefix: 'resultado_A' },
+  { label: 'Perfil B — A Piloto Automático', prefix: 'resultado_B' },
+  { label: 'Perfil C — A Prisioneira do Esforço', prefix: 'resultado_C' },
+  { label: 'Perfil D — A Compensadora Noturna', prefix: 'resultado_D' },
+];
+const RESULT_FIELDS = ['emoji','sabotador','tipo','titulo','desc','insight'];
+
+async function resultados() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `<div class="page-title">Resultados / Perfis Sabotadores</div><div class="page-sub">Edite os textos exibidos após o quiz.</div><div id="res-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  const rows = await sb('site_config', 'select=key,value&key=like.resultado_%');
+  const cfgMap = {};
+  rows.forEach(r => { cfgMap[r.key] = r.value; });
+
+  document.getElementById('res-body').innerHTML = RESULT_KEYS.map(p => `
+    <div class="card">
+      <div class="card-title">${p.label}</div>
+      ${RESULT_FIELDS.map(f => {
+        const k = `${p.prefix}_${f}`;
+        return `<div class="field-group">
+          <label>${f.charAt(0).toUpperCase()+f.slice(1)}</label>
+          <textarea id="rf-${k}" rows="${['desc','insight'].includes(f) ? 4 : 2}">${cfgMap[k]||''}</textarea>
+        </div>`;
+      }).join('')}
+      <button class="btn-save" onclick="saveResultGroup('${p.prefix}')">Salvar ${p.label}</button>
+    </div>`).join('');
+}
+
+async function saveResultGroup(prefix) {
+  const fields = RESULT_FIELDS;
+  const proms = fields.map(f => {
+    const k = `${prefix}_${f}`;
+    const val = document.getElementById(`rf-${k}`).value;
+    return proxyWrite({ action: 'update_config', key: k, value: val });
+  });
+  try {
+    const results = await Promise.all(proms);
+    if (results.every(r => r.ok)) toast('Perfil salvo com sucesso!');
+    else toast('Alguns campos falharam ao salvar', 'error');
+  } catch(e) { toast('Erro de conexão', 'error'); }
+}
+
+/* ── DEPOIMENTOS ─────────────────── */
+async function depoimentos() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `<div class="page-title">Depoimentos</div><div class="page-sub">Gerencie os depoimentos em vídeo exibidos na landing page.</div>
+    <button class="btn-add" onclick="showAddDepo()">+ Adicionar Depoimento</button>
+    <div id="add-depo-form" class="card hidden" style="margin-bottom:20px"></div>
+    <div id="depo-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  await loadDepos();
+}
+
+async function loadDepos() {
+  const rows = await sb('testimonials', 'select=id,name,result,quote,profession,video_url,type,order_index,active&order=order_index');
+  document.getElementById('depo-body').innerHTML = `
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Nome</th><th>Resultado</th><th>Vídeo URL</th><th>Ordem</th><th>Ativo</th><th>Ações</th></tr></thead>
+      <tbody>
+        ${rows.map(d => `
+          <tr>
+            <td><strong>${escHtml(d.name||'')}</strong><br><span style="font-size:.75rem;color:var(--text3)">${escHtml(d.quote||'')}</span></td>
+            <td style="font-size:.8rem;color:var(--cta)">${escHtml(d.result||'')}</td>
+            <td style="font-size:.75rem;word-break:break-all;max-width:200px">${escHtml(d.video_url||'')}</td>
+            <td>${d.order_index}</td>
+            <td>${d.active ? '✅' : '❌'}</td>
+            <td><button class="btn-edit-q" onclick="editDepo('${d.id}', ${escHtml(JSON.stringify(d))})">✏️ Editar</button></td>
+          </tr>
+          <tr><td colspan="6"><div id="depo-form-${d.id}" class="hidden" style="padding:16px 0"></div></td></tr>`).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+function showAddDepo() {
+  const el = document.getElementById('add-depo-form');
+  el.classList.remove('hidden');
+  el.innerHTML = depoFormHtml('new', {});
+}
+
+function editDepo(id, d) {
+  if (typeof d === 'string') d = JSON.parse(d.replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'));
+  document.getElementById(`depo-form-${id}`).innerHTML = depoFormHtml(id, d);
+  document.getElementById(`depo-form-${id}`).classList.remove('hidden');
+}
+
+function depoFormHtml(id, d) {
+  return `<div class="card">
+    <div class="grid2">
+      <div class="field-group"><label>Nome</label><input id="df-name-${id}" value="${escHtml(d.name||'')}"></div>
+      <div class="field-group"><label>Profissão</label><input id="df-prof-${id}" value="${escHtml(d.profession||'')}"></div>
+      <div class="field-group"><label>Resultado obtido</label><input id="df-result-${id}" value="${escHtml(d.result||'')}"></div>
+      <div class="field-group"><label>Ordem</label><input type="number" id="df-order-${id}" value="${d.order_index||0}"></div>
+    </div>
+    <div class="field-group"><label>URL do Vídeo (YouTube)</label><input id="df-video-${id}" value="${escHtml(d.video_url||'')}"></div>
+    <div class="field-group"><label>Frase / Depoimento</label><textarea id="df-quote-${id}" rows="3">${escHtml(d.quote||'')}</textarea></div>
+    <div class="field-group"><label>Ativo?</label><select id="df-active-${id}"><option value="1" ${d.active!==false?'selected':''}>Sim</option><option value="0" ${d.active===false?'selected':''}>Não</option></select></div>
+    <button class="btn-save" onclick="saveDepo('${id}')">Salvar</button>
+    <button class="inline-cancel" style="margin-left:12px" onclick="document.getElementById('${id==='new'?'add-depo-form':'depo-form-'+id}').classList.add('hidden')">Cancelar</button>
+  </div>`;
+}
+
+async function saveDepo(id) {
+  const data = {
+    action: 'update_testimonial', id,
+    name: document.getElementById(`df-name-${id}`).value,
+    profession: document.getElementById(`df-prof-${id}`).value,
+    result: document.getElementById(`df-result-${id}`).value,
+    order_index: document.getElementById(`df-order-${id}`).value,
+    video_url: document.getElementById(`df-video-${id}`).value,
+    quote: document.getElementById(`df-quote-${id}`).value,
+    active: document.getElementById(`df-active-${id}`).value,
+  };
+  try {
+    const res = await proxyWrite(data);
+    if (res.ok) { toast('Depoimento salvo!'); await loadDepos(); }
+    else toast(res.error || 'Erro', 'error');
+  } catch(e) { toast('Erro de conexão', 'error'); }
+}
+
+/* ── MENTORAS ─────────────────── */
+async function mentoras() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `<div class="page-title">Mentoras</div><div class="page-sub">Edite os perfis das mentoras exibidos na landing page.</div><div id="mentora-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  const rows = await sb('mentors', 'select=id,name,role,bio,photo_url,video_url,instagram_url,order_index&order=order_index');
+  document.getElementById('mentora-body').innerHTML = rows.map(m => `
+    <div class="card">
+      <div class="card-title">${m.name}</div>
+      <div class="grid2">
+        <div class="field-group"><label>Nome</label><input id="mf-name-${m.id}" value="${escHtml(m.name||'')}"></div>
+        <div class="field-group"><label>Cargo/Especialidade</label><input id="mf-role-${m.id}" value="${escHtml(m.role||'')}"></div>
+      </div>
+      <div class="field-group"><label>Bio</label><textarea id="mf-bio-${m.id}" rows="5">${escHtml(m.bio||'')}</textarea></div>
+      <div class="field-group"><label>URL da Foto</label><input id="mf-photo-${m.id}" value="${escHtml(m.photo_url||'')}" placeholder="https://..."></div>
+      <div class="field-group"><label>URL do Vídeo</label><input id="mf-video-${m.id}" value="${escHtml(m.video_url||'')}" placeholder="https://youtube.com/..."></div>
+      <div class="field-group"><label>Instagram URL</label><input id="mf-insta-${m.id}" value="${escHtml(m.instagram_url||'')}" placeholder="https://instagram.com/..."></div>
+      <button class="btn-save" onclick="saveMentora('${m.id}')">Salvar</button>
+    </div>`).join('');
+}
+
+async function saveMentora(id) {
+  const data = {
+    action: 'update_mentor', id,
+    name: document.getElementById(`mf-name-${id}`).value,
+    role: document.getElementById(`mf-role-${id}`).value,
+    bio: document.getElementById(`mf-bio-${id}`).value,
+    photo_url: document.getElementById(`mf-photo-${id}`).value,
+    video_url: document.getElementById(`mf-video-${id}`).value,
+    instagram_url: document.getElementById(`mf-insta-${id}`).value,
+  };
+  try {
+    const res = await proxyWrite(data);
+    if (res.ok) toast('Mentora salva!');
+    else toast(res.error || 'Erro', 'error');
+  } catch(e) { toast('Erro de conexão', 'error'); }
+}
+
+/* ── CONFIG ──────────────────────── */
+const CONFIG_KEYS = [
+  { label: 'Data da Masterclass (ISO)', key: 'live_data' },
+  { label: 'Descrição da data', key: 'masterclass_data' },
+  { label: 'Anúncio da barra de topo', key: 'anuncio_bar' },
+  { label: 'Link WhatsApp VIP', key: 'whatsapp_link' },
+  { label: 'Vídeo Hero (URL YouTube)', key: 'hero_video_url' },
+  { label: 'Vídeo Promessa Daniely', key: 'video_promessa_daniely' },
+  { label: 'Vídeo Promessa Ira', key: 'video_promessa_ira' },
+  { label: 'Vídeo Perfil A', key: 'video_perfil_a' },
+  { label: 'Vídeo Perfil B', key: 'video_perfil_b' },
+  { label: 'Vídeo Perfil C', key: 'video_perfil_c' },
+  { label: 'Vídeo Perfil D', key: 'video_perfil_d' },
+  { label: 'Preço do programa', key: 'carrinho_preco' },
+  { label: 'Parcelas', key: 'carrinho_parcelado' },
+  { label: 'Link do carrinho', key: 'carrinho_link' },
+  { label: 'Abertura do carrinho (ISO)', key: 'carrinho_abertura' },
+  { label: 'Forçar abertura do carrinho?', key: 'carrinho_forcar' },
+];
+
+async function configPage() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `<div class="page-title">Configurações</div><div class="page-sub">Configurações gerais: datas, links, preços e vídeos.</div><div id="cfg-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  const rows = await sb('site_config', 'select=key,value');
+  const cfgMap = {};
+  rows.forEach(r => { cfgMap[r.key] = r.value; });
+
+  document.getElementById('cfg-body').innerHTML = `
+    <div class="card">
+      ${CONFIG_KEYS.map(c => `
+        <div class="field-group">
+          <label>${c.label}</label>
+          <input id="cfg-${c.key}" value="${escHtml(cfgMap[c.key]||'')}">
+        </div>`).join('')}
+      <button class="btn-save" onclick="saveAllConfig()">Salvar Configurações</button>
+    </div>`;
+}
+
+async function saveAllConfig() {
+  const proms = CONFIG_KEYS.map(c => {
+    const val = document.getElementById(`cfg-${c.key}`).value;
+    return proxyWrite({ action: 'update_config', key: c.key, value: val });
+  });
+  try {
+    const results = await Promise.all(proms);
+    if (results.every(r => r.ok)) toast('Configurações salvas!');
+    else toast('Alguns campos falharam', 'error');
+  } catch(e) { toast('Erro de conexão', 'error'); }
+}
+
+/* ── LEADS ─────────────────────── */
+async function leads() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `<div class="page-title">Leads</div><div class="page-sub">Todos os leads capturados pela landing page.</div>
+    <input class="search-bar" id="lead-search" placeholder="Buscar por nome, e-mail ou perfil…" oninput="filterLeads(this.value)">
+    <div id="leads-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  const rows = await sb('leads', 'select=id,name,email,phone,sabotador,cidade,estado,created_at,source&order=created_at.desc');
+  window._allLeads = rows;
+  renderLeads(rows);
+}
+
+function renderLeads(rows) {
+  document.getElementById('leads-body').innerHTML = `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>Perfil</th><th>Cidade</th><th>Data</th></tr></thead>
+      <tbody>
+        ${rows.map(l => `
+          <tr>
+            <td><strong style="font-size:.88rem">${escHtml(l.name||'')}</strong></td>
+            <td style="font-size:.82rem">${escHtml(l.email||'')}</td>
+            <td style="font-size:.82rem">${escHtml(l.phone||'')}</td>
+            <td><span class="lead-sabotador">${escHtml(l.sabotador||'—')}</span></td>
+            <td style="font-size:.78rem;color:var(--text3)">${escHtml(l.cidade||'')} ${escHtml(l.estado||'')}</td>
+            <td style="font-size:.75rem;color:var(--text3);white-space:nowrap">${l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '—'}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table></div>
+    <p style="font-size:.78rem;color:var(--text3);margin-top:12px">${rows.length} lead(s) encontrado(s)</p>`;
+}
+
+function filterLeads(q) {
+  if (!window._allLeads) return;
+  const lq = q.toLowerCase();
+  const filtered = window._allLeads.filter(l =>
+    (l.name||'').toLowerCase().includes(lq) ||
+    (l.email||'').toLowerCase().includes(lq) ||
+    (l.sabotador||'').toLowerCase().includes(lq) ||
+    (l.phone||'').includes(lq)
+  );
+  renderLeads(filtered);
+}
+
+/* ── INIT ─────────────────────── */
+checkSession();
+</script>
+</body>
+</html>
