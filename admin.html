@@ -836,6 +836,22 @@ async function loadLeads(page = 0) {
   }
 }
 
+const SABOTADOR_NAMES = {
+  A: '🍫 A Recompensadora',
+  B: '🤖 Piloto Automático',
+  C: '⚡ Prisioneira do Esforço',
+  D: '🌙 Compensadora Noturna'
+};
+function sabotadorLabel(s) {
+  if (!s) return '';
+  if (SABOTADOR_NAMES[s.trim().toUpperCase()]) return SABOTADOR_NAMES[s.trim().toUpperCase()];
+  if (/Recompensadora|Hedônica/i.test(s)) return SABOTADOR_NAMES.A;
+  if (/Piloto|Amn[eé]sia/i.test(s)) return SABOTADOR_NAMES.B;
+  if (/Prisioneira|Fadiga/i.test(s)) return SABOTADOR_NAMES.C;
+  if (/Compensadora|Restri/i.test(s)) return SABOTADOR_NAMES.D;
+  return s;
+}
+
 function renderLeadsTable() {
   const search = (document.getElementById('leads-search')?.value || '').toLowerCase();
   const filter = document.getElementById('leads-filter-sabotador')?.value || '';
@@ -853,7 +869,7 @@ function renderLeadsTable() {
       <td>${esc(l.name||'')}</td>
       <td style="word-break:break-all">${esc(l.email||'')}</td>
       <td>${esc(l.phone||'')}</td>
-      <td>${l.sabotador?`<span class="badge badge-amber">${esc(l.sabotador)}</span>`:'—'}</td>
+      <td>${l.sabotador?`<span class="badge badge-amber">${esc(sabotadorLabel(l.sabotador))}</span>`:'—'}</td>
       <td>${esc(l.faixa_etaria||'—')}</td>
       <td>${esc(l.faixa_renda||'—')}</td>
       <td>${esc((l.cidade||'')+(l.estado?' / '+l.estado:''))}</td>
