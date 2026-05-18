@@ -20,9 +20,10 @@ define('SMTP_FROM',     'contato@emagreser.danielydealbuquerque.com.br');
 define('SMTP_FROM_NAME','Programa EmagreSer');
 
 // Z-API WhatsApp
-define('ZAPI_INSTANCE', '***REMOVED_ZAPI_INSTANCE***');
-define('ZAPI_TOKEN',    '***REMOVED_ZAPI_TOKEN***');
-define('ZAPI_URL',      'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
+define('ZAPI_INSTANCE',      '***REMOVED_ZAPI_INSTANCE***');
+define('ZAPI_TOKEN',         '***REMOVED_ZAPI_TOKEN***');
+define('ZAPI_CLIENT_TOKEN',  '***REMOVED_ZAPI_CLIENT_TOKEN***');
+define('ZAPI_URL',           'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
 
 define('BATCH_SIZE', 20); // e-mails por rodada
 // ────────────────────────────────────────────────────────────────
@@ -183,7 +184,7 @@ function send_whatsapp(string $phone, string $message): array {
         CURLOPT_TIMEOUT        => 15,
         CURLOPT_HTTPHEADER     => [
             'Content-Type: application/json',
-            'Client-Token: ' . ZAPI_TOKEN,
+            'Client-Token: ' . ZAPI_CLIENT_TOKEN,
         ],
     ]);
     $res  = curl_exec($ch);

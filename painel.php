@@ -15,6 +15,7 @@ define('SMTP_FROM',            'contato@emagreser.danielydealbuquerque.com.br');
 define('SMTP_FROM_NAME',       'Programa EmagreSer');
 define('ZAPI_INSTANCE',        '***REMOVED_ZAPI_INSTANCE***');
 define('ZAPI_TOKEN',           '***REMOVED_ZAPI_TOKEN***');
+define('ZAPI_CLIENT_TOKEN',    '***REMOVED_ZAPI_CLIENT_TOKEN***');
 
 if (($_GET['token'] ?? '') !== PANEL_TOKEN) {
     http_response_code(403);
@@ -278,7 +279,7 @@ function send_zapi_test(string $phone, string $name): array {
     $url = 'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN . '/send-text';
     $payload = json_encode(['phone' => $phone, 'message' => "✅ *Teste EmagreSer*\n\nOlá, {$name}! A automação de WhatsApp está funcionando corretamente.\n\n_Programa EmagreSer — " . date('d/m/Y H:i') . "_"]);
     $ch = curl_init($url);
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => $payload, CURLOPT_TIMEOUT => 15, CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Client-Token: ' . ZAPI_TOKEN]]);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => $payload, CURLOPT_TIMEOUT => 15, CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Client-Token: ' . ZAPI_CLIENT_TOKEN]]);
     $res = curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
     $data = json_decode($res, true);
     return ($code === 200 && !empty($data['zaapId'])) ? ['ok' => true, 'msg' => 'sent'] : ['ok' => false, 'msg' => $res];
