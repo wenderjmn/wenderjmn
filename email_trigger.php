@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 define('SUPABASE_URL',         getenv('SUPABASE_URL')         ?: 'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
 define('SITE_URL',             getenv('SITE_URL')             ?: 'https://emagreser.danielydealbuquerque.com.br');
-define('WPP_LINK',             getenv('WPP_LINK')             ?: 'https://chat.whatsapp.com/SEU_LINK_AQUI');
+define('WPP_LINK',             getenv('WPP_LINK')             ?: 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ');
 define('ZAPI_INSTANCE',        '***REMOVED_ZAPI_INSTANCE***');
 define('ZAPI_TOKEN',           '***REMOVED_ZAPI_TOKEN***');
 // ────────────────────────────────────────────────────────────────
@@ -67,18 +67,25 @@ $vars = [
     '{{link_descadastro}}' => SITE_URL . '/descadastro.php?email=' . urlencode($email),
 ];
 
-// ── DATA DA MASTERCLASS ──────────────────────────────────────────
-$masterclass = new DateTime('2026-06-06 08:00:00', new DateTimeZone('America/Sao_Paulo'));
-$masterclass_1h = new DateTime('2026-06-06 19:00:00', new DateTimeZone('America/Sao_Paulo'));
+// ── DATAS FIXAS ───────────────────────────────────────────────────
+$masterclass      = new DateTime('2026-06-06 08:00:00', new DateTimeZone('America/Sao_Paulo'));
+$masterclass_1h   = new DateTime('2026-06-06 19:00:00', new DateTimeZone('America/Sao_Paulo'));
+$masterclass_3d   = new DateTime('2026-06-03 09:00:00', new DateTimeZone('America/Sao_Paulo'));
+$masterclass_eve  = new DateTime('2026-06-05 09:00:00', new DateTimeZone('America/Sao_Paulo'));
 
-// ── SEQUÊNCIA DE E-MAILS ─────────────────────────────────────────
+// ── SEQUÊNCIA DE E-MAILS (11 e-mails) ───────────────────────────
 $email_sequence = [
-    ['slug' => 'boas_vindas',    'delay_hours' => 0],
-    ['slug' => 'nutricao_d1',    'delay_hours' => 24],
-    ['slug' => 'prova_social_d2','delay_hours' => 48],
-    ['slug' => 'urgencia_d3',    'delay_hours' => 72],
-    ['slug' => 'masterclass_hoje','scheduled_at' => $masterclass->format(DateTime::ATOM)],
-    ['slug' => 'masterclass_1h', 'scheduled_at' => $masterclass_1h->format(DateTime::ATOM)],
+    ['slug' => 'boas_vindas',       'delay_hours' => 0],
+    ['slug' => 'nutricao_d1',       'delay_hours' => 24],
+    ['slug' => 'prova_social_d2',   'delay_hours' => 48],
+    ['slug' => 'urgencia_d3',       'delay_hours' => 72],
+    ['slug' => 'conteudo_d5',       'delay_hours' => 120],
+    ['slug' => 'depoimento_d7',     'delay_hours' => 168],
+    ['slug' => 'antecipacao_d10',   'delay_hours' => 240],
+    ['slug' => 'lembrete_3dias',    'scheduled_at' => $masterclass_3d->format(DateTime::ATOM)],
+    ['slug' => 'amanha_masterclass','scheduled_at' => $masterclass_eve->format(DateTime::ATOM)],
+    ['slug' => 'masterclass_hoje',  'scheduled_at' => $masterclass->format(DateTime::ATOM)],
+    ['slug' => 'masterclass_1h',    'scheduled_at' => $masterclass_1h->format(DateTime::ATOM)],
 ];
 
 $email_rows = [];
