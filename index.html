@@ -917,17 +917,31 @@ function buildPrintDepos(){
   const grid=document.getElementById('prints-grid');
   const section=document.getElementById('depo-prints');
   if(!grid)return;
-  // Read keys print_depo_1 … print_depo_12 from config
   const items=[];
   for(let i=1;i<=12;i++){
-    const url=k('print_depo_'+i);
-    if(url&&url.trim())items.push(url.trim());
+    const raw=k('print_depo_'+i);
+    if(raw&&raw.trim())items.push(resolveImgUrl(raw.trim()));
   }
   if(!items.length){if(section)section.classList.add('hidden');return;}
-  grid.innerHTML=items.map(url=>`
-    <div class="print-item" onclick="openLightbox('${url.replace(/'/g,'&#39;')}')">
+  grid.innerHTML=items.map(url=>{
+    // Para lightbox usa resolução maior se for Google Drive
+    const full=url.includes('drive.google.com/thumbnail')?url.replace(/&sz=w\d+/,'&sz=w1200'):url;
+    return`<div class="print-item" onclick="openLightbox('${full.replace(/'/g,'&#39;')}')">
       <img src="${url}" alt="Depoimento" loading="lazy" onerror="this.closest('.print-item').style.display='none'">
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+/* Converte qualquer URL do Google Drive para link de imagem direta */
+function resolveImgUrl(url){
+  if(!url)return url;
+  // Já é thumbnail → retorna como está
+  if(url.includes('drive.google.com/thumbnail'))return url;
+  // Link de compartilhamento /file/d/ID/view ou /open?id=ID
+  const m=url.match(/\/d\/([a-zA-Z0-9_-]{20,})/)||url.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+  if(m)return`https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+  // URL direta (Hostinger, imgur, etc.) → retorna como está
+  return url;
 }
 
 function openLightbox(url){
