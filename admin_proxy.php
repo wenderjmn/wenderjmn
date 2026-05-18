@@ -195,10 +195,14 @@ function update_quiz_question() {
         'option_b'      => trim($_POST['option_b'] ?? ''),
         'option_c'      => trim($_POST['option_c'] ?? ''),
         'option_d'      => trim($_POST['option_d'] ?? ''),
+        'weight_a'      => trim($_POST['weight_a'] ?? 'A'),
+        'weight_b'      => trim($_POST['weight_b'] ?? 'B'),
+        'weight_c'      => trim($_POST['weight_c'] ?? 'C'),
+        'weight_d'      => trim($_POST['weight_d'] ?? 'D'),
     ];
 
-    foreach ($data as $k => $v) {
-        if (!$v) { echo json_encode(['ok'=>false,'error'=>"Campo {$k} não pode ser vazio"]); return; }
+    foreach (['question_text','option_a','option_b','option_c','option_d'] as $k) {
+        if (!$data[$k]) { echo json_encode(['ok'=>false,'error'=>"Campo {$k} não pode ser vazio"]); return; }
     }
 
     $res = sb_request('PATCH', 'quiz_questions?id=eq.' . rawurlencode($id), $data);

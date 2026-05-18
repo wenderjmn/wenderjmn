@@ -18,30 +18,15 @@
 body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
 input,textarea,select,button{font-family:inherit;font-size:inherit}
 
-/* ── LOGIN ── */
-#login-screen{
-  display:flex;align-items:center;justify-content:center;
-  min-height:100vh;background:var(--bg);
-}
-.login-card{
-  background:var(--bg2);border:1px solid var(--border);border-radius:12px;
-  padding:40px;width:360px;
-}
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
+.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:40px;width:360px;max-width:calc(100vw - 32px)}
 .login-card h1{font-size:22px;margin-bottom:4px}
 .login-card p{color:var(--text2);margin-bottom:28px;font-size:13px}
 .field{margin-bottom:16px}
 .field label{display:block;color:var(--text2);font-size:12px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
-.field input{
-  width:100%;padding:10px 12px;background:var(--bg3);
-  border:1px solid var(--border);border-radius:var(--radius);
-  color:var(--text);outline:none;transition:border .2s;
-}
-.field input:focus{border-color:var(--teal)}
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  padding:10px 18px;border-radius:var(--radius);border:none;cursor:pointer;
-  font-weight:500;transition:opacity .2s;
-}
+.field input,.field textarea,.field select{width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);outline:none;transition:border .2s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--teal)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:var(--radius);border:none;cursor:pointer;font-weight:500;transition:opacity .2s,background .15s;white-space:nowrap}
 .btn-primary{background:var(--teal);color:#fff}
 .btn-primary:hover{background:var(--teal-d)}
 .btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
@@ -52,187 +37,108 @@ input,textarea,select,button{font-family:inherit;font-size:inherit}
 .btn:disabled{opacity:.5;cursor:default}
 #login-error{color:var(--red);font-size:13px;margin-top:12px;display:none}
 
-/* ── APP ── */
 #app{display:none;flex-direction:column;min-height:100vh}
-.topbar{
-  height:56px;background:var(--bg2);border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;padding:0 20px;
-  position:sticky;top:0;z-index:100;
-}
+.topbar{height:56px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:100}
 .topbar-left{display:flex;align-items:center;gap:12px}
 .logo{font-size:16px;font-weight:700;color:var(--teal)}
-.topbar-right{display:flex;align-items:center;gap:12px}
+.topbar-right{display:flex;align-items:center;gap:8px}
 .user-info{font-size:12px;color:var(--text2)}
-.layout{display:flex;flex:1}
-.sidebar{
-  width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);
-  padding:16px 0;position:sticky;top:56px;height:calc(100vh - 56px);
-  overflow-y:auto;flex-shrink:0;
-}
-.nav-item{
-  display:flex;align-items:center;gap:10px;padding:10px 16px;
-  color:var(--text2);cursor:pointer;border-left:3px solid transparent;
-  transition:all .15s;font-size:13px;
-}
+.menu-btn{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:4px 8px}
+.layout{display:flex;flex:1;min-height:calc(100vh - 56px)}
+.sidebar{width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);padding:16px 0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;flex-shrink:0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;color:var(--text2);cursor:pointer;border-left:3px solid transparent;transition:all .15s;font-size:13px}
 .nav-item:hover{background:var(--bg3);color:var(--text)}
-.nav-item.active{
-  background:var(--teal-bg);color:var(--teal);
-  border-left-color:var(--teal);
-}
+.nav-item.active{background:var(--teal-bg);color:var(--teal);border-left-color:var(--teal)}
 .nav-icon{width:18px;text-align:center;flex-shrink:0}
-.main{flex:1;padding:24px;overflow-x:hidden}
+.main{flex:1;padding:20px;overflow-x:hidden;max-width:100%}
 .page{display:none}
 .page.active{display:block}
 .page-title{font-size:20px;font-weight:700;margin-bottom:4px}
-.page-sub{color:var(--text2);font-size:13px;margin-bottom:24px}
+.page-sub{color:var(--text2);font-size:13px;margin-bottom:20px}
 
-/* ── CARDS ── */
-.card{
-  background:var(--bg2);border:1px solid var(--border);
-  border-radius:var(--radius);padding:20px;margin-bottom:16px;
-}
-.card-title{font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text2);
-  text-transform:uppercase;letter-spacing:.05em}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:600;margin-bottom:14px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:6px}
 
-/* ── STATS ── */
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}
-.stat-card{
-  background:var(--bg2);border:1px solid var(--border);
-  border-radius:var(--radius);padding:20px;
-}
-.stat-value{font-size:28px;font-weight:700;color:var(--teal)}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.stat-value{font-size:26px;font-weight:700;color:var(--teal)}
 .stat-label{font-size:12px;color:var(--text2);margin-top:4px}
 
-/* ── TABLE ── */
 .table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);
-   font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
-td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text)}
+table{width:100%;border-collapse:collapse;min-width:560px}
+th{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text);vertical-align:top}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:rgba(255,255,255,.02)}
 
-/* ── FORM CONTROLS ── */
-.ctrl-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:12px}
-.ctrl-label{
-  width:200px;flex-shrink:0;font-size:12px;color:var(--text2);
-  padding-top:10px;
-}
-.ctrl-input{flex:1}
-.ctrl-input input,.ctrl-input textarea,.ctrl-input select{
-  width:100%;padding:8px 10px;background:var(--bg3);
-  border:1px solid var(--border);border-radius:var(--radius);
-  color:var(--text);outline:none;transition:border .2s;
-}
+.ctrl-row{display:grid;grid-template-columns:200px 1fr auto;gap:8px;align-items:start;margin-bottom:12px}
+.ctrl-label{font-size:12px;color:var(--text2);padding-top:10px;line-height:1.4}
+.ctrl-input input,.ctrl-input textarea,.ctrl-input select{width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);outline:none;transition:border .2s;font-size:13px}
 .ctrl-input input:focus,.ctrl-input textarea:focus,.ctrl-input select:focus{border-color:var(--teal)}
-.ctrl-input textarea{resize:vertical;min-height:80px}
-.save-row{display:flex;justify-content:flex-end;margin-top:8px}
+.ctrl-input textarea{resize:vertical;min-height:70px;line-height:1.5}
+.ctrl-input.full{grid-column:2/4}
 
-/* ── EDIT ROW (inline) ── */
-.edit-trigger{cursor:pointer;color:var(--teal);font-size:12px;opacity:0;transition:opacity .2s}
-tr:hover .edit-trigger{opacity:1}
-.inline-edit{display:none;margin-top:6px}
-.inline-edit.open{display:block}
-.inline-edit input,.inline-edit textarea{
-  width:100%;padding:6px 8px;background:var(--bg3);
-  border:1px solid var(--border);border-radius:var(--radius);
-  color:var(--text);outline:none;font-size:13px;
-}
-.inline-edit textarea{resize:vertical;min-height:60px}
-.inline-actions{display:flex;gap:6px;margin-top:6px}
-
-/* ── TABS ── */
-.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px}
-.tab{
-  padding:10px 16px;cursor:pointer;font-size:13px;color:var(--text2);
-  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;
-}
-.tab.active{color:var(--teal);border-bottom-color:var(--teal)}
-.tab:hover:not(.active){color:var(--text)}
-.tab-content{display:none}
-.tab-content.active{display:block}
-
-/* ── BADGE ── */
-.badge{
-  display:inline-block;padding:2px 8px;border-radius:20px;
-  font-size:11px;font-weight:600;
-}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
 .badge-green{background:var(--green-bg);color:var(--green)}
 .badge-red{background:var(--red-bg);color:var(--red)}
 .badge-amber{background:rgba(245,158,11,.1);color:var(--amber)}
+.badge-teal{background:var(--teal-bg);color:var(--teal)}
 
-/* ── TOAST ── */
-#toast{
-  position:fixed;bottom:24px;right:24px;z-index:9999;
-  display:flex;flex-direction:column;gap:8px;
-}
-.toast-item{
-  background:var(--bg2);border:1px solid var(--border);
-  border-radius:var(--radius);padding:12px 16px;
-  font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);
-  animation:slideIn .25s ease;max-width:320px;
-}
+#toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);animation:slideIn .25s ease;max-width:320px}
 .toast-item.success{border-color:var(--green);color:var(--green)}
 .toast-item.error{border-color:var(--red);color:var(--red)}
 @keyframes slideIn{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
 
-/* ── MODAL ── */
-.modal-backdrop{
-  position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;
-  display:none;align-items:center;justify-content:center;
-}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:none;align-items:center;justify-content:center;padding:16px}
 .modal-backdrop.open{display:flex}
-.modal{
-  background:var(--bg2);border:1px solid var(--border);border-radius:12px;
-  padding:28px;width:520px;max-width:calc(100vw - 32px);max-height:90vh;overflow-y:auto;
-}
-.modal-title{font-size:16px;font-weight:700;margin-bottom:20px}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;width:560px;max-width:100%;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
 
-/* ── MISC ── */
-.sep{border:none;border-top:1px solid var(--border);margin:20px 0}
-.text-sm{font-size:12px}
-.text-muted{color:var(--text2)}
-.mt-4{margin-top:16px}
-.flex{display:flex}.gap-2{gap:8px}.items-center{align-items:center}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.spinner{
-  width:18px;height:18px;border:2px solid rgba(255,255,255,.3);
-  border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;
-}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty{text-align:center;padding:40px;color:var(--text3)}
+.text-sm{font-size:12px}.text-muted{color:var(--text2)}
+.flex{display:flex}.gap-2{gap:8px}.items-center{align-items:center}
+.weights-row{display:grid;grid-template-columns:auto 1fr 60px;gap:8px;align-items:center;margin-bottom:6px}
+.weight-letter{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;background:var(--bg3);font-weight:700;font-size:11px;color:var(--text2)}
 
-@media(max-width:768px){
-  .sidebar{display:none}.ctrl-label{width:120px}
+.mentor-photo-preview{width:80px;height:80px;border-radius:50%;object-fit:cover;background:var(--bg3);flex-shrink:0;border:2px solid var(--border)}
+.photo-helper{font-size:11px;color:var(--text3);margin-top:4px}
+
+@media(max-width:900px){
+  .sidebar{position:fixed;left:-100%;transition:left .2s;z-index:200;width:240px}
+  .sidebar.open{left:0}
+  .menu-btn{display:block}
+  .ctrl-row{grid-template-columns:1fr;gap:6px}
+  .ctrl-label{padding-top:0;font-weight:600;color:var(--text)}
   .grid-2{grid-template-columns:1fr}
+  .grid-4{grid-template-columns:1fr 1fr}
+  .topbar{padding:0 12px}
+  .main{padding:14px}
 }
 </style>
 </head>
 <body>
 
-<!-- ── LOGIN ── -->
 <div id="login-screen">
   <div class="login-card">
     <h1>EmagreSer</h1>
     <p>Área administrativa — acesso restrito</p>
-    <div class="field">
-      <label>Usuário</label>
-      <input type="text" id="login-user" placeholder="seu usuário" autocomplete="username">
-    </div>
-    <div class="field">
-      <label>Senha</label>
-      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
-    </div>
+    <div class="field"><label>Usuário</label><input type="text" id="login-user" autocomplete="username"></div>
+    <div class="field"><label>Senha</label><input type="password" id="login-pass" autocomplete="current-password"></div>
     <button class="btn btn-primary btn-full" id="login-btn" onclick="doLogin()">Entrar</button>
     <div id="login-error"></div>
   </div>
 </div>
 
-<!-- ── APP ── -->
 <div id="app">
   <div class="topbar">
     <div class="topbar-left">
+      <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
       <span class="logo">EmagreSer</span>
       <span class="text-sm text-muted">Admin</span>
     </div>
@@ -244,42 +150,23 @@ tr:hover .edit-trigger{opacity:1}
 
   <div class="layout">
     <nav class="sidebar">
-      <div class="nav-item active" data-page="dashboard">
-        <span class="nav-icon">📊</span> Dashboard
-      </div>
-      <div class="nav-item" data-page="textos">
-        <span class="nav-icon">✏️</span> Textos da LP
-      </div>
-      <div class="nav-item" data-page="videos">
-        <span class="nav-icon">🎬</span> Vídeos
-      </div>
-      <div class="nav-item" data-page="quiz">
-        <span class="nav-icon">🧩</span> Quiz
-      </div>
-      <div class="nav-item" data-page="perfis">
-        <span class="nav-icon">🎯</span> Perfis / Resultados
-      </div>
-      <div class="nav-item" data-page="depoimentos">
-        <span class="nav-icon">💬</span> Depoimentos
-      </div>
-      <div class="nav-item" data-page="mentoras">
-        <span class="nav-icon">👩</span> Mentoras
-      </div>
-      <div class="nav-item" data-page="config">
-        <span class="nav-icon">⚙️</span> Configurações
-      </div>
-      <div class="nav-item" data-page="leads">
-        <span class="nav-icon">📋</span> Leads
-      </div>
+      <div class="nav-item active" data-page="dashboard"><span class="nav-icon">📊</span> Dashboard</div>
+      <div class="nav-item" data-page="textos"><span class="nav-icon">✏️</span> Textos da LP</div>
+      <div class="nav-item" data-page="videos"><span class="nav-icon">🎬</span> Vídeos</div>
+      <div class="nav-item" data-page="quiz"><span class="nav-icon">🧩</span> Quiz</div>
+      <div class="nav-item" data-page="perfis"><span class="nav-icon">🎯</span> Perfis / Resultados</div>
+      <div class="nav-item" data-page="depoimentos"><span class="nav-icon">💬</span> Depoimentos</div>
+      <div class="nav-item" data-page="mentoras"><span class="nav-icon">👩</span> Mentoras</div>
+      <div class="nav-item" data-page="config"><span class="nav-icon">⚙️</span> Configurações</div>
+      <div class="nav-item" data-page="leads"><span class="nav-icon">📋</span> Leads</div>
     </nav>
 
     <main class="main">
 
-      <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
         <div class="page-title">Dashboard</div>
         <div class="page-sub">Visão geral do EmagreSer</div>
-        <div class="stats-grid" id="stats-grid">
+        <div class="stats-grid">
           <div class="stat-card"><div class="stat-value" id="stat-leads">—</div><div class="stat-label">Leads captados</div></div>
           <div class="stat-card"><div class="stat-value" id="stat-leads7">—</div><div class="stat-label">Últimos 7 dias</div></div>
           <div class="stat-card"><div class="stat-value" id="stat-quiz">—</div><div class="stat-label">Perguntas do quiz</div></div>
@@ -289,242 +176,85 @@ tr:hover .edit-trigger{opacity:1}
           <div class="card-title">Status do sistema</div>
           <div id="sys-status" class="text-muted text-sm">Verificando...</div>
         </div>
+        <div class="card">
+          <div class="card-title">Distribuição de sabotadores (leads)</div>
+          <div id="sabotador-stats" class="text-muted text-sm">Carregando…</div>
+        </div>
       </div>
 
-      <!-- TEXTOS -->
       <div class="page" id="page-textos">
         <div class="page-title">Textos da LP</div>
-        <div class="page-sub">Edite os textos da landing page. Clique em "Salvar" após cada alteração.</div>
-
-        <div class="card">
-          <div class="card-title">Announcement Bar</div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Texto do anúncio</div>
-            <div class="ctrl-input">
-              <input type="text" id="cfg-anuncio_bar" data-key="anuncio_bar" placeholder="Ex: 🎉 Masterclass gratuita...">
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('anuncio_bar')">Salvar</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Hero Section</div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Título (linha 1)</div>
-            <div class="ctrl-input"><input type="text" id="cfg-hero_titulo1" data-key="hero_titulo1"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('hero_titulo1')">Salvar</button>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Título (destaque)</div>
-            <div class="ctrl-input"><input type="text" id="cfg-hero_titulo2" data-key="hero_titulo2"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('hero_titulo2')">Salvar</button>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Subtítulo</div>
-            <div class="ctrl-input"><textarea id="cfg-hero_subtitulo" data-key="hero_subtitulo"></textarea></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('hero_subtitulo')">Salvar</button>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Texto do botão CTA</div>
-            <div class="ctrl-input"><input type="text" id="cfg-hero_cta" data-key="hero_cta"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('hero_cta')">Salvar</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Masterclass / Carrinho</div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Título do carrinho</div>
-            <div class="ctrl-input"><input type="text" id="cfg-carrinho_titulo" data-key="carrinho_titulo"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('carrinho_titulo')">Salvar</button>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Preço</div>
-            <div class="ctrl-input"><input type="text" id="cfg-carrinho_preco" data-key="carrinho_preco" placeholder="Ex: R$ 197"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('carrinho_preco')">Salvar</button>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Parcelado</div>
-            <div class="ctrl-input"><input type="text" id="cfg-carrinho_parcelado" data-key="carrinho_parcelado" placeholder="Ex: 12x R$ 19,90"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('carrinho_parcelado')">Salvar</button>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Link do carrinho</div>
-            <div class="ctrl-input"><input type="text" id="cfg-carrinho_link" data-key="carrinho_link"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('carrinho_link')">Salvar</button>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Link WhatsApp</div>
-            <div class="ctrl-input"><input type="text" id="cfg-whatsapp_link" data-key="whatsapp_link"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('whatsapp_link')">Salvar</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Controles de Abertura do Carrinho</div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Carrinho aberto? (true/false)</div>
-            <div class="ctrl-input">
-              <select id="cfg-carrinho_abertura" data-key="carrinho_abertura">
-                <option value="false">Fechado</option>
-                <option value="true">Aberto</option>
-              </select>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfgSelect('carrinho_abertura')">Salvar</button>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Forçar aberto? (true/false)</div>
-            <div class="ctrl-input">
-              <select id="cfg-carrinho_forcar" data-key="carrinho_forcar">
-                <option value="false">Não forçar</option>
-                <option value="true">Forçar aberto</option>
-              </select>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfgSelect('carrinho_forcar')">Salvar</button>
-          </div>
-        </div>
+        <div class="page-sub">Edite todos os textos da landing page. Cada alteração é salva ao clicar em Salvar.</div>
+        <div id="textos-container"></div>
       </div>
 
-      <!-- VÍDEOS -->
       <div class="page" id="page-videos">
         <div class="page-title">Vídeos</div>
-        <div class="page-sub">URLs do YouTube para cada vídeo da LP. Aceita links normais, Shorts e youtu.be.</div>
-
-        <div class="card">
-          <div class="card-title">Hero</div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Vídeo do hero (URL YouTube)</div>
-            <div class="ctrl-input"><input type="text" id="cfg-hero_video_url" data-key="hero_video_url" placeholder="https://youtube.com/..."></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('hero_video_url')">Salvar</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Seção "Roma" — Vídeos das Mentoras</div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Daniely — promessa</div>
-            <div class="ctrl-input"><input type="text" id="cfg-video_promessa_daniely" data-key="video_promessa_daniely"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('video_promessa_daniely')">Salvar</button>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Ira — promessa</div>
-            <div class="ctrl-input"><input type="text" id="cfg-video_promessa_ira" data-key="video_promessa_ira"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('video_promessa_ira')">Salvar</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Vídeos dos Perfis (Resultado do Quiz)</div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Perfil A</div>
-            <div class="ctrl-input"><input type="text" id="cfg-video_perfil_a" data-key="video_perfil_a"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('video_perfil_a')">Salvar</button>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Perfil B</div>
-            <div class="ctrl-input"><input type="text" id="cfg-video_perfil_b" data-key="video_perfil_b"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('video_perfil_b')">Salvar</button>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Perfil C</div>
-            <div class="ctrl-input"><input type="text" id="cfg-video_perfil_c" data-key="video_perfil_c"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('video_perfil_c')">Salvar</button>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Perfil D</div>
-            <div class="ctrl-input"><input type="text" id="cfg-video_perfil_d" data-key="video_perfil_d"></div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('video_perfil_d')">Salvar</button>
-          </div>
-        </div>
+        <div class="page-sub">URLs do YouTube (aceita normal, Shorts, youtu.be).</div>
+        <div id="videos-container"></div>
       </div>
 
-      <!-- QUIZ -->
       <div class="page" id="page-quiz">
         <div class="page-title">Quiz — Perguntas</div>
-        <div class="page-sub">10 perguntas com 4 opções (A/B/C/D). Cada opção pesa num perfil sabotador.</div>
+        <div class="page-sub">10 perguntas com 4 opções (A/B/C/D). Cada opção tem um peso (A/B/C/D) usado para calcular o perfil.</div>
         <div id="quiz-list"></div>
       </div>
 
-      <!-- PERFIS -->
       <div class="page" id="page-perfis">
         <div class="page-title">Perfis / Resultados</div>
-        <div class="page-sub">Textos exibidos após o quiz de acordo com o perfil do usuário.</div>
-
+        <div class="page-sub">Textos exibidos após o quiz para cada um dos 4 perfis sabotadores.</div>
         <div id="perfis-cards"></div>
       </div>
 
-      <!-- DEPOIMENTOS -->
       <div class="page" id="page-depoimentos">
         <div class="page-title">Depoimentos</div>
-        <div class="page-sub">Gerencie os vídeos de depoimentos exibidos na LP.</div>
-        <div class="flex gap-2" style="margin-bottom:16px">
+        <div class="page-sub">Vídeos de depoimentos exibidos na LP.</div>
+        <div class="flex gap-2" style="margin-bottom:14px">
           <button class="btn btn-primary" onclick="openTestimonialModal(null)">+ Novo depoimento</button>
         </div>
         <div class="card">
           <div class="table-wrap">
-            <table id="dep-table">
-              <thead><tr>
-                <th>Nome</th><th>Resultado</th><th>Vídeo</th><th>Ordem</th><th>Status</th><th></th>
-              </tr></thead>
+            <table>
+              <thead><tr><th>Nome</th><th>Resultado</th><th>Vídeo</th><th>Ordem</th><th>Status</th><th></th></tr></thead>
               <tbody id="dep-body"></tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- MENTORAS -->
       <div class="page" id="page-mentoras">
         <div class="page-title">Mentoras</div>
         <div class="page-sub">Edite as informações das mentoras.</div>
         <div id="mentoras-list"></div>
       </div>
 
-      <!-- CONFIG -->
       <div class="page" id="page-config">
         <div class="page-title">Configurações</div>
-        <div class="page-sub">Dados da live / masterclass.</div>
-
-        <div class="card">
-          <div class="card-title">Live Data (JSON)</div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">live_data</div>
-            <div class="ctrl-input">
-              <textarea id="cfg-live_data" data-key="live_data" rows="6"></textarea>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('live_data')">Salvar</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Masterclass Data (JSON)</div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">masterclass_data</div>
-            <div class="ctrl-input">
-              <textarea id="cfg-masterclass_data" data-key="masterclass_data" rows="6"></textarea>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="saveCfg('masterclass_data')">Salvar</button>
-          </div>
-        </div>
+        <div class="page-sub">Dados da live / masterclass e controle de carrinho.</div>
+        <div id="config-container"></div>
       </div>
 
-      <!-- LEADS -->
       <div class="page" id="page-leads">
-        <div class="page-title">Leads</div>
+        <div class="page-title">Leads <span class="badge badge-teal" id="leads-total">0</span></div>
         <div class="page-sub">Leads captados pelo formulário da LP.</div>
-        <div class="flex gap-2" style="margin-bottom:16px">
-          <button class="btn btn-secondary btn-sm" onclick="exportLeads()">⬇ Exportar CSV</button>
-          <button class="btn btn-secondary btn-sm" onclick="loadLeads()">↻ Atualizar</button>
+        <div class="flex gap-2" style="margin-bottom:14px;flex-wrap:wrap">
+          <input type="text" id="leads-search" placeholder="Buscar nome ou e-mail" style="flex:1;min-width:200px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text)">
+          <select id="leads-filter-sabotador" style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text)">
+            <option value="">Todos sabotadores</option>
+            <option value="A">Perfil A</option><option value="B">Perfil B</option>
+            <option value="C">Perfil C</option><option value="D">Perfil D</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="exportLeads()">⬇ CSV</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadLeads(0)">↻</button>
         </div>
         <div class="card">
           <div class="table-wrap">
             <table>
-              <thead><tr>
-                <th>Nome</th><th>E-mail</th><th>Telefone</th><th>Perfil</th><th>Data</th>
-              </tr></thead>
+              <thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Sabotador</th><th>Cidade/UF</th><th>Data</th></tr></thead>
               <tbody id="leads-body"></tbody>
             </table>
           </div>
-          <div id="leads-pagination" style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"></div>
+          <div id="leads-pagination" style="display:flex;gap:6px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap"></div>
         </div>
       </div>
 
@@ -532,10 +262,8 @@ tr:hover .edit-trigger{opacity:1}
   </div>
 </div>
 
-<!-- TOAST -->
 <div id="toast"></div>
 
-<!-- MODAL — Depoimento -->
 <div class="modal-backdrop" id="dep-modal">
   <div class="modal">
     <div class="modal-title" id="dep-modal-title">Novo Depoimento</div>
@@ -550,13 +278,7 @@ tr:hover .edit-trigger{opacity:1}
       <div class="field"><label>Ordem</label><input type="number" id="dep-order" value="0"></div>
     </div>
     <div class="field"><label>URL do vídeo YouTube</label><input type="text" id="dep-video"></div>
-    <div class="field">
-      <label>Status</label>
-      <select id="dep-active">
-        <option value="1">Ativo</option>
-        <option value="0">Inativo</option>
-      </select>
-    </div>
+    <div class="field"><label>Status</label><select id="dep-active"><option value="1">Ativo</option><option value="0">Inativo</option></select></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeDepModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="saveTestimonial()">Salvar</button>
@@ -564,16 +286,27 @@ tr:hover .edit-trigger{opacity:1}
   </div>
 </div>
 
-<!-- MODAL — Quiz -->
 <div class="modal-backdrop" id="quiz-modal">
-  <div class="modal" style="width:600px">
+  <div class="modal">
     <div class="modal-title">Editar Pergunta</div>
     <input type="hidden" id="q-id">
     <div class="field"><label>Pergunta</label><textarea id="q-text" rows="3"></textarea></div>
-    <div class="field"><label>Opção A</label><input type="text" id="q-a"></div>
-    <div class="field"><label>Opção B</label><input type="text" id="q-b"></div>
-    <div class="field"><label>Opção C</label><input type="text" id="q-c"></div>
-    <div class="field"><label>Opção D</label><input type="text" id="q-d"></div>
+    <div class="grid-2">
+      <div class="field"><label>Opção A</label><input type="text" id="q-a"></div>
+      <div class="field"><label>Peso A (A/B/C/D)</label><select id="q-wa"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Opção B</label><input type="text" id="q-b"></div>
+      <div class="field"><label>Peso B</label><select id="q-wb"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Opção C</label><input type="text" id="q-c"></div>
+      <div class="field"><label>Peso C</label><select id="q-wc"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Opção D</label><input type="text" id="q-d"></div>
+      <div class="field"><label>Peso D</label><select id="q-wd"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeQuizModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="saveQuizQuestion()">Salvar</button>
@@ -583,25 +316,168 @@ tr:hover .edit-trigger{opacity:1}
 
 <script>
 const SUPABASE_URL = 'https://drgrwpmhmrrhxuwxabow.supabase.co';
-const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyZ3J3cG1obXJyaHh1d3hhYm93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY1NzU3MDcsImV4cCI6MjA2MjE1MTcwN30.vVLlNBuR8SvLV0H-MVfX_Mfz_pVJEfBR5yAbHFxqBG4';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyZ3J3cG1obXJyaHh1d3hhYm93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg0OTcsImV4cCI6MjA5MzA1NDQ5N30._cjH7sFNaEVNf6cmp4f05x9UE-mfX2RT84BYdhy-9dQ';
 const PROXY = 'admin_proxy.php';
 
 let currentUser = null;
 let siteConfig = {};
+let allLeads = [];
 let leadsPage = 0;
-const LEADS_PER_PAGE = 50;
+const LEADS_PER_PAGE = 25;
 
-// ── AUTH ──────────────────────────────────────────────────────────────────────
+const TEXTOS_SECTIONS = [
+  {title:'Geral / Cabeçalho', fields:[
+    {key:'programa_nome', label:'Nome do programa', type:'text'},
+    {key:'anuncio_bar', label:'Barra de anúncio (topo)', type:'textarea'},
+  ]},
+  {title:'Hero (topo da página)', fields:[
+    {key:'hero_headline', label:'Headline principal', type:'textarea'},
+    {key:'hero_subheadline', label:'Sub-headline', type:'textarea'},
+    {key:'hero_cta_principal', label:'Texto do botão CTA', type:'text'},
+    {key:'hero_cta_sub', label:'Subtexto do CTA', type:'text'},
+  ]},
+  {title:'Promessa (seção Roma)', fields:[
+    {key:'roma_titulo', label:'Título Roma', type:'text'},
+    {key:'roma_descricao', label:'Descrição Roma', type:'textarea'},
+    {key:'promessa_sub_roma', label:'Subtítulo Roma', type:'text'},
+    {key:'promessa_item1', label:'Pílula 1', type:'text'},
+    {key:'promessa_item2', label:'Pílula 2', type:'text'},
+    {key:'promessa_item3', label:'Pílula 3', type:'text'},
+    {key:'promessa_cta', label:'CTA Roma', type:'text'},
+  ]},
+  {title:'Depoimentos', fields:[
+    {key:'depo_secao_label', label:'Label da seção', type:'text'},
+    {key:'depo_secao_titulo', label:'Título da seção', type:'text'},
+    {key:'depo_secao_sub', label:'Subtítulo', type:'text'},
+    {key:'depo_frase_pre_cta', label:'Frase antes do CTA', type:'textarea'},
+    {key:'depo_cta', label:'CTA dos depoimentos', type:'text'},
+  ]},
+  {title:'Você se identifica? (dores)', fields:[
+    {key:'issovce_titulo', label:'Título', type:'text'},
+    {key:'issovce_lead', label:'Texto principal (use \\n para parágrafos)', type:'textarea'},
+    {key:'issovce_cta', label:'CTA', type:'text'},
+  ]},
+  {title:'O Problema', fields:[
+    {key:'problema_label', label:'Label', type:'text'},
+    {key:'problema_titulo', label:'Título', type:'text'},
+    {key:'problema_texto', label:'Texto (use \\n\\n para parágrafos)', type:'textarea'},
+    {key:'problema_cta', label:'CTA', type:'text'},
+  ]},
+  {title:'Como Funciona (3 passos)', fields:[
+    {key:'processo_p1_titulo', label:'Passo 1 — título', type:'text'},
+    {key:'processo_p1_desc', label:'Passo 1 — descrição', type:'textarea'},
+    {key:'processo_p2_titulo', label:'Passo 2 — título', type:'text'},
+    {key:'processo_p2_desc', label:'Passo 2 — descrição', type:'textarea'},
+    {key:'processo_p3_titulo', label:'Passo 3 — título', type:'text'},
+    {key:'processo_p3_desc', label:'Passo 3 — descrição', type:'textarea'},
+  ]},
+  {title:'CTA do Quiz', fields:[
+    {key:'quiz_cta_label', label:'Label', type:'text'},
+    {key:'quiz_cta_titulo', label:'Título', type:'text'},
+    {key:'quiz_cta_desc', label:'Descrição', type:'textarea'},
+    {key:'quiz_cta_tags', label:'Tags (separadas por ·)', type:'text'},
+    {key:'quiz_cta_btn', label:'Texto do botão', type:'text'},
+  ]},
+  {title:'Sobre o Programa', fields:[
+    {key:'sobre_label', label:'Label', type:'text'},
+    {key:'sobre_titulo', label:'Título', type:'text'},
+    {key:'sobre_texto', label:'Texto (use \\n\\n para parágrafos)', type:'textarea'},
+    {key:'sobre_item1', label:'Item 1', type:'text'},
+    {key:'sobre_item2', label:'Item 2', type:'text'},
+    {key:'sobre_item3', label:'Item 3', type:'text'},
+    {key:'sobre_item4', label:'Item 4', type:'text'},
+  ]},
+  {title:'Autoridade / Por que confiar', fields:[
+    {key:'confiar_label', label:'Label', type:'text'},
+    {key:'confiar_titulo', label:'Título', type:'text'},
+    {key:'confiar_texto', label:'Texto', type:'textarea'},
+    {key:'confiar_tags', label:'Tags (separadas por vírgula)', type:'text'},
+  ]},
+  {title:'Mentoras (seção)', fields:[
+    {key:'mentoras_label', label:'Label', type:'text'},
+    {key:'mentoras_titulo', label:'Título', type:'text'},
+  ]},
+  {title:'Masterclass', fields:[
+    {key:'masterclass_label', label:'Label', type:'text'},
+    {key:'masterclass_nome', label:'Nome da masterclass', type:'text'},
+    {key:'masterclass_data', label:'Data exibida', type:'text'},
+    {key:'masterclass_desc', label:'Descrição', type:'textarea'},
+    {key:'masterclass_item1', label:'Item 1', type:'text'},
+    {key:'masterclass_item2', label:'Item 2', type:'text'},
+    {key:'masterclass_item3', label:'Item 3', type:'text'},
+    {key:'masterclass_cta', label:'CTA', type:'text'},
+  ]},
+  {title:'Entregáveis (o que recebe)', fields:[
+    {key:'incluso_label', label:'Label', type:'text'},
+    {key:'incluso_titulo', label:'Título', type:'text'},
+    {key:'incluso_item1', label:'Item 1', type:'text'},
+    {key:'incluso_item2', label:'Item 2', type:'text'},
+    {key:'incluso_item3', label:'Item 3', type:'text'},
+    {key:'incluso_item4', label:'Item 4', type:'text'},
+    {key:'incluso_item5', label:'Item 5', type:'text'},
+  ]},
+  {title:'CTA Final', fields:[
+    {key:'cta_final_label', label:'Label', type:'text'},
+    {key:'cta_final_titulo', label:'Título (use \\n para quebra)', type:'textarea'},
+    {key:'cta_final_desc', label:'Descrição', type:'textarea'},
+    {key:'cta_final_tags', label:'Tags (separadas por ·)', type:'text'},
+    {key:'cta_final_btn', label:'Texto do botão', type:'text'},
+    {key:'cta_final_nota', label:'Nota abaixo', type:'text'},
+  ]},
+  {title:'Rodapé', fields:[
+    {key:'footer_nome', label:'Nome', type:'text'},
+    {key:'footer_creditos', label:'Créditos', type:'text'},
+  ]},
+];
+
+const VIDEOS_FIELDS = [
+  {title:'Hero (vídeo principal)', fields:[
+    {key:'hero_video_url', label:'URL YouTube do hero'},
+  ]},
+  {title:'Seção Roma — Promessas das Mentoras', fields:[
+    {key:'video_promessa_daniely', label:'Vídeo Daniely'},
+    {key:'video_promessa_ira', label:'Vídeo Ira'},
+    {key:'video_promessa_geral', label:'Vídeo geral (opcional)'},
+  ]},
+  {title:'Vídeos dos Perfis (resultado do quiz)', fields:[
+    {key:'video_perfil_a', label:'Perfil A (Recompensadora)'},
+    {key:'video_perfil_b', label:'Perfil B (Piloto Automático)'},
+    {key:'video_perfil_c', label:'Perfil C (Prisioneira do Esforço)'},
+    {key:'video_perfil_d', label:'Perfil D (Compensadora Noturna)'},
+  ]},
+  {title:'Live ao vivo', fields:[
+    {key:'live_youtube_url', label:'URL YouTube da live'},
+  ]},
+];
+
+const CONFIG_FIELDS = [
+  {title:'Links principais', fields:[
+    {key:'whatsapp_link', label:'Link do grupo VIP no WhatsApp', type:'text'},
+    {key:'carrinho_link', label:'Link do carrinho/checkout', type:'text'},
+  ]},
+  {title:'Carrinho — preços', fields:[
+    {key:'carrinho_titulo', label:'Título do carrinho', type:'text'},
+    {key:'carrinho_preco', label:'Preço (ex: R$ 197)', type:'text'},
+    {key:'carrinho_parcelado', label:'Parcelado (ex: 12x R$ 19,90)', type:'text'},
+  ]},
+  {title:'Controle de abertura', fields:[
+    {key:'carrinho_abertura', label:'Carrinho aberto?', type:'select', options:[['false','Fechado'],['true','Aberto']]},
+    {key:'carrinho_forcar', label:'Forçar aberto (override)?', type:'select', options:[['false','Não'],['true','Sim — sempre aberto']]},
+  ]},
+  {title:'Datas da live (JSON)', fields:[
+    {key:'live_data', label:'live_data (ISO date ou JSON)', type:'textarea'},
+    {key:'masterclass_data', label:'masterclass_data', type:'textarea'},
+    {key:'live_titulo', label:'Título da live', type:'text'},
+    {key:'live_descricao', label:'Descrição da live', type:'textarea'},
+  ]},
+];
+
 async function doLogin() {
   const btn = document.getElementById('login-btn');
-  const errEl = document.getElementById('login-error');
   const user = document.getElementById('login-user').value.trim();
   const pass = document.getElementById('login-pass').value;
-
   if (!user || !pass) { showLoginError('Preencha usuário e senha'); return; }
-  btn.disabled = true;
-  btn.innerHTML = '<div class="spinner"></div>';
-
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>';
   try {
     const fd = new FormData();
     fd.append('action','login'); fd.append('username',user); fd.append('password',pass);
@@ -610,15 +486,10 @@ async function doLogin() {
     if (j.ok) { currentUser = j.user; enterApp(); }
     else showLoginError(j.error || 'Erro ao fazer login');
   } catch(e) { showLoginError('Erro de rede: ' + e.message); }
-
-  btn.disabled = false;
-  btn.textContent = 'Entrar';
+  btn.disabled = false; btn.textContent = 'Entrar';
 }
 
-function showLoginError(msg) {
-  const el = document.getElementById('login-error');
-  el.textContent = msg; el.style.display = 'block';
-}
+function showLoginError(msg) { const el = document.getElementById('login-error'); el.textContent = msg; el.style.display = 'block'; }
 
 async function doLogout() {
   const fd = new FormData(); fd.append('action','logout');
@@ -641,131 +512,147 @@ function enterApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   document.getElementById('app').style.flexDirection = 'column';
-  document.getElementById('topbar-user').textContent = currentUser.username + ' (' + currentUser.role + ')';
+  document.getElementById('topbar-user').textContent = currentUser.username + ' · ' + currentUser.role;
   loadAllData();
 }
 
-document.getElementById('login-pass').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
-});
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
-// ── NAVIGATION ────────────────────────────────────────────────────────────────
 document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     el.classList.add('active');
     document.getElementById('page-' + el.dataset.page).classList.add('active');
-    if (el.dataset.page === 'leads') loadLeads();
+    document.querySelector('.sidebar').classList.remove('open');
+    if (el.dataset.page === 'leads') loadLeads(0);
   });
 });
 
-// ── DATA LOADING ──────────────────────────────────────────────────────────────
 async function sbGet(table, params = '') {
-  const sep = params ? '?' : '';
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}${sep}${params}`, {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
     headers: {apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY}
   });
   return r.json();
 }
 
 async function loadAllData() {
-  const [cfg, quiz, dep, mentors, leads, leadsWeek, depCount] = await Promise.all([
-    sbGet('site_config','select=key,value'),
-    sbGet('quiz_questions','order=order_index.asc'),
-    sbGet('testimonials','order=order_index.asc'),
-    sbGet('mentors','order=name.asc'),
-    sbGet('leads','select=count', 'head=true&count=exact'),
-    sbGet('leads','select=count&created_at=gte.' + new Date(Date.now()-7*86400000).toISOString()),
-    sbGet('testimonials','select=count&active=eq.true'),
-  ]);
-
-  // Config map
-  if (Array.isArray(cfg)) {
-    cfg.forEach(row => siteConfig[row.key] = row.value);
-    populateConfigFields();
+  try {
+    const [cfg, quiz, dep, mentors] = await Promise.all([
+      sbGet('site_config','select=key,value&limit=500'),
+      sbGet('quiz_questions','select=*&order=order_index.asc'),
+      sbGet('testimonials','select=*&order=order_index.asc'),
+      sbGet('mentors','select=*&order=order_index.asc.nullslast,name.asc'),
+    ]);
+    if (Array.isArray(cfg)) {
+      siteConfig = {};
+      cfg.forEach(row => { siteConfig[row.key] = row.value; });
+    }
+    renderTextos();
+    renderVideos();
+    renderConfigPage();
+    renderPerfis();
+    if (Array.isArray(quiz)) renderQuizList(quiz);
+    if (Array.isArray(dep)) renderDepoimentos(dep);
+    if (Array.isArray(mentors)) renderMentoras(mentors);
+    loadStats();
+    loadLeads(0);
+  } catch(e) {
+    toast('Erro ao carregar dados: ' + e.message, 'error');
   }
-
-  // Quiz
-  if (Array.isArray(quiz)) renderQuizList(quiz);
-
-  // Depoimentos
-  if (Array.isArray(dep)) renderDepoimentos(dep);
-
-  // Mentoras
-  if (Array.isArray(mentors)) renderMentoras(mentors);
-
-  // Perfis (from site_config)
-  renderPerfis();
-
-  // Stats (approximate via count on response header)
-  loadStats();
 }
 
 async function loadStats() {
   try {
-    const r1 = await fetch(`${SUPABASE_URL}/rest/v1/leads?select=count`, {
-      headers: {apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY, Prefer: 'count=exact'}
-    });
-    const total = r1.headers.get('content-range')?.split('/')[1] || '—';
-    document.getElementById('stat-leads').textContent = total;
-
-    const r2 = await fetch(`${SUPABASE_URL}/rest/v1/leads?select=count&created_at=gte.${new Date(Date.now()-7*86400000).toISOString()}`, {
-      headers: {apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY, Prefer: 'count=exact'}
-    });
-    const week = r2.headers.get('content-range')?.split('/')[1] || '—';
-    document.getElementById('stat-leads7').textContent = week;
-
-    const r3 = await fetch(`${SUPABASE_URL}/rest/v1/quiz_questions?select=count`, {
-      headers: {apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY, Prefer: 'count=exact'}
-    });
-    document.getElementById('stat-quiz').textContent = r3.headers.get('content-range')?.split('/')[1] || '—';
-
-    const r4 = await fetch(`${SUPABASE_URL}/rest/v1/testimonials?select=count&active=eq.true`, {
-      headers: {apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY, Prefer: 'count=exact'}
-    });
-    document.getElementById('stat-dep').textContent = r4.headers.get('content-range')?.split('/')[1] || '—';
-
-    document.getElementById('sys-status').innerHTML =
-      `<span style="color:var(--green)">✓ Supabase conectado</span> &nbsp;·&nbsp; Projeto: drgrwpmhmrrhxuwxabow`;
+    const headers = {apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY, Prefer: 'count=exact'};
+    const r1 = await fetch(`${SUPABASE_URL}/rest/v1/leads?select=*&limit=1`, {headers});
+    document.getElementById('stat-leads').textContent = (r1.headers.get('content-range')||'').split('/')[1] || '0';
+    const r2 = await fetch(`${SUPABASE_URL}/rest/v1/leads?select=*&limit=1&created_at=gte.${new Date(Date.now()-7*86400000).toISOString()}`, {headers});
+    document.getElementById('stat-leads7').textContent = (r2.headers.get('content-range')||'').split('/')[1] || '0';
+    const r3 = await fetch(`${SUPABASE_URL}/rest/v1/quiz_questions?select=*&limit=1`, {headers});
+    document.getElementById('stat-quiz').textContent = (r3.headers.get('content-range')||'').split('/')[1] || '0';
+    const r4 = await fetch(`${SUPABASE_URL}/rest/v1/testimonials?select=*&limit=1&active=eq.true`, {headers});
+    document.getElementById('stat-dep').textContent = (r4.headers.get('content-range')||'').split('/')[1] || '0';
+    document.getElementById('sys-status').innerHTML = '<span style="color:var(--green)">✓ Supabase conectado</span> &nbsp;·&nbsp; Projeto: drgrwpmhmrrhxuwxabow';
   } catch(e) {
-    document.getElementById('sys-status').innerHTML = `<span style="color:var(--red)">✗ Erro: ${e.message}</span>`;
+    document.getElementById('sys-status').innerHTML = `<span style="color:var(--red)">✗ Erro: ${esc(e.message)}</span>`;
   }
 }
 
-// ── CONFIG ────────────────────────────────────────────────────────────────────
-function populateConfigFields() {
-  document.querySelectorAll('[data-key]').forEach(el => {
-    const key = el.dataset.key;
-    if (siteConfig[key] !== undefined) el.value = siteConfig[key];
-  });
+function renderTextos() {
+  const html = TEXTOS_SECTIONS.map(sec => `
+    <div class="card">
+      <div class="card-title">${esc(sec.title)}</div>
+      ${sec.fields.map(f => renderConfigField(f)).join('')}
+    </div>
+  `).join('');
+  document.getElementById('textos-container').innerHTML = html;
+}
+
+function renderVideos() {
+  const html = VIDEOS_FIELDS.map(sec => `
+    <div class="card">
+      <div class="card-title">${esc(sec.title)}</div>
+      ${sec.fields.map(f => renderConfigField({...f, type:'text', placeholder:'https://youtube.com/...'})).join('')}
+    </div>
+  `).join('');
+  document.getElementById('videos-container').innerHTML = html;
+}
+
+function renderConfigPage() {
+  const html = CONFIG_FIELDS.map(sec => `
+    <div class="card">
+      <div class="card-title">${esc(sec.title)}</div>
+      ${sec.fields.map(f => renderConfigField(f)).join('')}
+    </div>
+  `).join('');
+  document.getElementById('config-container').innerHTML = html;
+}
+
+function renderConfigField(f) {
+  const val = esc(siteConfig[f.key] ?? '');
+  const id = 'cfg-' + f.key;
+  let input;
+  if (f.type === 'select') {
+    input = `<select id="${id}">${f.options.map(([v,l]) => `<option value="${esc(v)}"${String(val)===String(v)?' selected':''}>${esc(l)}</option>`).join('')}</select>`;
+  } else if (f.type === 'textarea') {
+    input = `<textarea id="${id}">${val}</textarea>`;
+  } else {
+    input = `<input type="text" id="${id}" value="${val}"${f.placeholder?` placeholder="${esc(f.placeholder)}"`:''}>`;
+  }
+  return `<div class="ctrl-row">
+    <div class="ctrl-label">${esc(f.label)}<div style="font-size:10px;opacity:.6;margin-top:2px">${esc(f.key)}</div></div>
+    <div class="ctrl-input">${input}</div>
+    <button class="btn btn-primary btn-sm" onclick="saveCfg('${esc(f.key)}')">Salvar</button>
+  </div>`;
 }
 
 async function saveCfg(key) {
   const el = document.getElementById('cfg-' + key);
   if (!el) return;
-  await proxyPost({action:'update_config', key, value: el.value});
-  siteConfig[key] = el.value;
+  const ok = await proxyPost({action:'update_config', key, value: el.value});
+  if (ok) siteConfig[key] = el.value;
 }
 
-async function saveCfgSelect(key) {
-  await saveCfg(key);
-}
-
-// ── QUIZ ──────────────────────────────────────────────────────────────────────
 function renderQuizList(questions) {
-  const el = document.getElementById('quiz-list');
-  el.innerHTML = questions.map((q,i) => `
+  if (!questions.length) {
+    document.getElementById('quiz-list').innerHTML = '<div class="card"><div class="empty">Nenhuma pergunta cadastrada</div></div>';
+    return;
+  }
+  document.getElementById('quiz-list').innerHTML = questions.map((q,i) => `
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Pergunta ${i+1}</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Pergunta ${i+1} · order_index ${q.order_index}</div>
           <div style="font-weight:600;margin-bottom:10px">${esc(q.question_text)}</div>
-          <div style="font-size:12px;color:var(--text2)">
-            A: ${esc(q.option_a)} &nbsp;·&nbsp; B: ${esc(q.option_b)} &nbsp;·&nbsp; C: ${esc(q.option_c)} &nbsp;·&nbsp; D: ${esc(q.option_d)}
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">
+            <div><b style="color:var(--teal)">A</b> [${esc(q.weight_a||'?')}] ${esc(q.option_a)}</div>
+            <div><b style="color:var(--teal)">B</b> [${esc(q.weight_b||'?')}] ${esc(q.option_b)}</div>
+            <div><b style="color:var(--teal)">C</b> [${esc(q.weight_c||'?')}] ${esc(q.option_c)}</div>
+            <div><b style="color:var(--teal)">D</b> [${esc(q.weight_d||'?')}] ${esc(q.option_d)}</div>
           </div>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick='openQuizModal(${JSON.stringify(q)})'>Editar</button>
+        <button class="btn btn-secondary btn-sm" onclick='openQuizModal(${JSON.stringify(q).replace(/'/g,"&#39;")})'>Editar</button>
       </div>
     </div>
   `).join('');
@@ -773,11 +660,11 @@ function renderQuizList(questions) {
 
 function openQuizModal(q) {
   document.getElementById('q-id').value = q.id;
-  document.getElementById('q-text').value = q.question_text;
-  document.getElementById('q-a').value = q.option_a;
-  document.getElementById('q-b').value = q.option_b;
-  document.getElementById('q-c').value = q.option_c;
-  document.getElementById('q-d').value = q.option_d;
+  document.getElementById('q-text').value = q.question_text || '';
+  ['a','b','c','d'].forEach(l => {
+    document.getElementById('q-' + l).value = q['option_' + l] || '';
+    document.getElementById('q-w' + l).value = q['weight_' + l] || l.toUpperCase();
+  });
   document.getElementById('quiz-modal').classList.add('open');
 }
 function closeQuizModal() { document.getElementById('quiz-modal').classList.remove('open'); }
@@ -787,73 +674,54 @@ async function saveQuizQuestion() {
     action: 'update_quiz_question',
     id: document.getElementById('q-id').value,
     question_text: document.getElementById('q-text').value,
-    option_a: document.getElementById('q-a').value,
-    option_b: document.getElementById('q-b').value,
-    option_c: document.getElementById('q-c').value,
-    option_d: document.getElementById('q-d').value,
+    option_a: document.getElementById('q-a').value, weight_a: document.getElementById('q-wa').value,
+    option_b: document.getElementById('q-b').value, weight_b: document.getElementById('q-wb').value,
+    option_c: document.getElementById('q-c').value, weight_c: document.getElementById('q-wc').value,
+    option_d: document.getElementById('q-d').value, weight_d: document.getElementById('q-wd').value,
   };
   const ok = await proxyPost(data);
   if (ok) {
     closeQuizModal();
-    const updated = await sbGet('quiz_questions','order=order_index.asc');
+    const updated = await sbGet('quiz_questions','select=*&order=order_index.asc');
     if (Array.isArray(updated)) renderQuizList(updated);
   }
 }
 
-// ── PERFIS ────────────────────────────────────────────────────────────────────
 function renderPerfis() {
   const profiles = [
-    {letter:'a', label:'Perfil A', emoji:'🔥'},
-    {letter:'b', label:'Perfil B', emoji:'🧠'},
-    {letter:'c', label:'Perfil C', emoji:'❤️'},
-    {letter:'d', label:'Perfil D', emoji:'💪'},
+    {letter:'A', emoji:'🍫', label:'Perfil A — A Recompensadora'},
+    {letter:'B', emoji:'🤖', label:'Perfil B — A Piloto Automático'},
+    {letter:'C', emoji:'⚡', label:'Perfil C — A Prisioneira do Esforço'},
+    {letter:'D', emoji:'🌙', label:'Perfil D — A Compensadora Noturna'},
   ];
-
-  document.getElementById('perfis-cards').innerHTML = profiles.map(p => {
-    const titleKey = `resultado_${p.letter}_titulo`;
-    const descKey  = `resultado_${p.letter}_desc`;
-    const insightKey = `resultado_${p.letter}_insight`;
-    return `
-      <div class="card">
-        <div class="card-title">${p.emoji} ${p.label}</div>
-        <div class="ctrl-row">
-          <div class="ctrl-label">Título / sabotador</div>
-          <div class="ctrl-input"><input type="text" id="cfg-${titleKey}" data-key="${titleKey}"></div>
-          <button class="btn btn-primary btn-sm" onclick="saveCfg('${titleKey}')">Salvar</button>
-        </div>
-        <div class="ctrl-row">
-          <div class="ctrl-label">Descrição</div>
-          <div class="ctrl-input"><textarea id="cfg-${descKey}" data-key="${descKey}"></textarea></div>
-          <button class="btn btn-primary btn-sm" onclick="saveCfg('${descKey}')">Salvar</button>
-        </div>
-        <div class="ctrl-row">
-          <div class="ctrl-label">Insight</div>
-          <div class="ctrl-input"><textarea id="cfg-${insightKey}" data-key="${insightKey}"></textarea></div>
-          <button class="btn btn-primary btn-sm" onclick="saveCfg('${insightKey}')">Salvar</button>
-        </div>
-      </div>
-    `;
+  const html = profiles.map(p => {
+    const fields = [
+      {key:`resultado_${p.letter}_tipo`, label:'Tipo / cabeçalho', type:'text'},
+      {key:`resultado_${p.letter}_sabotador`, label:'Nome do sabotador', type:'text'},
+      {key:`resultado_${p.letter}_titulo`, label:'Título', type:'text'},
+      {key:`resultado_${p.letter}_emoji`, label:'Emoji', type:'text'},
+      {key:`resultado_${p.letter}_desc`, label:'Descrição', type:'textarea'},
+      {key:`resultado_${p.letter}_insight`, label:'Insight (frase em itálico)', type:'textarea'},
+    ];
+    return `<div class="card">
+      <div class="card-title">${p.emoji} ${esc(p.label)}</div>
+      ${fields.map(f => renderConfigField(f)).join('')}
+    </div>`;
   }).join('');
-
-  // Populate values from already-loaded siteConfig
-  document.querySelectorAll('[data-key]').forEach(el => {
-    const key = el.dataset.key;
-    if (siteConfig[key] !== undefined) el.value = siteConfig[key];
-  });
+  document.getElementById('perfis-cards').innerHTML = html;
 }
 
-// ── DEPOIMENTOS ───────────────────────────────────────────────────────────────
 function renderDepoimentos(deps) {
   const tbody = document.getElementById('dep-body');
   if (!deps.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">Nenhum depoimento</td></tr>'; return; }
   tbody.innerHTML = deps.map(d => `
     <tr>
-      <td>${esc(d.name)}</td>
+      <td>${esc(d.name||'')}</td>
       <td>${esc(d.result||'')}</td>
-      <td><a href="${esc(d.video_url||'')}" target="_blank" style="color:var(--teal)">🔗</a></td>
-      <td>${d.order_index}</td>
+      <td>${d.video_url?`<a href="${esc(d.video_url)}" target="_blank" style="color:var(--teal)">🔗 ver</a>`:'—'}</td>
+      <td>${d.order_index ?? 0}</td>
       <td><span class="badge ${d.active ? 'badge-green':'badge-red'}">${d.active ? 'Ativo':'Inativo'}</span></td>
-      <td><button class="btn btn-secondary btn-sm" onclick='openTestimonialModal(${JSON.stringify(d)})'>Editar</button></td>
+      <td><button class="btn btn-secondary btn-sm" onclick='openTestimonialModal(${JSON.stringify(d).replace(/'/g,"&#39;")})'>Editar</button></td>
     </tr>
   `).join('');
 }
@@ -866,14 +734,14 @@ function openTestimonialModal(dep) {
   document.getElementById('dep-quote').value = dep?.quote || '';
   document.getElementById('dep-profession').value = dep?.profession || '';
   document.getElementById('dep-video').value = dep?.video_url || '';
-  document.getElementById('dep-order').value = dep?.order_index || 0;
+  document.getElementById('dep-order').value = dep?.order_index ?? 0;
   document.getElementById('dep-active').value = dep?.active !== false ? '1' : '0';
   document.getElementById('dep-modal').classList.add('open');
 }
 function closeDepModal() { document.getElementById('dep-modal').classList.remove('open'); }
 
 async function saveTestimonial() {
-  const data = {
+  const ok = await proxyPost({
     action: 'update_testimonial',
     id: document.getElementById('dep-id').value,
     name: document.getElementById('dep-name').value,
@@ -883,52 +751,36 @@ async function saveTestimonial() {
     video_url: document.getElementById('dep-video').value,
     order_index: document.getElementById('dep-order').value,
     active: document.getElementById('dep-active').value,
-  };
-  const ok = await proxyPost(data);
+  });
   if (ok) {
     closeDepModal();
-    const updated = await sbGet('testimonials','order=order_index.asc');
+    const updated = await sbGet('testimonials','select=*&order=order_index.asc');
     if (Array.isArray(updated)) renderDepoimentos(updated);
   }
 }
 
-// ── MENTORAS ──────────────────────────────────────────────────────────────────
+function driveThumbUrl(url, size = 200) {
+  if (!url) return '';
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || url.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+  return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w${size}` : url;
+}
+
 function renderMentoras(mentors) {
+  if (!mentors.length) { document.getElementById('mentoras-list').innerHTML = '<div class="card"><div class="empty">Nenhuma mentora cadastrada</div></div>'; return; }
   document.getElementById('mentoras-list').innerHTML = mentors.map(m => `
     <div class="card">
-      <div style="display:flex;gap:16px;align-items:flex-start">
-        <img src="${driveUrl(m.photo_url)}" alt="${esc(m.name)}"
-          style="width:64px;height:64px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--bg3)">
-        <div style="flex:1">
-          <div style="font-weight:700;margin-bottom:2px">${esc(m.name)}</div>
+      <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+        <img src="${esc(driveThumbUrl(m.photo_url))}" alt="${esc(m.name)}" class="mentor-photo-preview" onerror="this.style.display='none'">
+        <div style="flex:1;min-width:240px">
+          <div style="font-weight:700;font-size:15px;margin-bottom:2px">${esc(m.name)}</div>
           <div style="color:var(--text2);font-size:12px;margin-bottom:12px">${esc(m.role||'')}</div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Nome</div>
-            <div class="ctrl-input"><input type="text" id="m-name-${m.id}" value="${esc(m.name)}"></div>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Cargo / role</div>
-            <div class="ctrl-input"><input type="text" id="m-role-${m.id}" value="${esc(m.role||'')}"></div>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Bio</div>
-            <div class="ctrl-input"><textarea id="m-bio-${m.id}">${esc(m.bio||'')}</textarea></div>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Foto (Google Drive URL)</div>
-            <div class="ctrl-input"><input type="text" id="m-photo-${m.id}" value="${esc(m.photo_url||'')}"></div>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Vídeo YouTube</div>
-            <div class="ctrl-input"><input type="text" id="m-video-${m.id}" value="${esc(m.video_url||'')}"></div>
-          </div>
-          <div class="ctrl-row">
-            <div class="ctrl-label">Instagram URL</div>
-            <div class="ctrl-input"><input type="text" id="m-ig-${m.id}" value="${esc(m.instagram_url||'')}"></div>
-          </div>
-          <div class="save-row">
-            <button class="btn btn-primary btn-sm" onclick="saveMentor('${m.id}')">Salvar mentora</button>
-          </div>
+          <div class="ctrl-row"><div class="ctrl-label">Nome</div><div class="ctrl-input"><input type="text" id="m-name-${m.id}" value="${esc(m.name||'')}"></div><div></div></div>
+          <div class="ctrl-row"><div class="ctrl-label">Cargo / role</div><div class="ctrl-input"><input type="text" id="m-role-${m.id}" value="${esc(m.role||'')}"></div><div></div></div>
+          <div class="ctrl-row"><div class="ctrl-label">Bio</div><div class="ctrl-input"><textarea id="m-bio-${m.id}">${esc(m.bio||'')}</textarea></div><div></div></div>
+          <div class="ctrl-row"><div class="ctrl-label">Foto (URL)<div class="photo-helper">Google Drive ou link direto</div></div><div class="ctrl-input"><input type="text" id="m-photo-${m.id}" value="${esc(m.photo_url||'')}"></div><div></div></div>
+          <div class="ctrl-row"><div class="ctrl-label">Vídeo YouTube</div><div class="ctrl-input"><input type="text" id="m-video-${m.id}" value="${esc(m.video_url||'')}"></div><div></div></div>
+          <div class="ctrl-row"><div class="ctrl-label">Instagram URL</div><div class="ctrl-input"><input type="text" id="m-ig-${m.id}" value="${esc(m.instagram_url||'')}"></div><div></div></div>
+          <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn btn-primary btn-sm" onclick="saveMentor('${esc(m.id)}')">Salvar mentora</button></div>
         </div>
       </div>
     </div>
@@ -936,102 +788,120 @@ function renderMentoras(mentors) {
 }
 
 async function saveMentor(id) {
-  const data = {
-    action: 'update_mentor',
-    id,
-    name:          document.getElementById(`m-name-${id}`).value,
-    role:          document.getElementById(`m-role-${id}`).value,
-    bio:           document.getElementById(`m-bio-${id}`).value,
-    photo_url:     document.getElementById(`m-photo-${id}`).value,
-    video_url:     document.getElementById(`m-video-${id}`).value,
+  await proxyPost({
+    action: 'update_mentor', id,
+    name: document.getElementById(`m-name-${id}`).value,
+    role: document.getElementById(`m-role-${id}`).value,
+    bio: document.getElementById(`m-bio-${id}`).value,
+    photo_url: document.getElementById(`m-photo-${id}`).value,
+    video_url: document.getElementById(`m-video-${id}`).value,
     instagram_url: document.getElementById(`m-ig-${id}`).value,
-  };
-  await proxyPost(data);
+  });
 }
 
-// ── LEADS ─────────────────────────────────────────────────────────────────────
 async function loadLeads(page = 0) {
   leadsPage = page;
-  const from = page * LEADS_PER_PAGE;
-  const to   = from + LEADS_PER_PAGE - 1;
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/leads?order=created_at.desc&offset=${from}&limit=${LEADS_PER_PAGE}`, {
-    headers: {apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY, Prefer: 'count=exact', 'Range-Unit':'items', Range:`${from}-${to}`}
-  });
-  const total = parseInt(r.headers.get('content-range')?.split('/')[1] || '0');
-  const rows  = await r.json();
-
-  const tbody = document.getElementById('leads-body');
-  if (!Array.isArray(rows) || !rows.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty">Nenhum lead encontrado</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows.map(l => `
-    <tr>
-      <td>${esc(l.name||'')}</td>
-      <td>${esc(l.email||'')}</td>
-      <td>${esc(l.phone||'')}</td>
-      <td><span class="badge badge-amber">${esc(l.quiz_result||'')}</span></td>
-      <td>${new Date(l.created_at).toLocaleDateString('pt-BR')}</td>
-    </tr>
-  `).join('');
-
-  // Pagination
-  const pages = Math.ceil(total / LEADS_PER_PAGE);
-  const pagEl = document.getElementById('leads-pagination');
-  pagEl.innerHTML = '';
-  if (pages > 1) {
-    for (let i = 0; i < pages; i++) {
-      const btn = document.createElement('button');
-      btn.className = 'btn btn-sm ' + (i === page ? 'btn-primary' : 'btn-secondary');
-      btn.textContent = i + 1;
-      btn.onclick = () => loadLeads(i);
-      pagEl.appendChild(btn);
-    }
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/leads?select=*&order=created_at.desc&limit=500`, {
+      headers: {apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY, Prefer:'count=exact'}
+    });
+    allLeads = await r.json();
+    if (!Array.isArray(allLeads)) allLeads = [];
+    document.getElementById('leads-total').textContent = allLeads.length;
+    renderLeadsTable();
+    renderSabotadorStats();
+  } catch(e) {
+    document.getElementById('leads-body').innerHTML = `<tr><td colspan="6" class="empty">Erro: ${esc(e.message)}</td></tr>`;
   }
 }
 
+function renderLeadsTable() {
+  const search = (document.getElementById('leads-search')?.value || '').toLowerCase();
+  const filter = document.getElementById('leads-filter-sabotador')?.value || '';
+  let filtered = allLeads.filter(l => {
+    if (search && !((l.name||'').toLowerCase().includes(search) || (l.email||'').toLowerCase().includes(search))) return false;
+    if (filter && l.sabotador !== filter) return false;
+    return true;
+  });
+  const tbody = document.getElementById('leads-body');
+  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">Nenhum lead encontrado</td></tr>'; return; }
+  const from = leadsPage * LEADS_PER_PAGE;
+  const pageRows = filtered.slice(from, from + LEADS_PER_PAGE);
+  tbody.innerHTML = pageRows.map(l => `
+    <tr>
+      <td>${esc(l.name||'')}</td>
+      <td style="word-break:break-all">${esc(l.email||'')}</td>
+      <td>${esc(l.phone||'')}</td>
+      <td>${l.sabotador?`<span class="badge badge-amber">${esc(l.sabotador)}</span>`:'—'}</td>
+      <td>${esc((l.cidade||'')+(l.estado?' / '+l.estado:''))}</td>
+      <td>${l.created_at ? new Date(l.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+    </tr>
+  `).join('');
+  const pages = Math.ceil(filtered.length / LEADS_PER_PAGE);
+  const pagEl = document.getElementById('leads-pagination');
+  pagEl.innerHTML = pages > 1 ? Array.from({length:pages}, (_,i) =>
+    `<button class="btn btn-sm ${i===leadsPage?'btn-primary':'btn-secondary'}" onclick="leadsPage=${i};renderLeadsTable()">${i+1}</button>`
+  ).join('') : '';
+}
+
+function renderSabotadorStats() {
+  const counts = {A:0,B:0,C:0,D:0,outros:0};
+  allLeads.forEach(l => { if (counts[l.sabotador] !== undefined) counts[l.sabotador]++; else if (l.sabotador) counts.outros++; });
+  const total = allLeads.length || 1;
+  document.getElementById('sabotador-stats').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
+      ${Object.entries(counts).filter(([k,v]) => v > 0 || ['A','B','C','D'].includes(k)).map(([k,v]) => `
+        <div style="background:var(--bg3);padding:10px 12px;border-radius:6px">
+          <div style="font-size:11px;color:var(--text2)">Perfil ${k}</div>
+          <div style="font-size:18px;font-weight:700;color:var(--teal)">${v}</div>
+          <div style="font-size:10px;color:var(--text3)">${Math.round(v/total*100)}%</div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+document.addEventListener('input', e => {
+  if (e.target.id === 'leads-search' || e.target.id === 'leads-filter-sabotador') {
+    leadsPage = 0; renderLeadsTable();
+  }
+});
+
 function exportLeads() {
+  if (!allLeads.length) { toast('Nenhum lead para exportar', 'error'); return; }
+  const headers = ['nome','email','telefone','cidade','estado','sabotador','data'];
+  const rows = allLeads.map(l => [
+    l.name||'', l.email||'', l.phone||'', l.cidade||'', l.estado||'', l.sabotador||'',
+    l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : ''
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = '﻿' + headers.join(',') + '\n' + rows.join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a');
-  a.href = `${SUPABASE_URL}/rest/v1/leads?select=name,email,phone,quiz_result,created_at&order=created_at.desc&limit=10000`;
-  // Cannot export with anon key easily — just open in new tab for now
-  a.target = '_blank';
+  a.href = URL.createObjectURL(blob);
+  a.download = `leads-emagreser-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 }
 
-// ── PROXY POST ────────────────────────────────────────────────────────────────
 async function proxyPost(data) {
   const fd = new FormData();
-  Object.entries(data).forEach(([k,v]) => fd.append(k, v));
+  Object.entries(data).forEach(([k,v]) => fd.append(k, v == null ? '' : v));
   try {
     const r = await fetch(PROXY, {method:'POST', body:fd, credentials:'include'});
     const j = await r.json();
-    if (j.ok) { toast('Salvo com sucesso!', 'success'); return true; }
-    else { toast(j.error || 'Erro ao salvar', 'error'); return false; }
-  } catch(e) {
-    toast('Erro de rede: ' + e.message, 'error'); return false;
-  }
+    if (j.ok) { toast('Salvo!', 'success'); return true; }
+    toast(j.error || 'Erro ao salvar', 'error'); return false;
+  } catch(e) { toast('Erro de rede: ' + e.message, 'error'); return false; }
 }
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function driveUrl(url) {
-  if (!url) return '';
-  const m = url.match(/[-\w]{25,}/);
-  return m ? `https://drive.google.com/uc?export=view&id=${m[0]}` : url;
-}
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function toast(msg, type = 'success') {
   const el = document.createElement('div');
   el.className = 'toast-item ' + type;
   el.textContent = msg;
   document.getElementById('toast').appendChild(el);
-  setTimeout(() => el.remove(), 3500);
+  setTimeout(() => el.remove(), 3000);
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
 checkSession();
 </script>
 </body>
