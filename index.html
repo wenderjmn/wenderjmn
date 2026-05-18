@@ -57,10 +57,20 @@ h3{font-size:clamp(1.05rem,2.5vw,1.45rem);font-weight:600}
 .ann-cd{background:rgba(255,255,255,.15);padding:3px 12px;border-radius:20px;font-size:.74rem;white-space:nowrap}
 #ann-close{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.7);font-size:1rem;cursor:pointer;background:none;border:none}
 
+/* TOPBAR (logo + CTA) */
+#topbar{background:var(--white);border-bottom:1px solid var(--border);padding:12px 20px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.topbar-inner{max-width:1140px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.topbar-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.topbar-logo img{height:42px;width:auto;display:block}
+.topbar-logo-text{font-family:var(--fd);font-size:1.05rem;color:var(--text);font-weight:700;line-height:1}
+.topbar-logo-text span{color:var(--amber)}
+.topbar-cta{font-size:.78rem;padding:9px 18px;min-height:40px}
+@media(max-width:560px){.topbar-cta{font-size:.7rem;padding:8px 12px}.topbar-logo img{height:34px}.topbar-logo-text{font-size:.92rem}}
+
 /* HERO */
-.hero{background:var(--white);padding:80px 0 60px;border-bottom:1px solid var(--border)}
-.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:60px;align-items:center}
-@media(max-width:768px){.hero-grid{grid-template-columns:1fr;gap:36px}}
+.hero{background:var(--white);padding:60px 0 50px;border-bottom:1px solid var(--border)}
+.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:50px;align-items:center}
+@media(max-width:768px){.hero-grid{grid-template-columns:1fr;gap:32px}}
 .hero-eye{display:flex;align-items:center;gap:8px;margin-bottom:16px}
 .hero-dot{width:8px;height:8px;border-radius:50%;background:var(--teal)}
 .hero-eye-text{font-size:.72rem;font-weight:600;color:var(--teal);letter-spacing:.12em;text-transform:uppercase}
@@ -69,8 +79,11 @@ h3{font-size:clamp(1.05rem,2.5vw,1.45rem);font-weight:600}
 .hero-pills{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px}
 .hero-pill{display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--text2);font-weight:500}
 .hero-pill::before{content:'✓';color:var(--teal);font-weight:800}
-.hero-video-wrap{max-width:280px;aspect-ratio:9/16;border-radius:var(--rl);overflow:hidden;background:var(--bg3);box-shadow:var(--shadow-lg);margin:0 auto}
+.hero-videos{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:420px;margin:0 auto}
+@media(max-width:480px){.hero-videos{grid-template-columns:1fr;max-width:240px}}
+.hero-video-wrap{aspect-ratio:9/16;border-radius:var(--r);overflow:hidden;background:var(--bg3);box-shadow:var(--shadow-md);position:relative;cursor:pointer}
 .hero-video-wrap iframe{width:100%;height:100%;border:none;display:block}
+.hero-video-label{position:absolute;bottom:8px;left:0;right:0;text-align:center;color:#fff;font-size:.7rem;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.6);pointer-events:none}
 .vph{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text3);min-height:300px}
 
 /* ROMA */
@@ -133,8 +146,18 @@ h3{font-size:clamp(1.05rem,2.5vw,1.45rem);font-weight:600}
 #perfis{background:var(--white);padding:80px 0}
 .perfis-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin:36px 0}
 @media(max-width:600px){.perfis-grid{grid-template-columns:1fr}}
-.perfil-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:26px 22px;position:relative;overflow:hidden}
+.perfil-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:26px 22px;position:relative;overflow:hidden;min-height:180px;transition:all .35s ease}
 .perfil-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--teal)}
+.perfil-card.locked .perfil-emoji,
+.perfil-card.locked .perfil-tipo,
+.perfil-card.locked .perfil-sabotador,
+.perfil-card.locked .perfil-short{filter:blur(8px);user-select:none;pointer-events:none;opacity:.5}
+.perfil-card.locked::after{content:'🔒 Faça o mapeamento para descobrir';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(244,243,239,.55);font-weight:600;color:var(--text);font-size:.88rem;text-align:center;padding:16px;backdrop-filter:blur(2px)}
+.perfil-card.unlocked{border-color:var(--teal);background:var(--teal-bg);box-shadow:0 0 0 3px rgba(13,148,136,.18)}
+.perfil-card.unlocked::before{width:6px;background:var(--teal-d)}
+.perfil-card.unlocked .perfil-tipo{color:var(--teal-d);font-weight:700}
+.perfil-revealed-badge{position:absolute;top:10px;right:12px;background:var(--teal);color:#fff;font-size:.65rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:20px;display:none}
+.perfil-card.unlocked .perfil-revealed-badge{display:block}
 .perfil-emoji{font-size:1.8rem;display:block;margin-bottom:10px}
 .perfil-tipo{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--teal);margin-bottom:4px}
 .perfil-sabotador{font-family:var(--fd);font-size:1.05rem;font-weight:700;margin-bottom:7px;color:var(--text)}
@@ -146,8 +169,13 @@ h3{font-size:clamp(1.05rem,2.5vw,1.45rem);font-weight:600}
 .tags-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:28px}
 .tag-chip{background:rgba(13,148,136,.08);border:1px solid var(--teal-border);padding:5px 14px;border-radius:20px;font-size:.77rem;color:var(--teal);font-weight:500}
 
-/* QUIZ */
-#quiz-section{background:var(--white);padding:80px 0}
+/* QUIZ — POPUP MODAL */
+#quiz-section{display:none;position:fixed;inset:0;background:rgba(15,23,42,.75);z-index:2400;padding:20px;align-items:flex-start;justify-content:center;backdrop-filter:blur(5px);overflow-y:auto}
+#quiz-section.open{display:flex}
+#quiz-section>.container{max-width:680px;width:100%;background:var(--white);border-radius:var(--rl);padding:38px 28px;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;margin:auto}
+@media(max-width:560px){#quiz-section>.container{padding:26px 16px}}
+.quiz-close{position:absolute;top:10px;right:12px;font-size:1.4rem;color:var(--text3);background:none;border:none;cursor:pointer;padding:6px 10px;border-radius:8px;z-index:2;line-height:1}
+.quiz-close:hover{background:var(--bg2);color:var(--text)}
 .quiz-wrap{max-width:620px;margin:0 auto}
 .quiz-header{text-align:center;margin-bottom:36px}
 .quiz-prog-bar{height:4px;background:var(--border);border-radius:4px;margin-bottom:10px;overflow:hidden}
@@ -227,8 +255,8 @@ h3{font-size:clamp(1.05rem,2.5vw,1.45rem);font-weight:600}
 .mentoras-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-top:38px}
 @media(max-width:768px){.mentoras-grid{grid-template-columns:1fr}}
 .mentora-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--shadow)}
-.mentora-photo{width:100%;aspect-ratio:4/3;background:var(--bg3);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--text3)}
-.mentora-photo img{width:100%;height:100%;object-fit:cover;object-position:top}
+.mentora-photo{width:100%;aspect-ratio:3/4;max-height:480px;background:var(--bg3);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--text3)}
+.mentora-photo img{width:100%;height:100%;object-fit:cover;object-position:center 20%}
 .mentora-info{padding:22px}
 .mentora-name{font-family:var(--fd);font-size:1.15rem;margin-bottom:3px}
 .mentora-role{font-size:.75rem;color:var(--teal);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px}
@@ -305,6 +333,17 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
   <button id="ann-close" onclick="this.parentElement.remove()" aria-label="Fechar">✕</button>
 </div>
 
+<!-- TOPBAR — logo + CTA -->
+<header id="topbar">
+  <div class="topbar-inner">
+    <a href="#" class="topbar-logo" aria-label="EmagreSer">
+      <img src="logo.png" alt="" onerror="this.style.display='none'">
+      <span class="topbar-logo-text">Programa Emagre<span>Ser</span></span>
+    </a>
+    <button class="btn btn-teal topbar-cta" onclick="goToQuiz()">FAZER MAPEAMENTO</button>
+  </div>
+</header>
+
 <!-- HERO -->
 <section class="hero fade-up">
   <div class="container">
@@ -322,8 +361,15 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
         </div>
       </div>
       <div>
-        <div class="hero-video-wrap" id="hero-video-wrap">
-          <div class="vph"><span style="font-size:2rem">🎥</span><span style="font-size:.8rem">Carregando...</span></div>
+        <div class="hero-videos">
+          <div class="hero-video-wrap" id="hero-video-wrap">
+            <div class="vph"><span style="font-size:1.8rem">🎥</span><span style="font-size:.72rem">Daniely</span></div>
+            <div class="hero-video-label">Psicóloga Daniely</div>
+          </div>
+          <div class="hero-video-wrap" id="hero-video-ira">
+            <div class="vph"><span style="font-size:1.8rem">🎥</span><span style="font-size:.72rem">Ira</span></div>
+            <div class="hero-video-label">Nutricionista Ira</div>
+          </div>
         </div>
       </div>
     </div>
@@ -418,10 +464,10 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
     <h2>Qual é o mecanismo que está te sabotando?</h2>
     <p style="color:var(--text2);margin-top:10px;margin-bottom:0;max-width:560px;margin-left:auto;margin-right:auto;font-size:.97rem">Cada mulher tem um padrão diferente. Descubra o seu.</p>
     <div class="perfis-grid" id="perfis-grid">
-      <div class="perfil-card"><span class="perfil-emoji">🍫</span><div class="perfil-tipo" data-key="resultado_A_tipo">Perfil A — A Recompensadora</div><div class="perfil-sabotador" data-key="resultado_A_sabotador">Fome Hedônica</div><div class="perfil-short" data-key="resultado_A_titulo">Você usa a comida como prêmio e alívio emocional</div></div>
-      <div class="perfil-card"><span class="perfil-emoji">🤖</span><div class="perfil-tipo" data-key="resultado_B_tipo">Perfil B — A Piloto Automático</div><div class="perfil-sabotador" data-key="resultado_B_sabotador">Amnésia Alimentar</div><div class="perfil-short" data-key="resultado_B_titulo">Você come sem perceber — o automático assumiu o controle</div></div>
-      <div class="perfil-card"><span class="perfil-emoji">⚡</span><div class="perfil-tipo" data-key="resultado_C_tipo">Perfil C — A Prisioneira do Esforço</div><div class="perfil-sabotador" data-key="resultado_C_sabotador">Fadiga de Decisão</div><div class="perfil-short" data-key="resultado_C_titulo">Você esgota seu autocontrole e desiste por exaustão mental</div></div>
-      <div class="perfil-card"><span class="perfil-emoji">🌙</span><div class="perfil-tipo" data-key="resultado_D_tipo">Perfil D — A Compensadora Noturna</div><div class="perfil-sabotador" data-key="resultado_D_sabotador">Ciclo de Restrição</div><div class="perfil-short" data-key="resultado_D_titulo">Você restringe o dia todo e perde o controle à noite</div></div>
+      <div class="perfil-card locked" data-letter="A"><span class="perfil-revealed-badge">SEU PERFIL</span><span class="perfil-emoji">🍫</span><div class="perfil-tipo" data-key="resultado_A_tipo">Perfil A — A Recompensadora</div><div class="perfil-sabotador" data-key="resultado_A_sabotador">Fome Hedônica</div><div class="perfil-short" data-key="resultado_A_titulo">Você usa a comida como prêmio e alívio emocional</div></div>
+      <div class="perfil-card locked" data-letter="B"><span class="perfil-revealed-badge">SEU PERFIL</span><span class="perfil-emoji">🤖</span><div class="perfil-tipo" data-key="resultado_B_tipo">Perfil B — A Piloto Automático</div><div class="perfil-sabotador" data-key="resultado_B_sabotador">Amnésia Alimentar</div><div class="perfil-short" data-key="resultado_B_titulo">Você come sem perceber — o automático assumiu o controle</div></div>
+      <div class="perfil-card locked" data-letter="C"><span class="perfil-revealed-badge">SEU PERFIL</span><span class="perfil-emoji">⚡</span><div class="perfil-tipo" data-key="resultado_C_tipo">Perfil C — A Prisioneira do Esforço</div><div class="perfil-sabotador" data-key="resultado_C_sabotador">Fadiga de Decisão</div><div class="perfil-short" data-key="resultado_C_titulo">Você esgota seu autocontrole e desiste por exaustão mental</div></div>
+      <div class="perfil-card locked" data-letter="D"><span class="perfil-revealed-badge">SEU PERFIL</span><span class="perfil-emoji">🌙</span><div class="perfil-tipo" data-key="resultado_D_tipo">Perfil D — A Compensadora Noturna</div><div class="perfil-sabotador" data-key="resultado_D_sabotador">Ciclo de Restrição</div><div class="perfil-short" data-key="resultado_D_titulo">Você restringe o dia todo e perde o controle à noite</div></div>
     </div>
     <button class="btn btn-teal lg" style="margin-top:8px" onclick="goToQuiz()">DESCOBRIR MEU PERFIL →</button>
   </div>
@@ -443,12 +489,13 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
 </section>
 
 <!-- QUIZ -->
-<section id="quiz-section" class="fade-up">
+<section id="quiz-section">
   <div class="container">
+    <button class="quiz-close" onclick="closeQuizModal()" aria-label="Fechar">✕</button>
     <div class="quiz-wrap">
       <div class="quiz-header">
         <div class="section-label">MAPEAMENTO COMPORTAMENTAL</div>
-        <h2>Qual é o seu padrão?</h2>
+        <h2 style="font-size:clamp(1.3rem,3.5vw,2rem)">Qual é o seu padrão?</h2>
       </div>
       <div id="quiz-body">
         <div class="quiz-loading"><div class="spinner"></div><p>Carregando perguntas...</p></div>
@@ -741,13 +788,20 @@ function applyConfig(){
 }
 
 function buildHeroVideo(){
-  const wrap=document.getElementById('hero-video-wrap');
+  // Daniely's video (main hero_video_url, fallback to video_promessa_daniely)
+  buildHeroSlot('hero-video-wrap', k('hero_video_url')||k('video_promessa_daniely'), 'Psicóloga Daniely');
+  // Ira's video
+  buildHeroSlot('hero-video-ira', k('video_promessa_ira'), 'Nutricionista Ira');
+}
+
+function buildHeroSlot(elId, url, label){
+  const wrap=document.getElementById(elId);
   if(!wrap)return;
-  const id=ytId(k('hero_video_url'));
+  const id=ytId(url||'');
   if(id){
-    wrap.innerHTML=`<iframe src="https://www.youtube.com/embed/${id}?playsinline=1&rel=0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy"></iframe>`;
+    wrap.innerHTML=`<iframe src="https://www.youtube.com/embed/${id}?playsinline=1&rel=0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy"></iframe><div class="hero-video-label">${label}</div>`;
   }else{
-    wrap.innerHTML=`<div class="vph"><span style="font-size:2.5rem">🎥</span><span style="font-size:.78rem;color:var(--text3)">Vídeo em breve</span></div>`;
+    wrap.innerHTML=`<div class="vph"><span style="font-size:1.6rem">🎥</span><span style="font-size:.72rem;color:var(--text3)">Em breve</span></div><div class="hero-video-label">${label}</div>`;
   }
 }
 
@@ -899,6 +953,11 @@ function finishQuiz(){
   const p=profiles[profile];
   document.getElementById('res-emoji').textContent=p.emoji;
   document.getElementById('res-tipo').textContent=p.tipo;
+  // Close quiz modal and unlock matched perfil card
+  closeQuizModal();
+  document.querySelectorAll('.perfil-card').forEach(c=>{
+    if(c.dataset.letter===profile){c.classList.remove('locked');c.classList.add('unlocked');}
+  });
   const res=document.getElementById('resultado');
   res.classList.remove('hidden');
 
@@ -1039,8 +1098,7 @@ document.getElementById('modal-lead-form').addEventListener('submit',function(e)
   if(!phone||phone.replace(/\D/g,'').length<10){errEl.textContent='Por favor, informe seu WhatsApp com DDD.';errEl.classList.remove('hidden');return;}
   leadData={name,email,phone,cidade:cidade||null,estado:estado||null};
   closeLeadModal();
-  const t=document.getElementById('quiz-section');
-  if(t)t.scrollIntoView({behavior:'smooth',block:'start'});
+  openQuizModal();
 });
 
 document.getElementById('mlp').addEventListener('input',function(){
@@ -1050,7 +1108,27 @@ document.getElementById('mlp').addEventListener('input',function(){
   this.value=v;
 });
 
-/* ── SCROLL TO QUIZ ── */
+/* ── QUIZ MODAL ── */
+function openQuizModal(){
+  const sec=document.getElementById('quiz-section');
+  sec.classList.add('open');
+  document.body.style.overflow='hidden';
+  // scroll modal container to top
+  setTimeout(()=>{const c=sec.querySelector('.container');if(c)c.scrollTop=0;sec.scrollTop=0;},50);
+}
+function closeQuizModal(){
+  document.getElementById('quiz-section').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Escape')return;
+  const qm=document.getElementById('quiz-section');
+  if(qm&&qm.classList.contains('open'))closeQuizModal();
+  const lm=document.getElementById('lead-modal');
+  if(lm&&!lm.classList.contains('hidden'))closeLeadModal();
+});
+
 function goToQuiz(){
   if(quizState.done){
     const t=document.getElementById('resultado');
@@ -1062,8 +1140,7 @@ function goToQuiz(){
     setTimeout(()=>{const f=document.getElementById('mln');if(f)f.focus();},120);
     return;
   }
-  const t=document.getElementById('quiz-section');
-  if(t)t.scrollIntoView({behavior:'smooth',block:'start'});
+  openQuizModal();
 }
 
 /* ── ANIMATIONS ── */
