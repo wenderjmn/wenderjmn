@@ -8,7 +8,7 @@ define('PANEL_TOKEN',          'es2026admin');
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', '***REMOVED_SUPABASE_KEY***');
 define('SMTP_HOST',            'mail.hostinger.com');
-define('SMTP_PORT',            465);
+define('SMTP_PORT',            587);
 define('SMTP_USER',            'contato@emagreser.danielydealbuquerque.com.br');
 define('SMTP_PASS',            'EmagreSer@2025!');
 define('SMTP_FROM',            'contato@emagreser.danielydealbuquerque.com.br');
@@ -57,11 +57,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sb_patch_raw("email_queue?status=eq.failed", ['status' => 'pending', 'attempts' => 0, 'error_msg' => null]);
         $msg = '✅ E-mails com falha recolocados na fila'; $msg_type = 'ok';
     }
+
+    if ($action === 'activate_leads') {
+        $unqueued = sb_get("leads?sequence_queued_at=is.null&select=id,name,email,phone,sabotador&limit=100");
+        $count = 0;
+        foreach ($unqueued as $lead) {
+            if (empty($lead['email'])) continue;
+            $ch = curl_init((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']) . '/email_trigger.php');
+            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_POST=>true, CURLOPT_POSTFIELDS=>json_encode(['lead_id'=>$lead['id'],'event'=>'new_lead']), CURLOPT_HTTPHEADER=>['Content-Type: application/json'], CURLOPT_TIMEOUT=>10]);
+            curl_exec($ch); curl_close($ch);
+            $count++;
+            usleep(100000);
+        }
+        $msg = "✅ Automação ativada para {$count} leads"; $msg_type = 'ok';
+    }
 }
 
 // ── ESTATÍSTICAS ──────────────────────────────────────────────────
-$leads_total   = count(sb_get("leads?select=id"));
-$leads_queued  = count(sb_get("leads?sequence_queued_at=not.is.null&select=id"));
+$leads_total    = count(sb_get("leads?select=id"));
+$leads_queued   = count(sb_get("leads?sequence_queued_at=not.is.null&select=id"));
+$leads_pending  = $leads_total - $leads_queued;
 $email_sent    = count(sb_get("email_queue?status=eq.sent&select=id"));
 $email_pend    = count(sb_get("email_queue?status=eq.pending&select=id"));
 $email_fail    = count(sb_get("email_queue?status=eq.failed&select=id"));
@@ -114,7 +129,21 @@ tr:last-child td{border-bottom:none}
 .btn-green:hover{background:#0b7a6f}
 .btn-amber{background:#d97706;color:#fff}
 .btn-amber:hover{background:#b45309}
+.btn-blue{background:#1d4ed8;color:#fff}
+.btn-blue:hover{background:#1e3a8a}
+.refresh-bar{background:#1e293b;color:#64748b;text-align:center;font-size:11px;padding:6px;position:sticky;bottom:0}
 </style>
+<script>
+let countdown = 30;
+function tick(){
+  countdown--;
+  const el = document.getElementById('countdown');
+  if(el) el.textContent = countdown + 's';
+  if(countdown <= 0) location.reload();
+  else setTimeout(tick, 1000);
+}
+setTimeout(tick, 1000);
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -131,6 +160,16 @@ tr:last-child td{border-bottom:none}
   <div class="cards">
     <div class="card"><div class="n"><?= $leads_total ?></div><div class="l">Leads cadastradas</div></div>
     <div class="card"><div class="n"><?= $leads_queued ?></div><div class="l">Na automação</div></div>
+    <?php if($leads_pending > 0): ?>
+    <div class="card" style="grid-column:span 2;background:#fef9c3;border-color:#fde047">
+      <div class="n amber"><?= $leads_pending ?></div>
+      <div class="l" style="color:#854d0e"><?= $leads_pending ?> lead(s) sem automação ativada</div>
+      <form method="post" style="margin-top:10px">
+        <input type="hidden" name="action" value="activate_leads">
+        <button type="submit" class="btn btn-blue" style="width:auto;padding:7px 16px;font-size:12px">⚡ Ativar automação para todas</button>
+      </form>
+    </div>
+    <?php endif; ?>
     <div class="card"><div class="n"><?= $email_sent ?></div><div class="l">E-mails enviados</div></div>
     <div class="card"><div class="n amber"><?= $email_pend ?></div><div class="l">E-mails pendentes</div></div>
     <div class="card"><div class="n <?= $email_fail > 0 ? 'red' : '' ?>"><?= $email_fail ?></div><div class="l">E-mails com falha</div></div>
@@ -223,36 +262,70 @@ tr:last-child td{border-bottom:none}
   </div>
 
 </div>
+<div class="refresh-bar">Atualização automática em <span id="countdown">30</span>s &nbsp;·&nbsp; <?= date('H:i:s') ?></div>
 </body>
 </html>
 <?php
 
 // ── FUNÇÕES ───────────────────────────────────────────────────────
+function smtp_read_p($sock): string {
+    $out = '';
+    while ($line = fgets($sock, 512)) {
+        $out .= $line;
+        if (isset($line[3]) && $line[3] === ' ') break;
+    }
+    return $out;
+}
+
 function send_smtp_test(string $to, string $name): array {
     $subject = 'Teste de envio — Programa EmagreSer';
     $body = '<html><body style="font-family:Arial;padding:24px;background:#f4f3ef"><div style="max-width:500px;margin:0 auto;background:#fff;padding:28px;border-radius:10px"><h2 style="color:#0d9488">✅ SMTP funcionando!</h2><p>Olá, <strong>' . htmlspecialchars($name) . '</strong>!</p><p>Este é um e-mail de teste da automação do <strong>Programa EmagreSer</strong>.</p><p style="color:#6b7c67;font-size:13px">Enviado via SMTP Hostinger · ' . date('d/m/Y H:i:s') . '</p></div></body></html>';
 
-    $ctx = stream_context_create(['ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]]);
-    $sock = @stream_socket_client('ssl://' . SMTP_HOST . ':' . SMTP_PORT, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $ctx);
+    $sock = @stream_socket_client('tcp://' . SMTP_HOST . ':' . SMTP_PORT, $errno, $errstr, 20);
     if (!$sock) return ['ok' => false, 'msg' => "Conexão falhou: {$errstr}"];
+    stream_set_timeout($sock, 20);
 
-    $read = fgets($sock, 512);
-    if (strpos($read, '220') === false) { fclose($sock); return ['ok' => false, 'msg' => "SMTP: {$read}"]; }
+    $res = smtp_read_p($sock);
+    if (strpos($res, '220') === false) { fclose($sock); return ['ok' => false, 'msg' => "Banner: {$res}"]; }
 
-    $steps = [
-        "EHLO " . gethostname() . "\r\n"    => '250',
-        "AUTH LOGIN\r\n"                      => '334',
-        base64_encode(SMTP_USER) . "\r\n"    => '334',
-        base64_encode(SMTP_PASS) . "\r\n"    => '235',
-        "MAIL FROM:<" . SMTP_FROM . ">\r\n"  => '250',
-        "RCPT TO:<{$to}>\r\n"               => '250',
-        "DATA\r\n"                            => '354',
-    ];
-    foreach ($steps as $cmd => $expected) {
-        fwrite($sock, $cmd);
-        $res = fgets($sock, 512);
-        if (strpos($res, $expected) === false) { fclose($sock); return ['ok' => false, 'msg' => "Step {$expected}: {$res}"]; }
+    fwrite($sock, "EHLO " . gethostname() . "\r\n");
+    $res = smtp_read_p($sock);
+    if (strpos($res, '250') === false) { fclose($sock); return ['ok' => false, 'msg' => "EHLO: {$res}"]; }
+
+    fwrite($sock, "STARTTLS\r\n");
+    $res = smtp_read_p($sock);
+    if (strpos($res, '220') === false) { fclose($sock); return ['ok' => false, 'msg' => "STARTTLS: {$res}"]; }
+
+    if (!stream_socket_enable_crypto($sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+        fclose($sock); return ['ok' => false, 'msg' => 'TLS upgrade falhou'];
     }
+
+    fwrite($sock, "EHLO " . gethostname() . "\r\n");
+    smtp_read_p($sock);
+
+    fwrite($sock, "AUTH LOGIN\r\n");
+    $res = smtp_read_p($sock);
+    if (strpos($res, '334') === false) { fclose($sock); return ['ok' => false, 'msg' => "AUTH: {$res}"]; }
+
+    fwrite($sock, base64_encode(SMTP_USER) . "\r\n");
+    $res = smtp_read_p($sock);
+    if (strpos($res, '334') === false) { fclose($sock); return ['ok' => false, 'msg' => "User: {$res}"]; }
+
+    fwrite($sock, base64_encode(SMTP_PASS) . "\r\n");
+    $res = smtp_read_p($sock);
+    if (strpos($res, '235') === false) { fclose($sock); return ['ok' => false, 'msg' => "Pass: {$res}"]; }
+
+    fwrite($sock, "MAIL FROM:<" . SMTP_FROM . ">\r\n");
+    $res = smtp_read_p($sock);
+    if (strpos($res, '250') === false) { fclose($sock); return ['ok' => false, 'msg' => "MAIL FROM: {$res}"]; }
+
+    fwrite($sock, "RCPT TO:<{$to}>\r\n");
+    $res = smtp_read_p($sock);
+    if (strpos($res, '250') === false) { fclose($sock); return ['ok' => false, 'msg' => "RCPT TO: {$res}"]; }
+
+    fwrite($sock, "DATA\r\n");
+    $res = smtp_read_p($sock);
+    if (strpos($res, '354') === false) { fclose($sock); return ['ok' => false, 'msg' => "DATA: {$res}"]; }
 
     $fromEnc = '=?UTF-8?B?' . base64_encode(SMTP_FROM_NAME) . '?=';
     $toEnc   = '=?UTF-8?B?' . base64_encode($name) . '?= <' . $to . '>';
@@ -268,7 +341,7 @@ function send_smtp_test(string $to, string $name): array {
     $msg .= "--{$bnd}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n{$body}\r\n\r\n--{$bnd}--\r\n.\r\n";
 
     fwrite($sock, $msg);
-    $res = fgets($sock, 512);
+    $res = smtp_read_p($sock);
     fwrite($sock, "QUIT\r\n");
     fclose($sock);
 

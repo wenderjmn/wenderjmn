@@ -13,7 +13,7 @@ define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUP
 
 // SMTP Hostinger
 define('SMTP_HOST',     'mail.hostinger.com');
-define('SMTP_PORT',     465);
+define('SMTP_PORT',     587);
 define('SMTP_USER',     'contato@emagreser.danielydealbuquerque.com.br');
 define('SMTP_PASS',     'EmagreSer@2025!');
 define('SMTP_FROM',     'contato@emagreser.danielydealbuquerque.com.br');
@@ -104,41 +104,65 @@ $output = "[{$ts}] Worker rodou. " . count($pending) . " email(s) processados.\n
 file_put_contents(__DIR__ . '/email_worker.log', $output, FILE_APPEND);
 echo $output;
 
-// ── SMTP VIA SOCKET (sem dependência de extensão) ─────────────────
+// ── SMTP VIA SOCKET — STARTTLS porta 587 ─────────────────────────
+function smtp_read($sock): string {
+    $out = '';
+    while ($line = fgets($sock, 512)) {
+        $out .= $line;
+        if (isset($line[3]) && $line[3] === ' ') break;
+    }
+    return $out;
+}
+
 function send_smtp(string $to, string $toName, string $subject, string $body): array {
     $host = SMTP_HOST;
-    $port = SMTP_PORT;
+    $port = SMTP_PORT; // 587 STARTTLS
 
-    $ctx = stream_context_create(['ssl' => [
-        'verify_peer'       => false,
-        'verify_peer_name'  => false,
-        'allow_self_signed' => true,
-    ]]);
-
-    $sock = @stream_socket_client("ssl://{$host}:{$port}", $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $ctx);
+    $sock = @stream_socket_client("tcp://{$host}:{$port}", $errno, $errstr, 20);
     if (!$sock) return ['ok'=>false,'msg'=>"Conexão falhou: {$errstr}"];
+    stream_set_timeout($sock, 20);
 
-    $read = fgets($sock, 512);
-    if (strpos($read, '220') === false) { fclose($sock); return ['ok'=>false,'msg'=>"SMTP: {$read}"]; }
+    $res = smtp_read($sock);
+    if (strpos($res, '220') === false) { fclose($sock); return ['ok'=>false,'msg'=>"Banner: {$res}"]; }
 
-    $steps = [
-        "EHLO " . gethostname() . "\r\n"          => '250',
-        "AUTH LOGIN\r\n"                            => '334',
-        base64_encode(SMTP_USER) . "\r\n"          => '334',
-        base64_encode(SMTP_PASS) . "\r\n"          => '235',
-        "MAIL FROM:<" . SMTP_FROM . ">\r\n"        => '250',
-        "RCPT TO:<{$to}>\r\n"                      => '250',
-        "DATA\r\n"                                  => '354',
-    ];
+    fwrite($sock, "EHLO " . gethostname() . "\r\n");
+    $res = smtp_read($sock);
+    if (strpos($res, '250') === false) { fclose($sock); return ['ok'=>false,'msg'=>"EHLO: {$res}"]; }
 
-    foreach ($steps as $cmd => $expected) {
-        fwrite($sock, $cmd);
-        $res = fgets($sock, 512);
-        if (strpos($res, $expected) === false) {
-            fclose($sock);
-            return ['ok'=>false,'msg'=>"SMTP step failed ({$expected}): {$res}"];
-        }
+    fwrite($sock, "STARTTLS\r\n");
+    $res = smtp_read($sock);
+    if (strpos($res, '220') === false) { fclose($sock); return ['ok'=>false,'msg'=>"STARTTLS: {$res}"]; }
+
+    if (!stream_socket_enable_crypto($sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+        fclose($sock); return ['ok'=>false,'msg'=>'TLS upgrade falhou'];
     }
+
+    fwrite($sock, "EHLO " . gethostname() . "\r\n");
+    smtp_read($sock);
+
+    fwrite($sock, "AUTH LOGIN\r\n");
+    $res = smtp_read($sock);
+    if (strpos($res, '334') === false) { fclose($sock); return ['ok'=>false,'msg'=>"AUTH: {$res}"]; }
+
+    fwrite($sock, base64_encode(SMTP_USER) . "\r\n");
+    $res = smtp_read($sock);
+    if (strpos($res, '334') === false) { fclose($sock); return ['ok'=>false,'msg'=>"User: {$res}"]; }
+
+    fwrite($sock, base64_encode(SMTP_PASS) . "\r\n");
+    $res = smtp_read($sock);
+    if (strpos($res, '235') === false) { fclose($sock); return ['ok'=>false,'msg'=>"Pass: {$res}"]; }
+
+    fwrite($sock, "MAIL FROM:<" . SMTP_FROM . ">\r\n");
+    $res = smtp_read($sock);
+    if (strpos($res, '250') === false) { fclose($sock); return ['ok'=>false,'msg'=>"MAIL FROM: {$res}"]; }
+
+    fwrite($sock, "RCPT TO:<{$to}>\r\n");
+    $res = smtp_read($sock);
+    if (strpos($res, '250') === false) { fclose($sock); return ['ok'=>false,'msg'=>"RCPT TO: {$res}"]; }
+
+    fwrite($sock, "DATA\r\n");
+    $res = smtp_read($sock);
+    if (strpos($res, '354') === false) { fclose($sock); return ['ok'=>false,'msg'=>"DATA: {$res}"]; }
 
     // Monta o e-mail
     $fromEncoded = '=?UTF-8?B?' . base64_encode(SMTP_FROM_NAME) . '?=';
