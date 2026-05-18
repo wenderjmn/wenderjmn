@@ -815,20 +815,10 @@ function buildMentorVideo(elId,url,name){
   if(!el)return;
   const id=ytId(url);
   if(id){
-    el.innerHTML=`
-      <div class="mv-overlay" onclick="playMentorVideo(this,'${id}')">
-        <img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="${name}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1">
-        <div class="mv-play"><svg width="16" height="18" viewBox="0 0 16 18" fill="var(--teal)"><path d="M0 0l16 9L0 18V0z"/></svg></div>
-      </div>
-      <div class="mv-label">${name}</div>`;
+    el.innerHTML=`<iframe src="https://www.youtube.com/embed/${id}?playsinline=1&rel=0" allow="accelerometer;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy"></iframe><div class="mv-label">${name}</div>`;
   }else{
     el.innerHTML=`<div class="vph"><span style="font-size:1.8rem">🎥</span><span style="font-size:.72rem;color:var(--text3)">${name} — em breve</span></div>`;
   }
-}
-
-function playMentorVideo(overlay,id){
-  const card=overlay.closest('.mv-card');
-  card.innerHTML=`<iframe src="https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&rel=0" allow="autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>`;
 }
 
 function buildMentors(mentors){
