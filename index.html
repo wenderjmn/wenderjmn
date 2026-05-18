@@ -120,6 +120,7 @@ section[id]{scroll-margin-top:68px}
 .depo-card:hover .play-btn{transform:scale(1.08)}
 .depo-info{padding:13px 15px}
 .depo-name{font-weight:600;font-size:.86rem;color:var(--text)}
+.depo-prof{font-size:.72rem;color:var(--text3);margin-top:1px}
 .depo-result{font-size:.74rem;color:var(--teal);font-weight:600;margin-top:2px}
 .depo-quote{font-size:.8rem;color:var(--text2);margin-top:6px;line-height:1.5}
 .depo-frase{font-size:.97rem;color:var(--text2);max-width:640px;margin:0 auto 28px;text-align:center;line-height:1.75}
@@ -417,7 +418,12 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
         <span class="roma-pill" data-key="promessa_item2">Encontros ao vivo semanais</span>
         <span class="roma-pill" data-key="promessa_item3">Suporte contínuo no WhatsApp</span>
       </div>
-      <button class="btn btn-teal lg" onclick="goToQuiz()" data-key-inner="promessa_cta">QUERO SABER MEU SABOTADOR</button>
+      <div id="video-geral-wrap" class="hidden" style="margin:28px auto 0;max-width:320px">
+        <div style="aspect-ratio:9/16;border-radius:var(--rl);overflow:hidden;background:var(--bg3);box-shadow:var(--shadow-md)">
+          <iframe id="video-geral-iframe" src="" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy" style="width:100%;height:100%;border:none;display:block"></iframe>
+        </div>
+      </div>
+      <button class="btn btn-teal lg" style="margin-top:28px" onclick="goToQuiz()" data-key-inner="promessa_cta">QUERO SABER MEU SABOTADOR</button>
     </div>
   </div>
 </section>
@@ -549,7 +555,7 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
       <div id="lead-form-wrap">
         <div class="lead-form-card">
           <h3 class="form-title">🔒 Libere seu mapeamento completo</h3>
-          <p class="form-sub">Preencha seus dados para receber o diagnóstico completo do seu perfil sabotador + entrar no Grupo VIP da Masterclass.</p>
+          <p class="form-sub">Preencha seus dados para receber o resultado completo do seu mapeamento + entrar no Grupo VIP da Masterclass.</p>
           <form id="lead-form" novalidate>
             <div class="form-group"><label for="ln">Seu nome *</label><input type="text" id="ln" placeholder="Como posso te chamar?" required></div>
             <div class="form-group"><label for="le">E-mail *</label><input type="email" id="le" placeholder="seu@email.com" required></div>
@@ -559,7 +565,7 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
               <div class="form-group"><label for="lst">Estado</label><input type="text" id="lst" placeholder="UF" maxlength="2"></div>
             </div>
             <div id="form-err" class="form-err hidden"></div>
-            <button type="submit" class="btn btn-teal form-submit" id="form-btn" data-key-inner="cta_final_btn">QUERO MEU DIAGNÓSTICO + GRUPO VIP</button>
+            <button type="submit" class="btn btn-teal form-submit" id="form-btn" data-key-inner="cta_final_btn">QUERO MEU MAPEAMENTO + GRUPO VIP</button>
             <p class="form-privacy">🔒 Seus dados são 100% seguros. Sem spam.</p>
           </form>
         </div>
@@ -676,7 +682,7 @@ Você nunca teve o mapeamento certo.</h2>
       <div class="cta-tags" id="cta-final-tags">
         <span class="cta-tag">Rápido</span><span class="cta-tag">100% gratuito</span><span class="cta-tag">Resultado imediato</span>
       </div>
-      <button class="btn btn-white lg" onclick="goToQuiz()" data-key-inner="cta_final_btn">QUERO MEU DIAGNÓSTICO + GRUPO VIP</button>
+      <button class="btn btn-white lg" onclick="goToQuiz()" data-key-inner="cta_final_btn">QUERO MEU MAPEAMENTO + GRUPO VIP</button>
       <p class="cta-nota" data-key="cta_final_nota">Vagas no grupo VIP são limitadas e serão encerradas na data da masterclass.</p>
     </div>
   </div>
@@ -805,9 +811,15 @@ function applyConfig(){
     const el=document.getElementById(id);
     if(el)el.innerHTML=nl2p(text);
   });
+  // video geral depoimento (roma section)
+  const vgUrl=k('video_geral_depo_url');
+  const vgId=ytId(vgUrl||'');
+  const vgWrap=document.getElementById('video-geral-wrap');
+  const vgIframe=document.getElementById('video-geral-iframe');
+  if(vgId&&vgWrap&&vgIframe){vgIframe.src=`https://www.youtube.com/embed/${vgId}?playsinline=1&rel=0`;vgWrap.classList.remove('hidden');}
   // confiar text
   const ct=document.getElementById('confiar-text-container');
-  if(ct)ct.innerHTML=`<p>${k('confiar_texto')}</p>`;
+  if(ct)ct.innerHTML=nl2p(k('confiar_texto'));
   // confiar tags
   const tags=k('confiar_tags');
   if(tags){
@@ -892,7 +904,7 @@ function buildTestimonials(items){
         <img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="${t.name}" loading="lazy">
         <div class="depo-overlay"><div class="play-btn"><svg width="16" height="18" viewBox="0 0 16 18" fill="#333"><path d="M0 0l16 9L0 18V0z"/></svg></div></div>
       </div>
-      <div class="depo-info"><div class="depo-name">${t.name}</div>${res}${q}</div>
+      <div class="depo-info"><div class="depo-name">${t.name}</div>${t.profession?`<div class="depo-prof">${esc(t.profession)}</div>`:''}${res}${q}</div>
     </div>`;
   }).join('');
 }
@@ -1042,14 +1054,14 @@ function finishQuiz(){
     </div>`:`
     <div class="lead-form-card">
       <h3 class="form-title" style="font-size:1.1rem">🔒 Libere seu mapeamento completo</h3>
-      <p class="form-sub" style="font-size:.8rem">Preencha seus dados para receber o diagnóstico e entrar no Grupo VIP.</p>
+      <p class="form-sub" style="font-size:.8rem">Preencha seus dados para receber o resultado do seu mapeamento e entrar no Grupo VIP.</p>
       <form id="modal-result-form" novalidate>
         <div class="form-group"><label>Nome *</label><input type="text" id="rln" placeholder="Como posso te chamar?" required></div>
         <div class="form-group"><label>E-mail *</label><input type="email" id="rle" placeholder="seu@email.com" required></div>
         <div class="form-group"><label>WhatsApp *</label><input type="tel" id="rlp" placeholder="(11) 99999-9999" required></div>
         <div class="form-group"><label>Sua idade *</label><select id="rlfe" required><option value="">Selecione</option><option>18–24 anos</option><option>25–34 anos</option><option>35–44 anos</option><option>45–54 anos</option><option>55+ anos</option></select></div>
         <div id="res-form-err" class="form-err hidden"></div>
-        <button type="submit" class="btn btn-teal form-submit" id="res-form-btn">QUERO MEU DIAGNÓSTICO</button>
+        <button type="submit" class="btn btn-teal form-submit" id="res-form-btn">VER MEU MAPEAMENTO COMPLETO</button>
         <p class="form-privacy">🔒 100% seguro. Sem spam.</p>
       </form>
     </div>`;
@@ -1166,7 +1178,7 @@ document.getElementById('lead-form').addEventListener('submit',async function(e)
     document.getElementById('sucesso-wrap').scrollIntoView({behavior:'smooth',block:'start'});
   }catch(err){
     showErr('Erro ao enviar. Tente novamente.');
-    btn.textContent=k('cta_final_btn')||'QUERO MEU DIAGNÓSTICO + GRUPO VIP';
+    btn.textContent=k('cta_final_btn')||'QUERO MEU MAPEAMENTO + GRUPO VIP';
     btn.disabled=false;
   }
 });
