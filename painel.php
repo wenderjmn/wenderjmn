@@ -58,6 +58,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msg = '✅ E-mails com falha recolocados na fila'; $msg_type = 'ok';
     }
 
+    if ($action === 'retry_failed_wpp') {
+        sb_patch_raw("whatsapp_queue?status=eq.failed", ['status' => 'pending', 'attempts' => 0, 'error_msg' => null]);
+        $msg = '✅ WhatsApp com falha recolocados na fila'; $msg_type = 'ok';
+    }
+
     if ($action === 'activate_leads') {
         $unqueued = sb_get("leads?sequence_queued_at=is.null&select=id,name,email,phone,sabotador&limit=100");
         $count = 0;
@@ -82,10 +87,13 @@ $email_pend    = count(sb_get("email_queue?status=eq.pending&select=id"));
 $email_fail    = count(sb_get("email_queue?status=eq.failed&select=id"));
 $wpp_sent      = count(sb_get("whatsapp_queue?status=eq.sent&select=id"));
 $wpp_pend      = count(sb_get("whatsapp_queue?status=eq.pending&select=id"));
+$wpp_fail      = count(sb_get("whatsapp_queue?status=eq.failed&select=id"));
 
 $recent_sent   = sb_get("email_log?select=to_email,template_slug,sent_at,smtp_response&order=sent_at.desc&limit=15");
 $recent_fail   = sb_get("email_queue?status=eq.failed&select=to_email,template_slug,error_msg,attempts,created_at&order=created_at.desc&limit=10");
 $next_emails   = sb_get("email_queue?status=eq.pending&select=to_email,template_slug,scheduled_at&order=scheduled_at.asc&limit=10");
+$wpp_fail_list = sb_get("whatsapp_queue?status=eq.failed&select=to_phone,message,error_msg,attempts,created_at&order=created_at.desc&limit=10");
+$wpp_next      = sb_get("whatsapp_queue?status=eq.pending&select=to_phone,message,scheduled_at&order=scheduled_at.asc&limit=10");
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -175,7 +183,7 @@ setTimeout(tick, 1000);
     <div class="card"><div class="n <?= $email_fail > 0 ? 'red' : '' ?>"><?= $email_fail ?></div><div class="l">E-mails com falha</div></div>
     <div class="card"><div class="n"><?= $wpp_sent ?></div><div class="l">WPP enviados</div></div>
     <div class="card"><div class="n amber"><?= $wpp_pend ?></div><div class="l">WPP pendentes</div></div>
-    <div class="card"><div class="n"><?= $email_fail > 0 ? '<a href="?token='.PANEL_TOKEN.'&retry=1" style="color:inherit">↺</a>' : '✅' ?></div><div class="l">Status geral</div></div>
+    <div class="card"><div class="n <?= $wpp_fail > 0 ? 'red' : '' ?>"><?= $wpp_fail ?></div><div class="l">WPP com falha</div></div>
   </div>
 
   <!-- TESTE DE ENVIO -->
@@ -222,6 +230,28 @@ setTimeout(tick, 1000);
   </div>
   <?php endif; ?>
 
+  <?php if ($wpp_fail > 0): ?>
+  <div class="section" style="margin-bottom:16px">
+    <div class="section-hdr">⚠️ <?= $wpp_fail ?> WhatsApp(s) com falha
+      <form method="post" style="margin:0">
+        <input type="hidden" name="action" value="retry_failed_wpp">
+        <button type="submit" class="btn btn-amber" style="width:auto;padding:5px 14px">↺ Retentar todos</button>
+      </form>
+    </div>
+    <table>
+      <tr><th>Telefone</th><th>Mensagem</th><th>Tentativas</th><th>Erro</th></tr>
+      <?php foreach ($wpp_fail_list as $r): ?>
+      <tr>
+        <td><?= htmlspecialchars($r['to_phone']) ?></td>
+        <td style="font-size:12px;color:#374151;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars(substr($r['message'] ?? '', 0, 60)) ?>…</td>
+        <td><?= intval($r['attempts']) ?></td>
+        <td style="color:#dc2626;font-size:12px"><?= htmlspecialchars(substr($r['error_msg'] ?? '', 0, 80)) ?></td>
+      </tr>
+      <?php endforeach; ?>
+    </table>
+  </div>
+  <?php endif; ?>
+
   <!-- PRÓXIMOS ENVIOS -->
   <div class="section">
     <div class="section-hdr">⏳ Próximos E-mails na Fila</div>
@@ -255,6 +285,25 @@ setTimeout(tick, 1000);
         <td><span class="tag"><?= htmlspecialchars($r['template_slug']) ?></span></td>
         <td><?= substr($r['sent_at'] ?? '', 0, 16) ?></td>
         <td style="font-size:11px;color:#6b7c67"><?= htmlspecialchars(substr($r['smtp_response'] ?? '', 0, 60)) ?></td>
+      </tr>
+      <?php endforeach; ?>
+    </table>
+    <?php endif; ?>
+  </div>
+
+  <!-- PRÓXIMOS WPP -->
+  <div class="section">
+    <div class="section-hdr">💬 Próximos WhatsApp na Fila</div>
+    <?php if (empty($wpp_next)): ?>
+    <div style="padding:16px;color:#6b7c67;text-align:center">Nenhum WhatsApp pendente</div>
+    <?php else: ?>
+    <table>
+      <tr><th>Telefone</th><th>Mensagem (prévia)</th><th>Agendado para</th></tr>
+      <?php foreach ($wpp_next as $r): ?>
+      <tr>
+        <td><?= htmlspecialchars($r['to_phone']) ?></td>
+        <td style="font-size:12px;color:#374151"><?= htmlspecialchars(substr($r['message'] ?? '', 0, 70)) ?>…</td>
+        <td><?= substr($r['scheduled_at'] ?? '', 0, 16) ?></td>
       </tr>
       <?php endforeach; ?>
     </table>
