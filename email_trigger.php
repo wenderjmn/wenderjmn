@@ -19,8 +19,8 @@ define('SUPABASE_URL',         getenv('SUPABASE_URL')         ?: 'https://drgrwp
 define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: 'COLE_AQUI_SUA_SERVICE_ROLE_KEY');
 define('SITE_URL',             getenv('SITE_URL')             ?: 'https://emagreser.danielydealbuquerque.com.br');
 define('WPP_LINK',             getenv('WPP_LINK')             ?: 'https://chat.whatsapp.com/SEU_LINK_AQUI');
-define('ZAPI_INSTANCE',        getenv('ZAPI_INSTANCE')        ?: '');
-define('ZAPI_TOKEN',           getenv('ZAPI_TOKEN')           ?: '');
+define('ZAPI_INSTANCE',        '***REMOVED_ZAPI_INSTANCE***');
+define('ZAPI_TOKEN',           '***REMOVED_ZAPI_TOKEN***');
 // ────────────────────────────────────────────────────────────────
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['error' => 'POST only']); exit; }

@@ -14,14 +14,14 @@ define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: 'COLE_AQUI_SUA_
 // SMTP Hostinger
 define('SMTP_HOST',     'mail.hostinger.com');
 define('SMTP_PORT',     465);
-define('SMTP_USER',     getenv('SMTP_USER')     ?: 'COLE_SEU_EMAIL@seudominio.com.br');
-define('SMTP_PASS',     getenv('SMTP_PASS')     ?: 'COLE_A_SENHA_DO_EMAIL');
-define('SMTP_FROM',     getenv('SMTP_USER')     ?: 'COLE_SEU_EMAIL@seudominio.com.br');
+define('SMTP_USER',     'contato@emagreser.danielydealbuquerque.com.br');
+define('SMTP_PASS',     'EmagreSer@2025!');
+define('SMTP_FROM',     'contato@emagreser.danielydealbuquerque.com.br');
 define('SMTP_FROM_NAME','Programa EmagreSer');
 
 // Z-API WhatsApp
-define('ZAPI_INSTANCE', getenv('ZAPI_INSTANCE') ?: '');
-define('ZAPI_TOKEN',    getenv('ZAPI_TOKEN')    ?: '');
+define('ZAPI_INSTANCE', '***REMOVED_ZAPI_INSTANCE***');
+define('ZAPI_TOKEN',    '***REMOVED_ZAPI_TOKEN***');
 define('ZAPI_URL',      'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
 
 define('BATCH_SIZE', 20); // e-mails por rodada
