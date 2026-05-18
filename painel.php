@@ -63,6 +63,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msg = '✅ WhatsApp com falha recolocados na fila'; $msg_type = 'ok';
     }
 
+    // ── EXCLUSÕES INDIVIDUAIS ─────────────────────────────────────
+    if ($action === 'delete_email') {
+        $id = preg_replace('/[^a-f0-9\-]/', '', $_POST['item_id'] ?? '');
+        if ($id) { sb_delete("email_queue?id=eq.{$id}"); $msg = '🗑️ E-mail removido da fila'; $msg_type = 'ok'; }
+    }
+
+    if ($action === 'delete_wpp') {
+        $id = preg_replace('/[^a-f0-9\-]/', '', $_POST['item_id'] ?? '');
+        if ($id) { sb_delete("whatsapp_queue?id=eq.{$id}"); $msg = '🗑️ WhatsApp removido da fila'; $msg_type = 'ok'; }
+    }
+
+    // ── EXCLUSÕES EM LOTE ─────────────────────────────────────────
+    if ($action === 'delete_all_failed_email') {
+        sb_delete("email_queue?status=eq.failed");
+        $msg = '🗑️ Todos os e-mails com falha foram excluídos'; $msg_type = 'ok';
+    }
+
+    if ($action === 'delete_all_failed_wpp') {
+        sb_delete("whatsapp_queue?status=eq.failed");
+        $msg = '🗑️ Todos os WhatsApp com falha foram excluídos'; $msg_type = 'ok';
+    }
+
+    if ($action === 'delete_all_pending_email') {
+        sb_delete("email_queue?status=eq.pending");
+        $msg = '🗑️ Todos os e-mails pendentes foram excluídos'; $msg_type = 'ok';
+    }
+
+    if ($action === 'delete_all_pending_wpp') {
+        sb_delete("whatsapp_queue?status=eq.pending");
+        $msg = '🗑️ Todos os WhatsApp pendentes foram excluídos'; $msg_type = 'ok';
+    }
+
     if ($action === 'activate_leads') {
         $unqueued = sb_get("leads?sequence_queued_at=is.null&select=id,name,email,phone,sabotador&limit=100");
         $count = 0;
@@ -90,10 +122,10 @@ $wpp_pend      = count(sb_get("whatsapp_queue?status=eq.pending&select=id"));
 $wpp_fail      = count(sb_get("whatsapp_queue?status=eq.failed&select=id"));
 
 $recent_sent   = sb_get("email_log?select=to_email,template_slug,sent_at,smtp_response&order=sent_at.desc&limit=15");
-$recent_fail   = sb_get("email_queue?status=eq.failed&select=to_email,template_slug,error_msg,attempts,created_at&order=created_at.desc&limit=10");
-$next_emails   = sb_get("email_queue?status=eq.pending&select=to_email,template_slug,scheduled_at&order=scheduled_at.asc&limit=10");
-$wpp_fail_list = sb_get("whatsapp_queue?status=eq.failed&select=to_phone,message,error_msg,attempts,created_at&order=created_at.desc&limit=10");
-$wpp_next      = sb_get("whatsapp_queue?status=eq.pending&select=to_phone,message,scheduled_at&order=scheduled_at.asc&limit=10");
+$recent_fail   = sb_get("email_queue?status=eq.failed&select=id,to_email,template_slug,error_msg,attempts,created_at&order=created_at.desc&limit=10");
+$next_emails   = sb_get("email_queue?status=eq.pending&select=id,to_email,template_slug,scheduled_at&order=scheduled_at.asc&limit=10");
+$wpp_fail_list = sb_get("whatsapp_queue?status=eq.failed&select=id,to_phone,message,error_msg,attempts,created_at&order=created_at.desc&limit=10");
+$wpp_next      = sb_get("whatsapp_queue?status=eq.pending&select=id,to_phone,message,scheduled_at&order=scheduled_at.asc&limit=10");
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -139,6 +171,8 @@ tr:last-child td{border-bottom:none}
 .btn-amber:hover{background:#b45309}
 .btn-blue{background:#1d4ed8;color:#fff}
 .btn-blue:hover{background:#1e3a8a}
+.btn-red{background:#dc2626;color:#fff;font-size:11px;padding:4px 10px;border-radius:5px;border:none;cursor:pointer;white-space:nowrap}
+.btn-red:hover{background:#b91c1c}
 .refresh-bar{background:#1e293b;color:#64748b;text-align:center;font-size:11px;padding:6px;position:sticky;bottom:0}
 </style>
 <script>
@@ -211,19 +245,32 @@ setTimeout(tick, 1000);
   <?php if ($email_fail > 0): ?>
   <div class="section" style="margin-bottom:16px">
     <div class="section-hdr">⚠️ Existem <?= $email_fail ?> e-mail(s) com falha
-      <form method="post" style="margin:0">
-        <input type="hidden" name="action" value="retry_failed">
-        <button type="submit" class="btn btn-amber" style="width:auto;padding:5px 14px">↺ Retentar todos</button>
-      </form>
+      <div style="display:flex;gap:8px">
+        <form method="post" style="margin:0">
+          <input type="hidden" name="action" value="retry_failed">
+          <button type="submit" class="btn btn-amber" style="width:auto;padding:5px 14px">↺ Retentar todos</button>
+        </form>
+        <form method="post" style="margin:0" onsubmit="return confirm('Excluir todos os e-mails com falha?')">
+          <input type="hidden" name="action" value="delete_all_failed_email">
+          <button type="submit" class="btn btn-red">🗑️ Excluir todos</button>
+        </form>
+      </div>
     </div>
     <table>
-      <tr><th>E-mail</th><th>Template</th><th>Tentativas</th><th>Erro</th></tr>
+      <tr><th>E-mail</th><th>Template</th><th>Tentativas</th><th>Erro</th><th></th></tr>
       <?php foreach ($recent_fail as $r): ?>
       <tr>
         <td><?= htmlspecialchars($r['to_email']) ?></td>
         <td><span class="tag"><?= htmlspecialchars($r['template_slug']) ?></span></td>
         <td><?= intval($r['attempts']) ?></td>
-        <td style="color:#dc2626;font-size:12px"><?= htmlspecialchars(substr($r['error_msg'] ?? '', 0, 80)) ?></td>
+        <td style="color:#dc2626;font-size:12px"><?= htmlspecialchars(substr($r['error_msg'] ?? '', 0, 70)) ?></td>
+        <td>
+          <form method="post" style="margin:0" onsubmit="return confirm('Excluir este e-mail da fila?')">
+            <input type="hidden" name="action" value="delete_email">
+            <input type="hidden" name="item_id" value="<?= htmlspecialchars($r['id']) ?>">
+            <button type="submit" class="btn-red">🗑️</button>
+          </form>
+        </td>
       </tr>
       <?php endforeach; ?>
     </table>
@@ -233,19 +280,32 @@ setTimeout(tick, 1000);
   <?php if ($wpp_fail > 0): ?>
   <div class="section" style="margin-bottom:16px">
     <div class="section-hdr">⚠️ <?= $wpp_fail ?> WhatsApp(s) com falha
-      <form method="post" style="margin:0">
-        <input type="hidden" name="action" value="retry_failed_wpp">
-        <button type="submit" class="btn btn-amber" style="width:auto;padding:5px 14px">↺ Retentar todos</button>
-      </form>
+      <div style="display:flex;gap:8px">
+        <form method="post" style="margin:0">
+          <input type="hidden" name="action" value="retry_failed_wpp">
+          <button type="submit" class="btn btn-amber" style="width:auto;padding:5px 14px">↺ Retentar todos</button>
+        </form>
+        <form method="post" style="margin:0" onsubmit="return confirm('Excluir todos os WhatsApp com falha?')">
+          <input type="hidden" name="action" value="delete_all_failed_wpp">
+          <button type="submit" class="btn btn-red">🗑️ Excluir todos</button>
+        </form>
+      </div>
     </div>
     <table>
-      <tr><th>Telefone</th><th>Mensagem</th><th>Tentativas</th><th>Erro</th></tr>
+      <tr><th>Telefone</th><th>Mensagem</th><th>Tentativas</th><th>Erro</th><th></th></tr>
       <?php foreach ($wpp_fail_list as $r): ?>
       <tr>
         <td><?= htmlspecialchars($r['to_phone']) ?></td>
-        <td style="font-size:12px;color:#374151;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars(substr($r['message'] ?? '', 0, 60)) ?>…</td>
+        <td style="font-size:12px;color:#374151;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars(substr($r['message'] ?? '', 0, 55)) ?>…</td>
         <td><?= intval($r['attempts']) ?></td>
-        <td style="color:#dc2626;font-size:12px"><?= htmlspecialchars(substr($r['error_msg'] ?? '', 0, 80)) ?></td>
+        <td style="color:#dc2626;font-size:12px"><?= htmlspecialchars(substr($r['error_msg'] ?? '', 0, 70)) ?></td>
+        <td>
+          <form method="post" style="margin:0" onsubmit="return confirm('Excluir este WhatsApp da fila?')">
+            <input type="hidden" name="action" value="delete_wpp">
+            <input type="hidden" name="item_id" value="<?= htmlspecialchars($r['id']) ?>">
+            <button type="submit" class="btn-red">🗑️</button>
+          </form>
+        </td>
       </tr>
       <?php endforeach; ?>
     </table>
@@ -254,17 +314,31 @@ setTimeout(tick, 1000);
 
   <!-- PRÓXIMOS ENVIOS -->
   <div class="section">
-    <div class="section-hdr">⏳ Próximos E-mails na Fila</div>
+    <div class="section-hdr">⏳ Próximos E-mails na Fila
+      <?php if (!empty($next_emails)): ?>
+      <form method="post" style="margin:0" onsubmit="return confirm('Excluir TODOS os e-mails pendentes da fila?')">
+        <input type="hidden" name="action" value="delete_all_pending_email">
+        <button type="submit" class="btn btn-red">🗑️ Limpar fila</button>
+      </form>
+      <?php endif; ?>
+    </div>
     <?php if (empty($next_emails)): ?>
     <div style="padding:16px;color:#6b7c67;text-align:center">Nenhum e-mail pendente</div>
     <?php else: ?>
     <table>
-      <tr><th>E-mail</th><th>Template</th><th>Agendado para</th></tr>
+      <tr><th>E-mail</th><th>Template</th><th>Agendado para</th><th></th></tr>
       <?php foreach ($next_emails as $r): ?>
       <tr>
         <td><?= htmlspecialchars($r['to_email']) ?></td>
         <td><span class="tag"><?= htmlspecialchars($r['template_slug']) ?></span></td>
         <td><?= substr($r['scheduled_at'] ?? '', 0, 16) ?></td>
+        <td>
+          <form method="post" style="margin:0" onsubmit="return confirm('Excluir este e-mail da fila?')">
+            <input type="hidden" name="action" value="delete_email">
+            <input type="hidden" name="item_id" value="<?= htmlspecialchars($r['id']) ?>">
+            <button type="submit" class="btn-red">🗑️</button>
+          </form>
+        </td>
       </tr>
       <?php endforeach; ?>
     </table>
@@ -293,17 +367,31 @@ setTimeout(tick, 1000);
 
   <!-- PRÓXIMOS WPP -->
   <div class="section">
-    <div class="section-hdr">💬 Próximos WhatsApp na Fila</div>
+    <div class="section-hdr">💬 Próximos WhatsApp na Fila
+      <?php if (!empty($wpp_next)): ?>
+      <form method="post" style="margin:0" onsubmit="return confirm('Excluir TODOS os WhatsApp pendentes da fila?')">
+        <input type="hidden" name="action" value="delete_all_pending_wpp">
+        <button type="submit" class="btn btn-red">🗑️ Limpar fila</button>
+      </form>
+      <?php endif; ?>
+    </div>
     <?php if (empty($wpp_next)): ?>
     <div style="padding:16px;color:#6b7c67;text-align:center">Nenhum WhatsApp pendente</div>
     <?php else: ?>
     <table>
-      <tr><th>Telefone</th><th>Mensagem (prévia)</th><th>Agendado para</th></tr>
+      <tr><th>Telefone</th><th>Mensagem (prévia)</th><th>Agendado para</th><th></th></tr>
       <?php foreach ($wpp_next as $r): ?>
       <tr>
         <td><?= htmlspecialchars($r['to_phone']) ?></td>
-        <td style="font-size:12px;color:#374151"><?= htmlspecialchars(substr($r['message'] ?? '', 0, 70)) ?>…</td>
+        <td style="font-size:12px;color:#374151"><?= htmlspecialchars(substr($r['message'] ?? '', 0, 65)) ?>…</td>
         <td><?= substr($r['scheduled_at'] ?? '', 0, 16) ?></td>
+        <td>
+          <form method="post" style="margin:0" onsubmit="return confirm('Excluir este WhatsApp da fila?')">
+            <input type="hidden" name="action" value="delete_wpp">
+            <input type="hidden" name="item_id" value="<?= htmlspecialchars($r['id']) ?>">
+            <button type="submit" class="btn-red">🗑️</button>
+          </form>
+        </td>
       </tr>
       <?php endforeach; ?>
     </table>
@@ -365,5 +453,11 @@ function sb_get(string $path): array {
 function sb_patch_raw(string $path, array $data): void {
     $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $path);
     curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CUSTOMREQUEST => 'PATCH', CURLOPT_POSTFIELDS => json_encode($data), CURLOPT_HTTPHEADER => ['apikey: ' . SUPABASE_SERVICE_KEY, 'Authorization: Bearer ' . SUPABASE_SERVICE_KEY, 'Content-Type: application/json', 'Prefer: return=minimal']]);
+    curl_exec($ch); curl_close($ch);
+}
+
+function sb_delete(string $path): void {
+    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $path);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_CUSTOMREQUEST => 'DELETE', CURLOPT_HTTPHEADER => ['apikey: ' . SUPABASE_SERVICE_KEY, 'Authorization: Bearer ' . SUPABASE_SERVICE_KEY, 'Prefer: return=minimal']]);
     curl_exec($ch); curl_close($ch);
 }
