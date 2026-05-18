@@ -268,84 +268,23 @@ setTimeout(tick, 1000);
 <?php
 
 // ── FUNÇÕES ───────────────────────────────────────────────────────
-function smtp_read_p($sock): string {
-    $out = '';
-    while ($line = fgets($sock, 512)) {
-        $out .= $line;
-        if (isset($line[3]) && $line[3] === ' ') break;
-    }
-    return $out;
-}
-
 function send_smtp_test(string $to, string $name): array {
-    $subject = 'Teste de envio — Programa EmagreSer';
-    $body = '<html><body style="font-family:Arial;padding:24px;background:#f4f3ef"><div style="max-width:500px;margin:0 auto;background:#fff;padding:28px;border-radius:10px"><h2 style="color:#0d9488">✅ SMTP funcionando!</h2><p>Olá, <strong>' . htmlspecialchars($name) . '</strong>!</p><p>Este é um e-mail de teste da automação do <strong>Programa EmagreSer</strong>.</p><p style="color:#6b7c67;font-size:13px">Enviado via SMTP Hostinger · ' . date('d/m/Y H:i:s') . '</p></div></body></html>';
+    $subject  = 'Teste de envio — Programa EmagreSer';
+    $body     = '<html><body style="font-family:Arial;padding:24px;background:#f4f3ef"><div style="max-width:500px;margin:0 auto;background:#fff;padding:28px;border-radius:10px"><h2 style="color:#0d9488">✅ E-mail funcionando!</h2><p>Olá, <strong>' . htmlspecialchars($name) . '</strong>!</p><p>Este é um e-mail de teste da automação do <strong>Programa EmagreSer</strong>.</p><p style="color:#6b7c67;font-size:13px">Enviado via PHP mail() · ' . date('d/m/Y H:i:s') . '</p></div></body></html>';
+    $fromEnc  = '=?UTF-8?B?' . base64_encode(SMTP_FROM_NAME) . '?=';
+    $subjEnc  = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+    $bnd      = md5(uniqid());
 
-    $sock = @stream_socket_client('tcp://' . SMTP_HOST . ':' . SMTP_PORT, $errno, $errstr, 20);
-    if (!$sock) return ['ok' => false, 'msg' => "Conexão falhou: {$errstr}"];
-    stream_set_timeout($sock, 20);
+    $headers  = "From: {$fromEnc} <" . SMTP_FROM . ">\r\n";
+    $headers .= "Reply-To: " . SMTP_FROM . "\r\n";
+    $headers .= "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: multipart/alternative; boundary=\"{$bnd}\"";
 
-    $res = smtp_read_p($sock);
-    if (strpos($res, '220') === false) { fclose($sock); return ['ok' => false, 'msg' => "Banner: {$res}"]; }
+    $msg  = "--{$bnd}\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nTeste EmagreSer OK.\r\n\r\n";
+    $msg .= "--{$bnd}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n{$body}\r\n\r\n--{$bnd}--";
 
-    fwrite($sock, "EHLO " . gethostname() . "\r\n");
-    $res = smtp_read_p($sock);
-    if (strpos($res, '250') === false) { fclose($sock); return ['ok' => false, 'msg' => "EHLO: {$res}"]; }
-
-    fwrite($sock, "STARTTLS\r\n");
-    $res = smtp_read_p($sock);
-    if (strpos($res, '220') === false) { fclose($sock); return ['ok' => false, 'msg' => "STARTTLS: {$res}"]; }
-
-    if (!stream_socket_enable_crypto($sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-        fclose($sock); return ['ok' => false, 'msg' => 'TLS upgrade falhou'];
-    }
-
-    fwrite($sock, "EHLO " . gethostname() . "\r\n");
-    smtp_read_p($sock);
-
-    fwrite($sock, "AUTH LOGIN\r\n");
-    $res = smtp_read_p($sock);
-    if (strpos($res, '334') === false) { fclose($sock); return ['ok' => false, 'msg' => "AUTH: {$res}"]; }
-
-    fwrite($sock, base64_encode(SMTP_USER) . "\r\n");
-    $res = smtp_read_p($sock);
-    if (strpos($res, '334') === false) { fclose($sock); return ['ok' => false, 'msg' => "User: {$res}"]; }
-
-    fwrite($sock, base64_encode(SMTP_PASS) . "\r\n");
-    $res = smtp_read_p($sock);
-    if (strpos($res, '235') === false) { fclose($sock); return ['ok' => false, 'msg' => "Pass: {$res}"]; }
-
-    fwrite($sock, "MAIL FROM:<" . SMTP_FROM . ">\r\n");
-    $res = smtp_read_p($sock);
-    if (strpos($res, '250') === false) { fclose($sock); return ['ok' => false, 'msg' => "MAIL FROM: {$res}"]; }
-
-    fwrite($sock, "RCPT TO:<{$to}>\r\n");
-    $res = smtp_read_p($sock);
-    if (strpos($res, '250') === false) { fclose($sock); return ['ok' => false, 'msg' => "RCPT TO: {$res}"]; }
-
-    fwrite($sock, "DATA\r\n");
-    $res = smtp_read_p($sock);
-    if (strpos($res, '354') === false) { fclose($sock); return ['ok' => false, 'msg' => "DATA: {$res}"]; }
-
-    $fromEnc = '=?UTF-8?B?' . base64_encode(SMTP_FROM_NAME) . '?=';
-    $toEnc   = '=?UTF-8?B?' . base64_encode($name) . '?= <' . $to . '>';
-    $subjEnc = '=?UTF-8?B?' . base64_encode($subject) . '?=';
-    $bnd     = md5(uniqid());
-
-    $msg  = "Date: " . date('r') . "\r\n";
-    $msg .= "From: {$fromEnc} <" . SMTP_FROM . ">\r\n";
-    $msg .= "To: {$toEnc}\r\n";
-    $msg .= "Subject: {$subjEnc}\r\n";
-    $msg .= "MIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary=\"{$bnd}\"\r\n\r\n";
-    $msg .= "--{$bnd}\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nTeste SMTP EmagreSer OK.\r\n\r\n";
-    $msg .= "--{$bnd}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n{$body}\r\n\r\n--{$bnd}--\r\n.\r\n";
-
-    fwrite($sock, $msg);
-    $res = smtp_read_p($sock);
-    fwrite($sock, "QUIT\r\n");
-    fclose($sock);
-
-    return strpos($res, '250') !== false ? ['ok' => true, 'msg' => trim($res)] : ['ok' => false, 'msg' => trim($res)];
+    $ok = mail($to, $subjEnc, $msg, $headers, '-f' . SMTP_FROM);
+    return $ok ? ['ok' => true, 'msg' => 'Enviado com sucesso via mail()'] : ['ok' => false, 'msg' => 'mail() retornou false — sendmail pode não estar configurado no servidor'];
 }
 
 function send_zapi_test(string $phone, string $name): array {

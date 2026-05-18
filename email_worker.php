@@ -104,95 +104,29 @@ $output = "[{$ts}] Worker rodou. " . count($pending) . " email(s) processados.\n
 file_put_contents(__DIR__ . '/email_worker.log', $output, FILE_APPEND);
 echo $output;
 
-// ── SMTP VIA SOCKET — STARTTLS porta 587 ─────────────────────────
-function smtp_read($sock): string {
-    $out = '';
-    while ($line = fgets($sock, 512)) {
-        $out .= $line;
-        if (isset($line[3]) && $line[3] === ' ') break;
-    }
-    return $out;
-}
-
+// ── ENVIO DE E-MAIL via PHP mail() — Hostinger shared hosting ────
 function send_smtp(string $to, string $toName, string $subject, string $body): array {
-    $host = SMTP_HOST;
-    $port = SMTP_PORT; // 587 STARTTLS
+    $fromEnc  = '=?UTF-8?B?' . base64_encode(SMTP_FROM_NAME) . '?=';
+    $subjEnc  = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+    $boundary = md5(uniqid());
 
-    $sock = @stream_socket_client("tcp://{$host}:{$port}", $errno, $errstr, 20);
-    if (!$sock) return ['ok'=>false,'msg'=>"Conexão falhou: {$errstr}"];
-    stream_set_timeout($sock, 20);
+    $headers  = "From: {$fromEnc} <" . SMTP_FROM . ">\r\n";
+    $headers .= "Reply-To: " . SMTP_FROM . "\r\n";
+    $headers .= "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"";
 
-    $res = smtp_read($sock);
-    if (strpos($res, '220') === false) { fclose($sock); return ['ok'=>false,'msg'=>"Banner: {$res}"]; }
-
-    fwrite($sock, "EHLO " . gethostname() . "\r\n");
-    $res = smtp_read($sock);
-    if (strpos($res, '250') === false) { fclose($sock); return ['ok'=>false,'msg'=>"EHLO: {$res}"]; }
-
-    fwrite($sock, "STARTTLS\r\n");
-    $res = smtp_read($sock);
-    if (strpos($res, '220') === false) { fclose($sock); return ['ok'=>false,'msg'=>"STARTTLS: {$res}"]; }
-
-    if (!stream_socket_enable_crypto($sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-        fclose($sock); return ['ok'=>false,'msg'=>'TLS upgrade falhou'];
-    }
-
-    fwrite($sock, "EHLO " . gethostname() . "\r\n");
-    smtp_read($sock);
-
-    fwrite($sock, "AUTH LOGIN\r\n");
-    $res = smtp_read($sock);
-    if (strpos($res, '334') === false) { fclose($sock); return ['ok'=>false,'msg'=>"AUTH: {$res}"]; }
-
-    fwrite($sock, base64_encode(SMTP_USER) . "\r\n");
-    $res = smtp_read($sock);
-    if (strpos($res, '334') === false) { fclose($sock); return ['ok'=>false,'msg'=>"User: {$res}"]; }
-
-    fwrite($sock, base64_encode(SMTP_PASS) . "\r\n");
-    $res = smtp_read($sock);
-    if (strpos($res, '235') === false) { fclose($sock); return ['ok'=>false,'msg'=>"Pass: {$res}"]; }
-
-    fwrite($sock, "MAIL FROM:<" . SMTP_FROM . ">\r\n");
-    $res = smtp_read($sock);
-    if (strpos($res, '250') === false) { fclose($sock); return ['ok'=>false,'msg'=>"MAIL FROM: {$res}"]; }
-
-    fwrite($sock, "RCPT TO:<{$to}>\r\n");
-    $res = smtp_read($sock);
-    if (strpos($res, '250') === false) { fclose($sock); return ['ok'=>false,'msg'=>"RCPT TO: {$res}"]; }
-
-    fwrite($sock, "DATA\r\n");
-    $res = smtp_read($sock);
-    if (strpos($res, '354') === false) { fclose($sock); return ['ok'=>false,'msg'=>"DATA: {$res}"]; }
-
-    // Monta o e-mail
-    $fromEncoded = '=?UTF-8?B?' . base64_encode(SMTP_FROM_NAME) . '?=';
-    $toEncoded   = $toName ? ('=?UTF-8?B?' . base64_encode($toName) . '?= <' . $to . '>') : $to;
-    $subjectEnc  = '=?UTF-8?B?' . base64_encode($subject) . '?=';
-    $boundary    = md5(uniqid());
-    $date        = date('r');
-
-    $msg  = "Date: {$date}\r\n";
-    $msg .= "From: {$fromEncoded} <" . SMTP_FROM . ">\r\n";
-    $msg .= "To: {$toEncoded}\r\n";
-    $msg .= "Subject: {$subjectEnc}\r\n";
-    $msg .= "MIME-Version: 1.0\r\n";
-    $msg .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n\r\n";
-    $msg .= "--{$boundary}\r\n";
+    $msg  = "--{$boundary}\r\n";
     $msg .= "Content-Type: text/plain; charset=UTF-8\r\n\r\n";
     $msg .= strip_tags($body) . "\r\n\r\n";
     $msg .= "--{$boundary}\r\n";
     $msg .= "Content-Type: text/html; charset=UTF-8\r\n\r\n";
     $msg .= $body . "\r\n\r\n";
-    $msg .= "--{$boundary}--\r\n";
-    $msg .= ".\r\n";
+    $msg .= "--{$boundary}--";
 
-    fwrite($sock, $msg);
-    $res = fgets($sock, 512);
-    fwrite($sock, "QUIT\r\n");
-    fclose($sock);
+    $ok = mail($to, $subjEnc, $msg, $headers, '-f' . SMTP_FROM);
 
-    if (strpos($res, '250') !== false) return ['ok'=>true,'msg'=>trim($res)];
-    return ['ok'=>false,'msg'=>trim($res)];
+    if ($ok) return ['ok' => true,  'msg' => 'sent via mail()'];
+    return    ['ok' => false, 'msg' => 'mail() returned false — verifique o sendmail no servidor'];
 }
 
 // ── Z-API WHATSAPP ────────────────────────────────────────────────
