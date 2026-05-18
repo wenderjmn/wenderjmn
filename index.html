@@ -1140,11 +1140,16 @@ function finishQuiz(){
 
 async function saveLead(ld, profileLetter, sabotadorNome, scores){
   try{
-    await fetch(`${SUPABASE_URL}/rest/v1/leads`,{
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/leads`,{
       method:'POST',
-      headers:{apikey:ANON_KEY,Authorization:`Bearer ${ANON_KEY}`,'Content-Type':'application/json',Prefer:'return=minimal'},
+      headers:{apikey:ANON_KEY,Authorization:`Bearer ${ANON_KEY}`,'Content-Type':'application/json',Prefer:'return=representation'},
       body:JSON.stringify({name:ld.name,email:ld.email,phone:ld.phone,cidade:ld.cidade,estado:ld.estado,faixa_etaria:ld.faixa_etaria||null,faixa_renda:ld.faixa_renda||null,quiz_answers:quizState.answers,sabotador:profileLetter,sabotador_score:scores,source:'site'})
     });
+    const rows=await r.json();
+    const lead_id=Array.isArray(rows)&&rows[0]?rows[0].id:null;
+    if(lead_id){
+      fetch('email_trigger.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lead_id,event:'new_lead'})}).catch(()=>{});
+    }
   }catch(e){console.error('saveLead failed',e);}
 }
 
