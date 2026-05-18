@@ -270,21 +270,30 @@ setTimeout(tick, 1000);
 // ── FUNÇÕES ───────────────────────────────────────────────────────
 function send_smtp_test(string $to, string $name): array {
     $subject  = 'Teste de envio — Programa EmagreSer';
-    $body     = '<html><body style="font-family:Arial;padding:24px;background:#f4f3ef"><div style="max-width:500px;margin:0 auto;background:#fff;padding:28px;border-radius:10px"><h2 style="color:#0d9488">✅ E-mail funcionando!</h2><p>Olá, <strong>' . htmlspecialchars($name) . '</strong>!</p><p>Este é um e-mail de teste da automação do <strong>Programa EmagreSer</strong>.</p><p style="color:#6b7c67;font-size:13px">Enviado via PHP mail() · ' . date('d/m/Y H:i:s') . '</p></div></body></html>';
+    $body     = '<html><body style="font-family:Arial;padding:24px;background:#f4f3ef"><div style="max-width:500px;margin:0 auto;background:#fff;padding:28px;border-radius:10px"><h2 style="color:#0d9488">✅ E-mail funcionando!</h2><p>Olá, <strong>' . htmlspecialchars($name) . '</strong>!</p><p>Este é um e-mail de teste da automação do <strong>Programa EmagreSer</strong>.</p><p style="color:#6b7c67;font-size:13px">Enviado em ' . date('d/m/Y H:i:s') . '</p></div></body></html>';
     $fromEnc  = '=?UTF-8?B?' . base64_encode(SMTP_FROM_NAME) . '?=';
+    $toEnc    = '=?UTF-8?B?' . base64_encode($name) . '?= <' . $to . '>';
     $subjEnc  = '=?UTF-8?B?' . base64_encode($subject) . '?=';
     $bnd      = md5(uniqid());
+    $domain   = substr(strrchr(SMTP_FROM, '@'), 1);
 
     $headers  = "From: {$fromEnc} <" . SMTP_FROM . ">\r\n";
+    $headers .= "To: {$toEnc}\r\n";
     $headers .= "Reply-To: " . SMTP_FROM . "\r\n";
+    $headers .= "Message-ID: <" . uniqid('es', true) . "@{$domain}>\r\n";
+    $headers .= "Date: " . date('r') . "\r\n";
     $headers .= "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: multipart/alternative; boundary=\"{$bnd}\"";
+    $headers .= "Content-Type: multipart/alternative; boundary=\"{$bnd}\"\r\n";
+    $headers .= "List-Unsubscribe: <mailto:" . SMTP_FROM . "?subject=descadastro>\r\n";
+    $headers .= "X-Mailer: EmagreSer-Automacao/1.0";
 
-    $msg  = "--{$bnd}\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nTeste EmagreSer OK.\r\n\r\n";
-    $msg .= "--{$bnd}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n{$body}\r\n\r\n--{$bnd}--";
+    $msg  = "--{$bnd}\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n";
+    $msg .= quoted_printable_encode("Teste EmagreSer OK. Enviado em " . date('d/m/Y H:i:s')) . "\r\n\r\n";
+    $msg .= "--{$bnd}\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n";
+    $msg .= quoted_printable_encode($body) . "\r\n\r\n--{$bnd}--";
 
     $ok = mail($to, $subjEnc, $msg, $headers, '-f' . SMTP_FROM);
-    return $ok ? ['ok' => true, 'msg' => 'Enviado com sucesso via mail()'] : ['ok' => false, 'msg' => 'mail() retornou false — sendmail pode não estar configurado no servidor'];
+    return $ok ? ['ok' => true, 'msg' => 'Enviado com sucesso!'] : ['ok' => false, 'msg' => 'mail() retornou false'];
 }
 
 function send_zapi_test(string $phone, string $name): array {

@@ -104,29 +104,37 @@ $output = "[{$ts}] Worker rodou. " . count($pending) . " email(s) processados.\n
 file_put_contents(__DIR__ . '/email_worker.log', $output, FILE_APPEND);
 echo $output;
 
-// ── ENVIO DE E-MAIL via PHP mail() — Hostinger shared hosting ────
+// ── ENVIO DE E-MAIL via PHP mail() ───────────────────────────────
 function send_smtp(string $to, string $toName, string $subject, string $body): array {
-    $fromEnc  = '=?UTF-8?B?' . base64_encode(SMTP_FROM_NAME) . '?=';
-    $subjEnc  = '=?UTF-8?B?' . base64_encode($subject) . '?=';
-    $boundary = md5(uniqid());
+    $fromEnc   = '=?UTF-8?B?' . base64_encode(SMTP_FROM_NAME) . '?=';
+    $toEnc     = $toName ? ('=?UTF-8?B?' . base64_encode($toName) . '?= <' . $to . '>') : $to;
+    $subjEnc   = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+    $boundary  = md5(uniqid());
+    $messageId = '<' . uniqid('es', true) . '@' . parse_url(SUPABASE_URL, PHP_URL_HOST) . '>';
+    $domain    = substr(strrchr(SMTP_FROM, '@'), 1);
 
     $headers  = "From: {$fromEnc} <" . SMTP_FROM . ">\r\n";
+    $headers .= "To: {$toEnc}\r\n";
     $headers .= "Reply-To: " . SMTP_FROM . "\r\n";
+    $headers .= "Message-ID: <" . uniqid('es', true) . "@{$domain}>\r\n";
+    $headers .= "Date: " . date('r') . "\r\n";
     $headers .= "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"";
+    $headers .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
+    $headers .= "List-Unsubscribe: <mailto:" . SMTP_FROM . "?subject=descadastro>\r\n";
+    $headers .= "X-Mailer: EmagreSer-Automacao/1.0";
 
     $msg  = "--{$boundary}\r\n";
-    $msg .= "Content-Type: text/plain; charset=UTF-8\r\n\r\n";
-    $msg .= strip_tags($body) . "\r\n\r\n";
+    $msg .= "Content-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n";
+    $msg .= quoted_printable_encode(strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $body))) . "\r\n\r\n";
     $msg .= "--{$boundary}\r\n";
-    $msg .= "Content-Type: text/html; charset=UTF-8\r\n\r\n";
-    $msg .= $body . "\r\n\r\n";
+    $msg .= "Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n";
+    $msg .= quoted_printable_encode($body) . "\r\n\r\n";
     $msg .= "--{$boundary}--";
 
     $ok = mail($to, $subjEnc, $msg, $headers, '-f' . SMTP_FROM);
 
-    if ($ok) return ['ok' => true,  'msg' => 'sent via mail()'];
-    return    ['ok' => false, 'msg' => 'mail() returned false — verifique o sendmail no servidor'];
+    if ($ok) return ['ok' => true,  'msg' => 'sent'];
+    return    ['ok' => false, 'msg' => 'mail() falhou — verifique sendmail no servidor'];
 }
 
 // ── Z-API WHATSAPP ────────────────────────────────────────────────
