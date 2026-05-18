@@ -400,15 +400,7 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
       <h2 data-key="roma_titulo">Seu último emagrecimento</h2>
       <p style="font-size:1.02rem;color:var(--text2);margin:12px auto 8px;max-width:580px;line-height:1.75" data-key="roma_descricao">12 semanas para sair do efeito sanfona e nunca mais ser refém da balança.</p>
       <p style="font-size:.88rem;color:var(--text3);font-style:italic;margin-bottom:0" data-key="promessa_sub_roma">Para mulheres que resolvem tudo para todos, menos para si mesmas.</p>
-      <div class="roma-videos" id="roma-videos">
-        <div class="mv-card" id="mv-daniely">
-          <div class="vph"><span style="font-size:1.8rem">🎥</span><span style="font-size:.72rem">Daniely</span></div>
-        </div>
-        <div class="mv-card" id="mv-ira">
-          <div class="vph"><span style="font-size:1.8rem">🎥</span><span style="font-size:.72rem">Ira</span></div>
-        </div>
-      </div>
-      <div class="roma-pills">
+      <div class="roma-pills" style="margin-top:32px">
         <span class="roma-pill" data-key="promessa_item1">12 semanas de programa</span>
         <span class="roma-pill" data-key="promessa_item2">Encontros ao vivo semanais</span>
         <span class="roma-pill" data-key="promessa_item3">Suporte contínuo no WhatsApp</span>
@@ -765,7 +757,6 @@ async function init(){
     questions=qRows;
     applyConfig();
     buildHeroVideo();
-    buildRomaVideos();
     buildMentors(mentorRows);
     buildTestimonials(testRows);
     buildPrintDepos();
@@ -837,11 +828,6 @@ function buildHeroSlot(elId, url, label){
   }else{
     wrap.innerHTML=`<div class="vph"><span style="font-size:1.6rem">🎥</span><span style="font-size:.72rem;color:var(--text3)">Em breve</span></div><div class="hero-video-label">${label}</div>`;
   }
-}
-
-function buildRomaVideos(){
-  buildMentorVideo('mv-daniely',k('video_promessa_daniely'),'Daniely');
-  buildMentorVideo('mv-ira',k('video_promessa_ira'),'Ira Soraya');
 }
 
 function buildMentorVideo(elId,url,name){
