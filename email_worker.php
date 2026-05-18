@@ -55,6 +55,11 @@ foreach ($pending as $item) {
     $subject = str_replace(array_keys($vars), array_values($vars), $tpl['subject']);
     $body    = str_replace(array_keys($vars), array_values($vars), $tpl['body_html']);
 
+    // Garante wrapper <html> para evitar penalidade HTML_MIME_NO_HTML_TAG
+    if (stripos($body, '<html') === false) {
+        $body = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>' . $body . '</body></html>';
+    }
+
     // Envia via SMTP
     $result = send_smtp($item['to_email'], $item['to_name'] ?? '', $subject, $body);
 

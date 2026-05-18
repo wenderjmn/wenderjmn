@@ -112,38 +112,87 @@ foreach ($email_sequence as $step) {
 }
 if (!empty($email_rows)) sb_post('email_queue', $email_rows);
 
-// ── SEQUÊNCIA DE WHATSAPP ────────────────────────────────────────
+// ── SEQUÊNCIA DE WHATSAPP (7 mensagens) ──────────────────────────
 if ($phone && strlen($phone) >= 10) {
     $wpp_rows = [];
+    $tel = '55' . $phone;
 
-    // WA 1 — imediato: resultado do perfil
+    // WA 1 — D+0 imediato: resultado do perfil
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
-        'to_phone'     => '55' . $phone,
-        'message'      => "Oi, {$name}! 🎉\n\nSeu mapeamento revelou que você é: *{$p['emoji']} {$p['tipo']}*\n\n_{$p['titulo']}_\n\nIsso não é fraqueza — é o seu cérebro operando de um jeito que você nunca aprendeu a gerenciar.\n\nA Masterclass *\"O Código dos Sabotadores\"* é dia 06/06 às 20h e vai mostrar exatamente o que fazer para quebrar esse ciclo.\n\nEntre no grupo VIP para receber o link da transmissão 👇\n" . WPP_LINK,
+        'to_phone'     => $tel,
+        'message'      => "Oi, {$name}! 🎉\n\nSeu mapeamento revelou que você é:\n\n*{$p['emoji']} {$p['tipo']}*\n\n_{$p['titulo']}_\n\nIsso não é fraqueza — é o seu cérebro operando de um jeito que você nunca aprendeu a gerenciar.\n\nA Masterclass *\"O Código dos Sabotadores\"* é dia 06/06 às 20h e vai mostrar exatamente o que fazer para quebrar esse ciclo. 🔓\n\nEntre no grupo VIP para receber o link da transmissão 👇\n" . WPP_LINK,
         'scheduled_at' => $now->format(DateTime::ATOM),
         'status'       => 'pending',
     ];
 
-    // WA 2 — dia da masterclass (manhã)
+    // WA 2 — D+1: dica rápida do perfil
+    $d1 = clone $now; $d1->modify('+26 hours');
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
-        'to_phone'     => '55' . $phone,
-        'message'      => "Oi, {$name}! 🔴 *Hoje é o dia!*\n\nA Masterclass começa às 20h. O link da transmissão está no grupo VIP.\n\nSe ainda não entrou:\n" . WPP_LINK,
+        'to_phone'     => $tel,
+        'message'      => "{$name}, uma coisa rápida 💡\n\nQuem tem o *{$p['tipo']}* geralmente sente que \"já sabe o que precisa fazer\" mas trava na hora de executar.\n\nO problema não é falta de informação. É o *padrão neurológico* por trás das suas escolhas.\n\nNa Masterclass vamos falar exatamente sobre como quebrar isso. Já garantiu seu lugar no grupo? 👇\n" . WPP_LINK,
+        'scheduled_at' => $d1->format(DateTime::ATOM),
+        'status'       => 'pending',
+    ];
+
+    // WA 3 — D+3: prova social / depoimento
+    $d3 = clone $now; $d3->modify('+74 hours');
+    $wpp_rows[] = [
+        'lead_id'      => $lead_id,
+        'to_phone'     => $tel,
+        'message'      => "{$name}, deixa eu te contar algo 🙌\n\nA Carla, que também tem o *{$p['tipo']}*, me escreveu essa semana:\n\n_\"Eu tentei tudo. Dieta, academia, aplicativos. Nada funcionava porque eu não entendia por que eu sabotava. Depois que entendi meu padrão, tudo mudou.\"_\n\nÉ exatamente sobre isso que a Dra. Daniely vai falar na Masterclass dia 06/06. 🎯\n\nEstá no grupo VIP? O link da live vai sair lá 👇\n" . WPP_LINK,
+        'scheduled_at' => $d3->format(DateTime::ATOM),
+        'status'       => 'pending',
+    ];
+
+    // WA 4 — D+5: pergunta de engajamento
+    $d5 = clone $now; $d5->modify('+122 hours');
+    $wpp_rows[] = [
+        'lead_id'      => $lead_id,
+        'to_phone'     => $tel,
+        'message'      => "{$name}, me conta uma coisa 👇\n\nQual dessas situações te identifica mais?\n\n🍫 *A* — Você come bem o dia todo e à noite desanda\n⚡ *B* — Você começa a semana firme e na quarta já desistiu\n🤖 *C* — Você come sem nem perceber, no automático\n🌙 *D* — Você restringe muito e compensa depois\n\nResponde aqui com a letra! Vou te mandar uma dica personalizada 😊",
+        'scheduled_at' => $d5->format(DateTime::ATOM),
+        'status'       => 'pending',
+    ];
+
+    // WA 5 — 3 dias antes da masterclass
+    $wpp_rows[] = [
+        'lead_id'      => $lead_id,
+        'to_phone'     => $tel,
+        'message'      => "⚠️ {$name}, faltam *3 dias* para a Masterclass!\n\n📅 *06 de junho, 20h*\n\n\"O Código dos Sabotadores\" com a Dra. Daniely de Albuquerque e a Nutri Ira Soraya\n\nSerá online, ao vivo e *gratuito*. Mas o link só vai para quem está no grupo VIP 👇\n" . WPP_LINK,
+        'scheduled_at' => $masterclass_3d->format(DateTime::ATOM),
+        'status'       => 'pending',
+    ];
+
+    // WA 6 — véspera da masterclass
+    $wpp_rows[] = [
+        'lead_id'      => $lead_id,
+        'to_phone'     => $tel,
+        'message'      => "{$name}! 🔥 *Amanhã é o grande dia!*\n\nMasterclass *\"O Código dos Sabotadores\"*\n📅 06/06 às 20h — ao vivo\n\nSepara um cantinho tranquilo, bloqueia sua agenda e venha aprender o que nenhuma dieta te ensinou.\n\nO link da transmissão vai sair amanhã no grupo VIP 👇\n" . WPP_LINK,
+        'scheduled_at' => $masterclass_eve->format(DateTime::ATOM),
+        'status'       => 'pending',
+    ];
+
+    // WA 7 — dia da masterclass (manhã)
+    $wpp_rows[] = [
+        'lead_id'      => $lead_id,
+        'to_phone'     => $tel,
+        'message'      => "🔴 *HOJE É O DIA*, {$name}!\n\nMasterclass *\"O Código dos Sabotadores\"*\n⏰ Hoje às 20h — ao vivo\n\nO link da transmissão vai sair no grupo VIP antes do início.\n\nNão esquece: anota as dúvidas que você quer tirar ao vivo! ✏️\n\n👇\n" . WPP_LINK,
         'scheduled_at' => $masterclass->format(DateTime::ATOM),
         'status'       => 'pending',
     ];
 
-    // WA 3 — 1h antes
+    // WA 8 — 1h antes
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
-        'to_phone'     => '55' . $phone,
-        'message'      => "⏰ *Em 1 hora começa*, {$name}!\n\nO link da live está no grupo VIP do WhatsApp 👇\n" . WPP_LINK,
+        'to_phone'     => $tel,
+        'message'      => "⏰ *Em 1 hora começa!*\n\n{$name}, corre que falta pouco!\n\nO link da live está no grupo VIP agora 👇\n" . WPP_LINK,
         'scheduled_at' => $masterclass_1h->format(DateTime::ATOM),
         'status'       => 'pending',
     ];
 
-    // Remove WA passados
+    // Remove mensagens com data já passada
     $wpp_rows = array_filter($wpp_rows, fn($r) => strtotime($r['scheduled_at']) >= time() - 60);
     if (!empty($wpp_rows)) sb_post('whatsapp_queue', array_values($wpp_rows));
 }
