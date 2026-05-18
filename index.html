@@ -109,10 +109,10 @@ section[id]{scroll-margin-top:68px}
 .depo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:36px 0}
 @media(max-width:900px){.depo-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.depo-grid{grid-template-columns:repeat(2,1fr);gap:12px}}
-.depo-thumb{position:relative;aspect-ratio:9/16;background:var(--bg3);overflow:hidden;cursor:pointer;max-height:340px}
-@media(max-width:560px){.depo-thumb{max-height:260px}}
 .depo-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.depo-thumb img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;transition:transform .3s}
+.depo-thumb{position:relative;width:100%;height:300px;background:var(--bg3);overflow:hidden;cursor:pointer}
+@media(max-width:560px){.depo-thumb{height:210px}}
+.depo-thumb img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;transition:transform .3s}
 .depo-card:hover .depo-thumb img{transform:scale(1.04)}
 .depo-thumb iframe{width:100%;height:100%;border:none;display:block}
 .depo-overlay{position:absolute;inset:0;background:rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center}
@@ -242,9 +242,11 @@ section[id]{scroll-margin-top:68px}
 .form-sub{font-size:.82rem;color:var(--text3);text-align:center;margin-bottom:22px}
 .form-group{margin-bottom:13px}
 .form-group label{display:block;font-size:.78rem;font-weight:600;color:var(--text2);margin-bottom:5px}
-.form-group input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;color:var(--text);font-size:.9rem;font-family:inherit;transition:border-color .2s}
-.form-group input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,148,136,.1)}
+.form-group input,.form-group select{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;color:var(--text);font-size:.9rem;font-family:inherit;transition:border-color .2s;appearance:none;-webkit-appearance:none}
+.form-group select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a8a29e' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,148,136,.1)}
 .form-group input::placeholder{color:var(--text3)}
+.form-optional{font-size:.7rem;color:var(--text3);font-weight:400;margin-left:4px}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:460px){.form-row{grid-template-columns:1fr}}
 .form-submit{width:100%;margin-top:16px;font-size:.9rem;padding:16px}
@@ -281,8 +283,9 @@ section[id]{scroll-margin-top:68px}
 .mentoras-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-top:38px}
 @media(max-width:768px){.mentoras-grid{grid-template-columns:1fr}}
 .mentora-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--shadow)}
-.mentora-photo{width:100%;aspect-ratio:3/4;max-height:340px;background:var(--bg3);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--text3)}
-.mentora-photo img{width:100%;height:100%;object-fit:cover;object-position:center 20%}
+.mentora-photo{width:100%;height:360px;background:var(--bg3);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--text3)}
+@media(max-width:768px){.mentora-photo{height:300px}}
+.mentora-photo img{width:100%;height:100%;object-fit:cover;object-position:center top}
 .mentora-info{padding:22px}
 .mentora-name{font-family:var(--fd);font-size:1.15rem;margin-bottom:3px}
 .mentora-role{font-size:.75rem;color:var(--teal);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px}
@@ -709,6 +712,10 @@ Você nunca teve o mapeamento certo.</h2>
         <div class="form-group"><label for="mlc">Cidade</label><input type="text" id="mlc" placeholder="Sua cidade" autocomplete="address-level2"></div>
         <div class="form-group"><label for="mlst">Estado</label><input type="text" id="mlst" placeholder="UF" maxlength="2" autocomplete="address-level1"></div>
       </div>
+      <div class="form-row">
+        <div class="form-group"><label for="mlfe">Sua idade *</label><select id="mlfe" required><option value="">Selecione</option><option>18–24 anos</option><option>25–34 anos</option><option>35–44 anos</option><option>45–54 anos</option><option>55+ anos</option></select></div>
+        <div class="form-group"><label for="mlfr">Renda familiar <span class="form-optional">(opcional)</span></label><select id="mlfr"><option value="">Prefiro não dizer</option><option>Até R$3.000</option><option>R$3.001–R$6.000</option><option>R$6.001–R$12.000</option><option>R$12.001–R$20.000</option><option>Acima de R$20.000</option></select></div>
+      </div>
       <div id="modal-form-err" class="form-err hidden"></div>
       <button type="submit" class="btn btn-teal form-submit" id="modal-form-btn">INICIAR MEU MAPEAMENTO →</button>
       <p class="form-privacy">🔒 Seus dados são 100% seguros. Sem spam.</p>
@@ -1040,6 +1047,7 @@ function finishQuiz(){
         <div class="form-group"><label>Nome *</label><input type="text" id="rln" placeholder="Como posso te chamar?" required></div>
         <div class="form-group"><label>E-mail *</label><input type="email" id="rle" placeholder="seu@email.com" required></div>
         <div class="form-group"><label>WhatsApp *</label><input type="tel" id="rlp" placeholder="(11) 99999-9999" required></div>
+        <div class="form-group"><label>Sua idade *</label><select id="rlfe" required><option value="">Selecione</option><option>18–24 anos</option><option>25–34 anos</option><option>35–44 anos</option><option>45–54 anos</option><option>55+ anos</option></select></div>
         <div id="res-form-err" class="form-err hidden"></div>
         <button type="submit" class="btn btn-teal form-submit" id="res-form-btn">QUERO MEU DIAGNÓSTICO</button>
         <p class="form-privacy">🔒 100% seguro. Sem spam.</p>
@@ -1083,12 +1091,14 @@ function finishQuiz(){
         const name=document.getElementById('rln').value.trim();
         const email=document.getElementById('rle').value.trim();
         const phone=document.getElementById('rlp').value.trim();
+        const faixa_etaria=document.getElementById('rlfe')?.value||null;
         errEl.classList.add('hidden');
         if(!name){errEl.textContent='Informe seu nome.';errEl.classList.remove('hidden');return;}
         if(!email||!email.includes('@')){errEl.textContent='E-mail inválido.';errEl.classList.remove('hidden');return;}
         if(!phone||phone.replace(/\D/g,'').length<10){errEl.textContent='WhatsApp com DDD obrigatório.';errEl.classList.remove('hidden');return;}
+        if(!faixa_etaria){errEl.textContent='Selecione sua faixa de idade.';errEl.classList.remove('hidden');return;}
         btn.textContent='Enviando...';btn.disabled=true;
-        leadData={name,email,phone,cidade:null,estado:null};
+        leadData={name,email,phone,cidade:null,estado:null,faixa_etaria,faixa_renda:null};
         await saveLead(leadData, profile, p.sabotador, counts);
         // Show success
         document.querySelector('#quiz-section .lead-form-card').outerHTML=`
@@ -1107,7 +1117,7 @@ async function saveLead(ld, profileLetter, sabotadorNome, scores){
     await fetch(`${SUPABASE_URL}/rest/v1/leads`,{
       method:'POST',
       headers:{apikey:ANON_KEY,Authorization:`Bearer ${ANON_KEY}`,'Content-Type':'application/json',Prefer:'return=minimal'},
-      body:JSON.stringify({name:ld.name,email:ld.email,phone:ld.phone,cidade:ld.cidade,estado:ld.estado,quiz_answers:quizState.answers,sabotador:profileLetter,sabotador_score:scores,source:'site'})
+      body:JSON.stringify({name:ld.name,email:ld.email,phone:ld.phone,cidade:ld.cidade,estado:ld.estado,faixa_etaria:ld.faixa_etaria||null,faixa_renda:ld.faixa_renda||null,quiz_answers:quizState.answers,sabotador:profileLetter,sabotador_score:scores,source:'site'})
     });
   }catch(e){console.error('saveLead failed',e);}
 }
@@ -1205,7 +1215,10 @@ document.getElementById('modal-lead-form').addEventListener('submit',function(e)
   if(!name){errEl.textContent='Por favor, informe seu nome.';errEl.classList.remove('hidden');return;}
   if(!email||!email.includes('@')){errEl.textContent='Por favor, informe um e-mail válido.';errEl.classList.remove('hidden');return;}
   if(!phone||phone.replace(/\D/g,'').length<10){errEl.textContent='Por favor, informe seu WhatsApp com DDD.';errEl.classList.remove('hidden');return;}
-  leadData={name,email,phone,cidade:cidade||null,estado:estado||null};
+  const faixa_etaria=document.getElementById('mlfe').value||null;
+  if(!faixa_etaria){errEl.textContent='Por favor, selecione sua faixa de idade.';errEl.classList.remove('hidden');return;}
+  const faixa_renda=document.getElementById('mlfr').value||null;
+  leadData={name,email,phone,cidade:cidade||null,estado:estado||null,faixa_etaria,faixa_renda};
   closeLeadModal();
   openQuizModal();
 });

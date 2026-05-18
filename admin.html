@@ -250,7 +250,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div class="card">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Sabotador</th><th>Cidade/UF</th><th>Data</th></tr></thead>
+              <thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Sabotador</th><th>Idade</th><th>Renda</th><th>Cidade/UF</th><th>Data</th></tr></thead>
               <tbody id="leads-body"></tbody>
             </table>
           </div>
@@ -845,7 +845,7 @@ function renderLeadsTable() {
     return true;
   });
   const tbody = document.getElementById('leads-body');
-  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">Nenhum lead encontrado</td></tr>'; return; }
+  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">Nenhum lead encontrado</td></tr>'; return; }
   const from = leadsPage * LEADS_PER_PAGE;
   const pageRows = filtered.slice(from, from + LEADS_PER_PAGE);
   tbody.innerHTML = pageRows.map(l => `
@@ -854,6 +854,8 @@ function renderLeadsTable() {
       <td style="word-break:break-all">${esc(l.email||'')}</td>
       <td>${esc(l.phone||'')}</td>
       <td>${l.sabotador?`<span class="badge badge-amber">${esc(l.sabotador)}</span>`:'—'}</td>
+      <td>${esc(l.faixa_etaria||'—')}</td>
+      <td>${esc(l.faixa_renda||'—')}</td>
       <td>${esc((l.cidade||'')+(l.estado?' / '+l.estado:''))}</td>
       <td>${l.created_at ? new Date(l.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}</td>
     </tr>
