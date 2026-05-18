@@ -702,6 +702,7 @@ function renderPerfis() {
       {key:`resultado_${p.letter}_emoji`, label:'Emoji', type:'text'},
       {key:`resultado_${p.letter}_desc`, label:'Descrição', type:'textarea'},
       {key:`resultado_${p.letter}_insight`, label:'Insight (frase em itálico)', type:'textarea'},
+      {key:`video_perfil_${p.letter.toLowerCase()}`, label:'URL do vídeo do resultado (YouTube)', type:'text'},
     ];
     return `<div class="card">
       <div class="card-title">${p.emoji} ${esc(p.label)}</div>
@@ -846,18 +847,34 @@ function renderLeadsTable() {
 
 function renderSabotadorStats() {
   const counts = {A:0,B:0,C:0,D:0,outros:0};
-  allLeads.forEach(l => { if (counts[l.sabotador] !== undefined) counts[l.sabotador]++; else if (l.sabotador) counts.outros++; });
+  const labels = {
+    A:'🍫 Recompensadora', B:'🤖 Piloto Automático',
+    C:'⚡ Prisioneira do Esforço', D:'🌙 Compensadora Noturna', outros:'Outros/null'
+  };
+  allLeads.forEach(l => {
+    const s = l.sabotador || '';
+    if (counts[s] !== undefined) { counts[s]++; return; }
+    // Legacy: full name strings — extract letter by known patterns
+    if (/Recompensadora|Hedônica/i.test(s)) counts.A++;
+    else if (/Piloto|Amn[eé]sia/i.test(s)) counts.B++;
+    else if (/Prisioneira|Fadiga/i.test(s)) counts.C++;
+    else if (/Compensadora|Restri/i.test(s)) counts.D++;
+    else if (s) counts.outros++;
+  });
   const total = allLeads.length || 1;
-  document.getElementById('sabotador-stats').innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
-      ${Object.entries(counts).filter(([k,v]) => v > 0 || ['A','B','C','D'].includes(k)).map(([k,v]) => `
+  const el = document.getElementById('sabotador-stats');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">
+      ${Object.entries(counts).filter(([k]) => k !== 'outros' || counts.outros > 0).map(([k,v]) => `
         <div style="background:var(--bg3);padding:10px 12px;border-radius:6px">
-          <div style="font-size:11px;color:var(--text2)">Perfil ${k}</div>
-          <div style="font-size:18px;font-weight:700;color:var(--teal)">${v}</div>
-          <div style="font-size:10px;color:var(--text3)">${Math.round(v/total*100)}%</div>
+          <div style="font-size:10px;color:var(--text2);margin-bottom:4px">${labels[k]}</div>
+          <div style="font-size:20px;font-weight:700;color:var(--teal)">${v}</div>
+          <div style="font-size:10px;color:var(--text3)">${total > 1 ? Math.round(v/(total)*100)+'%' : '—'}</div>
         </div>
       `).join('')}
-    </div>`;
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:8px">Total: ${allLeads.length} leads carregados</div>`;
 }
 
 document.addEventListener('input', e => {

@@ -280,6 +280,15 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
 #floating-cta.visible{opacity:1;pointer-events:auto}
 @media(max-width:768px){#floating-cta{display:block}}
 
+/* LEAD MODAL */
+#lead-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
+.modal-box{background:var(--white);border-radius:var(--rl);padding:36px 32px;max-width:460px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);position:relative}
+@media(max-width:480px){.modal-box{padding:26px 16px}}
+.modal-box h3{font-family:var(--fd);font-size:1.3rem;text-align:center;margin-bottom:6px}
+.modal-box>.modal-sub{font-size:.82rem;color:var(--text3);text-align:center;margin-bottom:22px;line-height:1.65}
+.modal-close{position:absolute;top:12px;right:14px;font-size:1.1rem;color:var(--text3);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;transition:background .15s}
+.modal-close:hover{background:var(--bg2)}
+
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
@@ -606,6 +615,27 @@ Você nunca teve o mapeamento certo.</h2>
   <button class="btn btn-teal" style="width:100%" onclick="goToQuiz()">DESCOBRIR MEU PERFIL →</button>
 </div>
 
+<!-- LEAD MODAL -->
+<div id="lead-modal" class="hidden">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeLeadModal()" aria-label="Fechar">✕</button>
+    <h3>Antes de começar o mapeamento</h3>
+    <p class="modal-sub">Preencha seus dados para receber o resultado do seu perfil sabotador diretamente no WhatsApp.</p>
+    <form id="modal-lead-form" novalidate>
+      <div class="form-group"><label for="mln">Seu nome *</label><input type="text" id="mln" placeholder="Como posso te chamar?" required autocomplete="name"></div>
+      <div class="form-group"><label for="mle">E-mail *</label><input type="email" id="mle" placeholder="seu@email.com" required autocomplete="email"></div>
+      <div class="form-group"><label for="mlp">WhatsApp *</label><input type="tel" id="mlp" placeholder="(11) 99999-9999" required autocomplete="tel"></div>
+      <div class="form-row">
+        <div class="form-group"><label for="mlc">Cidade</label><input type="text" id="mlc" placeholder="Sua cidade" autocomplete="address-level2"></div>
+        <div class="form-group"><label for="mlst">Estado</label><input type="text" id="mlst" placeholder="UF" maxlength="2" autocomplete="address-level1"></div>
+      </div>
+      <div id="modal-form-err" class="form-err hidden"></div>
+      <button type="submit" class="btn btn-teal form-submit" id="modal-form-btn">INICIAR MEU MAPEAMENTO →</button>
+      <p class="form-privacy">🔒 Seus dados são 100% seguros. Sem spam.</p>
+    </form>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL='https://drgrwpmhmrrhxuwxabow.supabase.co';
 const ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyZ3J3cG1obXJyaHh1d3hhYm93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg0OTcsImV4cCI6MjA5MzA1NDQ5N30._cjH7sFNaEVNf6cmp4f05x9UE-mfX2RT84BYdhy-9dQ';
@@ -613,6 +643,7 @@ const ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 let cfg={};
 let questions=[];
 let quizState={current:0,answers:[],result:null,done:false};
+let leadData=null;
 
 async function sb(table,params){
   const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`,{
@@ -868,20 +899,49 @@ function finishQuiz(){
   const p=profiles[profile];
   document.getElementById('res-emoji').textContent=p.emoji;
   document.getElementById('res-tipo').textContent=p.tipo;
-  document.getElementById('res-titulo').textContent='🔒 Seu perfil foi identificado — libere abaixo';
-  // store full result for later reveal
-  const form=document.getElementById('lead-form');
-  form.dataset.profile=profile;
-  form.dataset.sabotador=p.sabotador;
-  form.dataset.scores=JSON.stringify(counts);
-  form.dataset.titulo=p.titulo;
-  form.dataset.desc=p.desc;
-  form.dataset.insight=p.insight;
-  form.dataset.video=p.video||'';
-  // show locked result (only badge + form)
   const res=document.getElementById('resultado');
   res.classList.remove('hidden');
-  setTimeout(()=>res.scrollIntoView({behavior:'smooth',block:'start'}),100);
+
+  if(leadData){
+    // Lead already captured via modal — show full result immediately
+    document.getElementById('lead-form-wrap').classList.add('hidden');
+    document.getElementById('res-titulo').textContent=p.titulo||p.tipo;
+    document.getElementById('res-desc').textContent=p.desc||'';
+    document.getElementById('res-insight').textContent=p.insight||'';
+    const vWrap=document.getElementById('res-video-wrap');
+    const vId=ytId(p.video||'');
+    if(vId&&vWrap){
+      vWrap.innerHTML=`<iframe src="https://www.youtube.com/embed/${vId}?playsinline=1&rel=0" allow="accelerometer;autoplay;clipboard-write;encrypted-media" allowfullscreen loading="lazy"></iframe>`;
+      vWrap.classList.remove('hidden');
+    }
+    document.getElementById('resultado-completo').classList.remove('hidden');
+    document.getElementById('wpp-btn').href=k('whatsapp_link')||'#';
+    document.getElementById('sucesso-wrap').classList.remove('hidden');
+    saveLead(leadData, profile, p.sabotador, counts);
+    setTimeout(()=>res.scrollIntoView({behavior:'smooth',block:'start'}),100);
+  } else {
+    // Fallback: show lead form (user somehow reached quiz without modal)
+    document.getElementById('res-titulo').textContent='🔒 Seu perfil foi identificado — libere abaixo';
+    const form=document.getElementById('lead-form');
+    form.dataset.profile=profile;
+    form.dataset.sabotador=p.sabotador;
+    form.dataset.scores=JSON.stringify(counts);
+    form.dataset.titulo=p.titulo;
+    form.dataset.desc=p.desc;
+    form.dataset.insight=p.insight;
+    form.dataset.video=p.video||'';
+    setTimeout(()=>res.scrollIntoView({behavior:'smooth',block:'start'}),100);
+  }
+}
+
+async function saveLead(ld, profileLetter, sabotadorNome, scores){
+  try{
+    await fetch(`${SUPABASE_URL}/rest/v1/leads`,{
+      method:'POST',
+      headers:{apikey:ANON_KEY,Authorization:`Bearer ${ANON_KEY}`,'Content-Type':'application/json',Prefer:'return=minimal'},
+      body:JSON.stringify({name:ld.name,email:ld.email,phone:ld.phone,cidade:ld.cidade,estado:ld.estado,quiz_answers:quizState.answers,sabotador:profileLetter,sabotador_score:scores,source:'site'})
+    });
+  }catch(e){console.error('saveLead failed',e);}
 }
 
 function revealFullResult(){
@@ -918,7 +978,7 @@ document.getElementById('lead-form').addEventListener('submit',async function(e)
     const r=await fetch(`${SUPABASE_URL}/rest/v1/leads`,{
       method:'POST',
       headers:{apikey:ANON_KEY,Authorization:`Bearer ${ANON_KEY}`,'Content-Type':'application/json',Prefer:'return=minimal'},
-      body:JSON.stringify({name,email,phone,cidade:cidade||null,estado:estado||null,quiz_answers:quizState.answers,sabotador:form.dataset.sabotador,sabotador_score:JSON.parse(form.dataset.scores||'{}'),source:'site'})
+      body:JSON.stringify({name,email,phone,cidade:cidade||null,estado:estado||null,quiz_answers:quizState.answers,sabotador:form.dataset.profile||form.dataset.sabotador,sabotador_score:JSON.parse(form.dataset.scores||'{}'),source:'site'})
     });
     if(!r.ok&&r.status!==201)throw new Error(r.status);
     document.getElementById('wpp-btn').href=k('whatsapp_link')||'#';
@@ -957,9 +1017,52 @@ function startCountdown(){
   update();setInterval(update,1000);
 }
 
+/* ── LEAD MODAL ── */
+function closeLeadModal(){document.getElementById('lead-modal').classList.add('hidden');}
+
+document.getElementById('lead-modal').addEventListener('click',function(e){
+  if(e.target===this)closeLeadModal();
+});
+
+document.getElementById('modal-lead-form').addEventListener('submit',function(e){
+  e.preventDefault();
+  const errEl=document.getElementById('modal-form-err');
+  const btn=document.getElementById('modal-form-btn');
+  const name=document.getElementById('mln').value.trim();
+  const email=document.getElementById('mle').value.trim();
+  const phone=document.getElementById('mlp').value.trim();
+  const cidade=document.getElementById('mlc').value.trim();
+  const estado=document.getElementById('mlst').value.trim().toUpperCase();
+  errEl.classList.add('hidden');
+  if(!name){errEl.textContent='Por favor, informe seu nome.';errEl.classList.remove('hidden');return;}
+  if(!email||!email.includes('@')){errEl.textContent='Por favor, informe um e-mail válido.';errEl.classList.remove('hidden');return;}
+  if(!phone||phone.replace(/\D/g,'').length<10){errEl.textContent='Por favor, informe seu WhatsApp com DDD.';errEl.classList.remove('hidden');return;}
+  leadData={name,email,phone,cidade:cidade||null,estado:estado||null};
+  closeLeadModal();
+  const t=document.getElementById('quiz-section');
+  if(t)t.scrollIntoView({behavior:'smooth',block:'start'});
+});
+
+document.getElementById('mlp').addEventListener('input',function(){
+  let v=this.value.replace(/\D/g,'').slice(0,11);
+  if(v.length>2)v=`(${v.slice(0,2)}) ${v.slice(2)}`;
+  if(v.length>10)v=v.slice(0,10)+'-'+v.slice(10);
+  this.value=v;
+});
+
 /* ── SCROLL TO QUIZ ── */
 function goToQuiz(){
-  const t=quizState.done?document.getElementById('resultado'):document.getElementById('quiz-section');
+  if(quizState.done){
+    const t=document.getElementById('resultado');
+    if(t)t.scrollIntoView({behavior:'smooth',block:'start'});
+    return;
+  }
+  if(!leadData){
+    document.getElementById('lead-modal').classList.remove('hidden');
+    setTimeout(()=>{const f=document.getElementById('mln');if(f)f.focus();},120);
+    return;
+  }
+  const t=document.getElementById('quiz-section');
   if(t)t.scrollIntoView({behavior:'smooth',block:'start'});
 }
 

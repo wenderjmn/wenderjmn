@@ -173,10 +173,15 @@ function update_config() {
         ['value' => $value, 'updated_at' => date('c')]
     );
 
+    if ($res['status'] === 503) {
+        http_response_code(503);
+        echo json_encode(['ok'=>false,'error'=>'Chave de serviço não configurada no servidor (SUPABASE_SERVICE_KEY). Edite admin_proxy.php e substitua COLE_AQUI_SUA_SERVICE_ROLE_KEY pela sua chave.']);
+        return;
+    }
     if ($res['status'] >= 200 && $res['status'] < 300) {
         echo json_encode(['ok'=>true]);
     } else {
-        echo json_encode(['ok'=>false,'error'=>'Supabase retornou HTTP '.$res['status']]);
+        echo json_encode(['ok'=>false,'error'=>'Supabase retornou HTTP '.$res['status'].($res['body']?' — '.json_encode($res['body']):'')]);
     }
 }
 
@@ -206,7 +211,11 @@ function update_quiz_question() {
     }
 
     $res = sb_request('PATCH', 'quiz_questions?id=eq.' . rawurlencode($id), $data);
-    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
+    if ($res['status'] === 503) {
+        http_response_code(503);
+        echo json_encode(['ok'=>false,'error'=>'Chave de serviço não configurada no servidor.']); return;
+    }
+    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300), 'status' => $res['status']]);
 }
 
 function update_testimonial() {
