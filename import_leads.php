@@ -10,7 +10,7 @@
 
 define('IMPORT_PASS',          getenv('IMPORT_PASS')          ?: '***REMOVED_IMPORT_PASS***');
 define('SUPABASE_URL',         getenv('SUPABASE_URL')         ?: 'https://drgrwpmhmrrhxuwxabow.supabase.co');
-define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: 'COLE_AQUI_SUA_SERVICE_ROLE_KEY');
+define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
 define('SITE_URL',             getenv('SITE_URL')             ?: 'https://emagreser.danielydealbuquerque.com.br');
 define('WPP_LINK',             getenv('WPP_LINK')             ?: 'https://chat.whatsapp.com/SEU_LINK_AQUI');
 
