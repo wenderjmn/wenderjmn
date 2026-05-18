@@ -470,6 +470,24 @@ const CONFIG_FIELDS = [
     {key:'live_titulo', label:'Título da live', type:'text'},
     {key:'live_descricao', label:'Descrição da live', type:'textarea'},
   ]},
+  {title:'Redes sociais do programa', fields:[
+    {key:'social_instagram', label:'Instagram EmagreSer (URL)', type:'text'},
+    {key:'social_facebook', label:'Facebook EmagreSer (URL)', type:'text'},
+  ]},
+  {title:'Depoimentos por prints (imagens)', fields:[
+    {key:'print_depo_1', label:'Print 1 (URL da imagem)', type:'text'},
+    {key:'print_depo_2', label:'Print 2 (URL da imagem)', type:'text'},
+    {key:'print_depo_3', label:'Print 3 (URL da imagem)', type:'text'},
+    {key:'print_depo_4', label:'Print 4 (URL da imagem)', type:'text'},
+    {key:'print_depo_5', label:'Print 5 (URL da imagem)', type:'text'},
+    {key:'print_depo_6', label:'Print 6 (URL da imagem)', type:'text'},
+    {key:'print_depo_7', label:'Print 7 (URL da imagem)', type:'text'},
+    {key:'print_depo_8', label:'Print 8 (URL da imagem)', type:'text'},
+    {key:'print_depo_9', label:'Print 9 (URL da imagem)', type:'text'},
+    {key:'print_depo_10', label:'Print 10 (URL da imagem)', type:'text'},
+    {key:'print_depo_11', label:'Print 11 (URL da imagem)', type:'text'},
+    {key:'print_depo_12', label:'Print 12 (URL da imagem)', type:'text'},
+  ]},
 ];
 
 async function doLogin() {
@@ -781,6 +799,7 @@ function renderMentoras(mentors) {
           <div class="ctrl-row"><div class="ctrl-label">Foto (URL)<div class="photo-helper">Google Drive ou link direto</div></div><div class="ctrl-input"><input type="text" id="m-photo-${m.id}" value="${esc(m.photo_url||'')}"></div><div></div></div>
           <div class="ctrl-row"><div class="ctrl-label">Vídeo YouTube</div><div class="ctrl-input"><input type="text" id="m-video-${m.id}" value="${esc(m.video_url||'')}"></div><div></div></div>
           <div class="ctrl-row"><div class="ctrl-label">Instagram URL</div><div class="ctrl-input"><input type="text" id="m-ig-${m.id}" value="${esc(m.instagram_url||'')}"></div><div></div></div>
+          <div class="ctrl-row"><div class="ctrl-label">Facebook URL</div><div class="ctrl-input"><input type="text" id="m-fb-${m.id}" value="${esc(m.facebook_url||'')}"></div><div></div></div>
           <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn btn-primary btn-sm" onclick="saveMentor('${esc(m.id)}')">Salvar mentora</button></div>
         </div>
       </div>
@@ -797,6 +816,7 @@ async function saveMentor(id) {
     photo_url: document.getElementById(`m-photo-${id}`).value,
     video_url: document.getElementById(`m-video-${id}`).value,
     instagram_url: document.getElementById(`m-ig-${id}`).value,
+    facebook_url: document.getElementById(`m-fb-${id}`)?.value || '',
   });
 }
 

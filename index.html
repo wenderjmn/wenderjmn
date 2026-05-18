@@ -121,6 +121,24 @@ h3{font-size:clamp(1.05rem,2.5vw,1.45rem);font-weight:600}
 .depo-frase{font-size:.97rem;color:var(--text2);max-width:640px;margin:0 auto 28px;text-align:center;line-height:1.75}
 
 /* DORES */
+/* DEPOIMENTOS PRINTS */
+#depo-prints{background:var(--bg2);padding:72px 0}
+.prints-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.print-item{border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-md);background:var(--white);cursor:zoom-in;transition:transform .2s}
+.print-item:hover{transform:scale(1.02)}
+.print-item img{width:100%;height:auto;display:block}
+/* lightbox */
+#print-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out}
+#print-lightbox img{max-width:min(600px,95vw);max-height:90vh;border-radius:var(--r);object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+
+/* SOCIAL ICONS */
+.social-icons{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.social-icon{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:var(--bg3);color:var(--text2);transition:all .2s;text-decoration:none}
+.social-icon:hover{background:var(--teal);color:#fff;transform:translateY(-1px)}
+.footer-social{display:flex;justify-content:center;gap:10px;margin:14px 0}
+.footer-social a{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,.08);color:#94a3b8;transition:all .2s}
+.footer-social a:hover{background:var(--teal);color:#fff}
+
 #dores{background:var(--bg2);padding:80px 0}
 .dores-inner{max-width:700px;margin:0 auto;text-align:center}
 .dores-lead{font-size:1.02rem;color:var(--text2);line-height:1.85}
@@ -352,8 +370,6 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
         <div class="hero-eye"><div class="hero-dot"></div><span class="hero-eye-text" data-key="programa_nome">Programa EmagreSer</span></div>
         <h1 class="hero-headline" data-key="hero_headline">Você lidera tudo na sua vida. Menos isso.</h1>
         <p class="hero-sub" data-key="hero_subheadline">Descubra qual padrão está fazendo você repetir ciclos, mesmo sabendo exatamente o que deveria fazer.</p>
-        <button class="btn btn-teal lg" onclick="goToQuiz()" data-key-inner="hero_cta_principal">DESCOBRIR MEU PERFIL AGORA</button>
-        <p class="btn-note" data-key="hero_cta_sub">Apenas 10 perguntas · Resultado imediato · 100% gratuito</p>
         <div class="hero-pills">
           <span class="hero-pill" data-key="promessa_item1">12 semanas de programa</span>
           <span class="hero-pill" data-key="promessa_item2">Encontros ao vivo semanais</span>
@@ -413,6 +429,19 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
     </div>
     <p class="depo-frase" data-key="depo_frase_pre_cta">Você não precisa de mais uma dieta nova.</p>
     <button class="btn btn-teal lg" onclick="goToQuiz()" data-key-inner="depo_cta">QUERO PARAR DE RECOMEÇAR TAMBÉM</button>
+  </div>
+</section>
+
+<!-- DEPOIMENTOS POR PRINTS -->
+<section id="depo-prints" class="fade-up">
+  <div class="container">
+    <div class="text-center" style="margin-bottom:36px">
+      <div class="section-label">RESULTADOS REAIS</div>
+      <h2>Veja o que estão dizendo</h2>
+    </div>
+    <div class="prints-grid" id="prints-grid">
+      <!-- preenchido pelo admin ou inserido manualmente abaixo -->
+    </div>
   </div>
 </section>
 
@@ -653,6 +682,9 @@ Você nunca teve o mapeamento certo.</h2>
 <footer>
   <div class="container">
     <p class="footer-nome" data-key="footer_nome">Programa EmagreSer</p>
+    <div class="footer-social" id="footer-social">
+      <!-- preenchido via cfg keys: social_instagram, social_facebook -->
+    </div>
     <p class="footer-credits" data-key="footer_creditos">Psicóloga Daniely Albuquerque &amp; Nutricionista Ira Soraya</p>
   </div>
 </footer>
@@ -727,7 +759,7 @@ async function init(){
       sb('site_config','select=key,value'),
       sb('quiz_questions','active=eq.true&select=id,order_index,question_text,option_a,option_b,option_c,option_d,weight_a,weight_b,weight_c,weight_d&order=order_index'),
       sb('testimonials','active=eq.true&select=id,name,result,quote,profession,video_url,type,order_index&order=order_index').catch(()=>[]),
-      sb('mentors','active=eq.true&select=id,name,role,bio,photo_url,instagram_url,order_index&order=order_index').catch(()=>[])
+      sb('mentors','active=eq.true&select=id,name,role,bio,photo_url,instagram_url,facebook_url,order_index&order=order_index').catch(()=>[])
     ]);
     cfgRows.forEach(r=>{cfg[r.key]=r.value;});
     questions=qRows;
@@ -736,6 +768,8 @@ async function init(){
     buildRomaVideos();
     buildMentors(mentorRows);
     buildTestimonials(testRows);
+    buildPrintDepos();
+    buildFooterSocial();
     buildQuiz();
   }catch(e){console.error('Init:',e);}
   startCountdown();
@@ -827,14 +861,17 @@ function buildMentors(mentors){
   grid.innerHTML=mentors.map(m=>{
     const src=gImg(m.photo_url);
     const photoEl=src?`<img src="${src}" alt="${m.name}" loading="lazy" onerror="this.parentElement.innerHTML='👩';">`:' 👩';
-    const ig=m.instagram_url?`<a href="${m.instagram_url}" target="_blank" rel="noopener" class="mentora-link">📸 Instagram</a>`:'';
+    const igIcon=`<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>`;
+    const fbIcon=`<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`;
+    const ig=m.instagram_url?`<a href="${m.instagram_url}" target="_blank" rel="noopener" class="social-icon" title="Instagram">${igIcon}</a>`:'';
+    const fb=m.facebook_url?`<a href="${m.facebook_url}" target="_blank" rel="noopener" class="social-icon" title="Facebook">${fbIcon}</a>`:'';
     return`<div class="mentora-card">
       <div class="mentora-photo">${photoEl}</div>
       <div class="mentora-info">
         <div class="mentora-name">${m.name}</div>
         <div class="mentora-role">${m.role}</div>
         <div class="mentora-bio">${m.bio||''}</div>
-        <div class="mentora-links">${ig}</div>
+        <div class="social-icons">${ig}${fb}</div>
       </div></div>`;
   }).join('');
 }
@@ -860,6 +897,45 @@ function buildTestimonials(items){
 
 function playDepo(el,id){
   el.innerHTML=`<iframe src="https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&rel=0" allow="autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>`;
+}
+
+function buildPrintDepos(){
+  const grid=document.getElementById('prints-grid');
+  const section=document.getElementById('depo-prints');
+  if(!grid)return;
+  // Read keys print_depo_1 … print_depo_12 from config
+  const items=[];
+  for(let i=1;i<=12;i++){
+    const url=k('print_depo_'+i);
+    if(url&&url.trim())items.push(url.trim());
+  }
+  if(!items.length){if(section)section.classList.add('hidden');return;}
+  grid.innerHTML=items.map(url=>`
+    <div class="print-item" onclick="openLightbox('${url.replace(/'/g,'&#39;')}')">
+      <img src="${url}" alt="Depoimento" loading="lazy" onerror="this.closest('.print-item').style.display='none'">
+    </div>`).join('');
+}
+
+function openLightbox(url){
+  const lb=document.createElement('div');
+  lb.id='print-lightbox';
+  lb.onclick=()=>lb.remove();
+  lb.innerHTML=`<img src="${url}" alt="Depoimento">`;
+  document.body.appendChild(lb);
+}
+
+function buildFooterSocial(){
+  const el=document.getElementById('footer-social');
+  if(!el)return;
+  const igUrl=k('social_instagram');
+  const fbUrl=k('social_facebook');
+  const igIcon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>`;
+  const fbIcon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`;
+  let html='';
+  if(igUrl)html+=`<a href="${igUrl}" target="_blank" rel="noopener" title="Instagram EmagreSer">${igIcon}</a>`;
+  if(fbUrl)html+=`<a href="${fbUrl}" target="_blank" rel="noopener" title="Facebook EmagreSer">${fbIcon}</a>`;
+  el.innerHTML=html;
+  if(!html)el.style.display='none';
 }
 
 /* ── QUIZ ── */
@@ -941,45 +1017,93 @@ function finishQuiz(){
     D:{sabotador:k('resultado_D_sabotador')||'Ciclo de Restrição',tipo:k('resultado_D_tipo')||'Perfil D — A Compensadora Noturna',titulo:k('resultado_D_titulo'),desc:k('resultado_D_desc'),insight:k('resultado_D_insight'),emoji:k('resultado_D_emoji')||'🌙',video:k('video_perfil_d')}
   };
   const p=profiles[profile];
-  document.getElementById('res-emoji').textContent=p.emoji;
-  document.getElementById('res-tipo').textContent=p.tipo;
-  // Close quiz modal and unlock matched perfil card
-  closeQuizModal();
+
+  // Unlock matched perfil card on the page
   document.querySelectorAll('.perfil-card').forEach(c=>{
     if(c.dataset.letter===profile){c.classList.remove('locked');c.classList.add('unlocked');}
   });
-  const res=document.getElementById('resultado');
-  res.classList.remove('hidden');
+
+  // Build result HTML
+  const wppLink=k('whatsapp_link')||'#';
+  const vId=ytId(p.video||'');
+  const videoHtml=vId?`<div class="res-video-wrap" style="max-width:200px;aspect-ratio:9/16;border-radius:var(--r);overflow:hidden;margin:0 auto 20px;box-shadow:var(--shadow-md)"><iframe src="https://www.youtube.com/embed/${vId}?playsinline=1&rel=0" allow="accelerometer;autoplay;clipboard-write;encrypted-media" allowfullscreen loading="lazy" style="width:100%;height:100%;border:none;display:block"></iframe></div>`:'';
+
+  const leadBlock=leadData?`
+    <div class="sucesso-card" style="padding:24px 20px">
+      <span class="sucesso-icon">🎉</span>
+      <h3 class="sucesso-title" style="font-size:1.1rem">Mapeamento completo!</h3>
+      <p class="sucesso-desc" style="font-size:.85rem;margin-bottom:18px">Entre no Grupo VIP no WhatsApp e receba tudo sobre a Masterclass.</p>
+      <a href="${wppLink}" class="btn btn-wpp" target="_blank" rel="noopener" style="display:inline-flex;min-height:46px;padding:12px 22px;font-size:.84rem">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        ENTRAR NO GRUPO VIP
+      </a>
+    </div>`:`
+    <div class="lead-form-card">
+      <h3 class="form-title" style="font-size:1.1rem">🔒 Libere seu mapeamento completo</h3>
+      <p class="form-sub" style="font-size:.8rem">Preencha seus dados para receber o diagnóstico e entrar no Grupo VIP.</p>
+      <form id="modal-result-form" novalidate>
+        <div class="form-group"><label>Nome *</label><input type="text" id="rln" placeholder="Como posso te chamar?" required></div>
+        <div class="form-group"><label>E-mail *</label><input type="email" id="rle" placeholder="seu@email.com" required></div>
+        <div class="form-group"><label>WhatsApp *</label><input type="tel" id="rlp" placeholder="(11) 99999-9999" required></div>
+        <div id="res-form-err" class="form-err hidden"></div>
+        <button type="submit" class="btn btn-teal form-submit" id="res-form-btn">QUERO MEU DIAGNÓSTICO</button>
+        <p class="form-privacy">🔒 100% seguro. Sem spam.</p>
+      </form>
+    </div>`;
+
+  const container=document.querySelector('#quiz-section .container');
+  container.innerHTML=`
+    <button class="quiz-close" onclick="closeQuizModal()" aria-label="Fechar">✕</button>
+    <div class="resultado-wrap">
+      <div class="res-badge" style="text-align:center;margin-bottom:20px">
+        <span style="font-size:3rem;display:block;margin-bottom:10px">${p.emoji}</span>
+        <div class="res-tipo">${p.tipo}</div>
+        <h2 class="res-titulo" style="font-size:clamp(1.1rem,3vw,1.5rem);margin-top:10px">${p.titulo||p.tipo}</h2>
+      </div>
+      ${videoHtml}
+      ${p.desc?`<div class="res-desc" style="margin-bottom:14px">${p.desc}</div>`:''}
+      ${p.insight?`<div class="res-insight" style="margin-bottom:28px">${p.insight}</div>`:''}
+      ${leadBlock}
+    </div>`;
+
+  container.scrollTop=0;
+  document.querySelector('#quiz-section').scrollTop=0;
 
   if(leadData){
-    // Lead already captured via modal — show full result immediately
-    document.getElementById('lead-form-wrap').classList.add('hidden');
-    document.getElementById('res-titulo').textContent=p.titulo||p.tipo;
-    document.getElementById('res-desc').textContent=p.desc||'';
-    document.getElementById('res-insight').textContent=p.insight||'';
-    const vWrap=document.getElementById('res-video-wrap');
-    const vId=ytId(p.video||'');
-    if(vId&&vWrap){
-      vWrap.innerHTML=`<iframe src="https://www.youtube.com/embed/${vId}?playsinline=1&rel=0" allow="accelerometer;autoplay;clipboard-write;encrypted-media" allowfullscreen loading="lazy"></iframe>`;
-      vWrap.classList.remove('hidden');
-    }
-    document.getElementById('resultado-completo').classList.remove('hidden');
-    document.getElementById('wpp-btn').href=k('whatsapp_link')||'#';
-    document.getElementById('sucesso-wrap').classList.remove('hidden');
     saveLead(leadData, profile, p.sabotador, counts);
-    setTimeout(()=>res.scrollIntoView({behavior:'smooth',block:'start'}),100);
-  } else {
-    // Fallback: show lead form (user somehow reached quiz without modal)
-    document.getElementById('res-titulo').textContent='🔒 Seu perfil foi identificado — libere abaixo';
-    const form=document.getElementById('lead-form');
-    form.dataset.profile=profile;
-    form.dataset.sabotador=p.sabotador;
-    form.dataset.scores=JSON.stringify(counts);
-    form.dataset.titulo=p.titulo;
-    form.dataset.desc=p.desc;
-    form.dataset.insight=p.insight;
-    form.dataset.video=p.video||'';
-    setTimeout(()=>res.scrollIntoView({behavior:'smooth',block:'start'}),100);
+  }else{
+    // Attach form handler
+    const resForm=document.getElementById('modal-result-form');
+    if(resForm){
+      document.getElementById('rlp').addEventListener('input',function(){
+        let v=this.value.replace(/\D/g,'').slice(0,11);
+        if(v.length>2)v=`(${v.slice(0,2)}) ${v.slice(2)}`;
+        if(v.length>10)v=v.slice(0,10)+'-'+v.slice(10);
+        this.value=v;
+      });
+      resForm.addEventListener('submit',async function(e){
+        e.preventDefault();
+        const btn=document.getElementById('res-form-btn');
+        const errEl=document.getElementById('res-form-err');
+        const name=document.getElementById('rln').value.trim();
+        const email=document.getElementById('rle').value.trim();
+        const phone=document.getElementById('rlp').value.trim();
+        errEl.classList.add('hidden');
+        if(!name){errEl.textContent='Informe seu nome.';errEl.classList.remove('hidden');return;}
+        if(!email||!email.includes('@')){errEl.textContent='E-mail inválido.';errEl.classList.remove('hidden');return;}
+        if(!phone||phone.replace(/\D/g,'').length<10){errEl.textContent='WhatsApp com DDD obrigatório.';errEl.classList.remove('hidden');return;}
+        btn.textContent='Enviando...';btn.disabled=true;
+        leadData={name,email,phone,cidade:null,estado:null};
+        await saveLead(leadData, profile, p.sabotador, counts);
+        // Show success
+        document.querySelector('#quiz-section .lead-form-card').outerHTML=`
+          <div class="sucesso-card" style="padding:24px 20px;text-align:center">
+            <span class="sucesso-icon">🎉</span>
+            <h3 class="sucesso-title" style="font-size:1.1rem">Mapeamento liberado!</h3>
+            <a href="${wppLink}" class="btn btn-wpp" target="_blank" rel="noopener" style="display:inline-flex;margin-top:12px">ENTRAR NO GRUPO VIP</a>
+          </div>`;
+      });
+    }
   }
 }
 

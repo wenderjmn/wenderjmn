@@ -263,6 +263,7 @@ function update_mentor() {
         'photo_url'     => trim($_POST['photo_url']     ?? ''),
         'video_url'     => trim($_POST['video_url']     ?? ''),
         'instagram_url' => trim($_POST['instagram_url'] ?? ''),
+        'facebook_url'  => trim($_POST['facebook_url']  ?? '') ?: null,
     ];
 
     $res = sb_request('PATCH', 'mentors?id=eq.' . rawurlencode($id), $data);
