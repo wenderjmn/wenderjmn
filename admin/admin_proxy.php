@@ -243,13 +243,17 @@ function update_mentor() {
         http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Sem permissão para editar mentoras']); return;
     }
 
+    $pos = trim($_POST['photo_position'] ?? 'top');
+    if (!in_array($pos, ['top','center','bottom'])) $pos = 'top';
+
     $data = [
-        'name'          => trim($_POST['name']          ?? ''),
-        'role'          => trim($_POST['role']          ?? ''),
-        'bio'           => trim($_POST['bio']           ?? ''),
-        'photo_url'     => trim($_POST['photo_url']     ?? ''),
-        'video_url'     => trim($_POST['video_url']     ?? ''),
-        'instagram_url' => trim($_POST['instagram_url'] ?? ''),
+        'name'           => trim($_POST['name']          ?? ''),
+        'role'           => trim($_POST['role']          ?? ''),
+        'bio'            => trim($_POST['bio']           ?? ''),
+        'photo_url'      => trim($_POST['photo_url']     ?? ''),
+        'photo_position' => $pos,
+        'video_url'      => trim($_POST['video_url']     ?? ''),
+        'instagram_url'  => trim($_POST['instagram_url'] ?? ''),
     ];
 
     $res = sb_request('PATCH', 'mentors?id=eq.' . rawurlencode($id), $data);

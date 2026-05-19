@@ -588,8 +588,11 @@ async function saveDepo(id) {
 async function mentoras() {
   const main = document.getElementById('main-content');
   main.innerHTML = `<div class="page-title">Mentoras</div><div class="page-sub">Edite os perfis das mentoras exibidos na landing page.</div><div id="mentora-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
-  const rows = await sb('mentors', 'select=id,name,role,bio,photo_url,video_url,instagram_url,order_index&order=order_index');
-  document.getElementById('mentora-body').innerHTML = rows.map(m => `
+  const rows = await sb('mentors', 'select=id,name,role,bio,photo_url,photo_position,video_url,instagram_url,order_index&order=order_index');
+  document.getElementById('mentora-body').innerHTML = rows.map(m => {
+    const pos = m.photo_position || 'top';
+    const posLabel = {top:'Cima',center:'Centro',bottom:'Baixo'};
+    return `
     <div class="card">
       <div class="card-title">${m.name}</div>
       <div class="grid2">
@@ -597,22 +600,72 @@ async function mentoras() {
         <div class="field-group"><label>Cargo/Especialidade</label><input id="mf-role-${m.id}" value="${escHtml(m.role||'')}"></div>
       </div>
       <div class="field-group"><label>Bio</label><textarea id="mf-bio-${m.id}" rows="5">${escHtml(m.bio||'')}</textarea></div>
-      <div class="field-group"><label>URL da Foto</label><input id="mf-photo-${m.id}" value="${escHtml(m.photo_url||'')}" placeholder="https://..."></div>
+      <div class="field-group">
+        <label>URL da Foto</label>
+        <input id="mf-photo-${m.id}" value="${escHtml(m.photo_url||'')}" placeholder="https://..." oninput="updatePhotoPreview('${m.id}')">
+      </div>
+      <div class="field-group">
+        <label>Enquadramento da Foto</label>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          ${['top','center','bottom'].map(v=>`<button type="button" id="mf-pos-btn-${m.id}-${v}"
+            onclick="setPhotoPos('${m.id}','${v}')"
+            style="flex:1;padding:8px;border-radius:8px;border:2px solid ${pos===v?'var(--teal)':'var(--border)'};background:${pos===v?'var(--teal)':'transparent'};color:${pos===v?'#fff':'var(--text)'};cursor:pointer;font-size:13px;font-weight:600;transition:all .2s">
+            ${posLabel[v]}
+          </button>`).join('')}
+        </div>
+        <input type="hidden" id="mf-pos-${m.id}" value="${pos}">
+        <div style="position:relative;width:100%;height:220px;border-radius:10px;overflow:hidden;background:#e2e0d8;border:1px solid var(--border)">
+          <img id="mf-preview-${m.id}" src="${escHtml(m.photo_url||'')}"
+            style="width:100%;height:100%;object-fit:cover;object-position:center ${pos};display:${m.photo_url?'block':'none'}"
+            onerror="this.style.display='none'">
+          <div id="mf-noimg-${m.id}" style="display:${m.photo_url?'none':'flex'};align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:13px">Sem foto — cole a URL acima</div>
+        </div>
+        <p style="font-size:11px;color:var(--text3);margin-top:6px">👆 Preview em escala real como aparece na home (360px altura)</p>
+      </div>
       <div class="field-group"><label>URL do Vídeo</label><input id="mf-video-${m.id}" value="${escHtml(m.video_url||'')}" placeholder="https://youtube.com/..."></div>
       <div class="field-group"><label>Instagram URL</label><input id="mf-insta-${m.id}" value="${escHtml(m.instagram_url||'')}" placeholder="https://instagram.com/..."></div>
       <button class="btn-save" onclick="saveMentora('${m.id}')">Salvar</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+function setPhotoPos(id, pos) {
+  document.getElementById(`mf-pos-${id}`).value = pos;
+  const preview = document.getElementById(`mf-preview-${id}`);
+  if (preview) preview.style.objectPosition = `center ${pos}`;
+  ['top','center','bottom'].forEach(v => {
+    const btn = document.getElementById(`mf-pos-btn-${id}-${v}`);
+    const active = v === pos;
+    btn.style.borderColor = active ? 'var(--teal)' : 'var(--border)';
+    btn.style.background  = active ? 'var(--teal)' : 'transparent';
+    btn.style.color       = active ? '#fff' : 'var(--text)';
+  });
+}
+
+function updatePhotoPreview(id) {
+  const url = document.getElementById(`mf-photo-${id}`).value;
+  const img = document.getElementById(`mf-preview-${id}`);
+  const noImg = document.getElementById(`mf-noimg-${id}`);
+  if (url) {
+    img.src = url;
+    img.style.display = 'block';
+    noImg.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    noImg.style.display = 'flex';
+  }
 }
 
 async function saveMentora(id) {
   const data = {
     action: 'update_mentor', id,
-    name: document.getElementById(`mf-name-${id}`).value,
-    role: document.getElementById(`mf-role-${id}`).value,
-    bio: document.getElementById(`mf-bio-${id}`).value,
-    photo_url: document.getElementById(`mf-photo-${id}`).value,
-    video_url: document.getElementById(`mf-video-${id}`).value,
-    instagram_url: document.getElementById(`mf-insta-${id}`).value,
+    name:           document.getElementById(`mf-name-${id}`).value,
+    role:           document.getElementById(`mf-role-${id}`).value,
+    bio:            document.getElementById(`mf-bio-${id}`).value,
+    photo_url:      document.getElementById(`mf-photo-${id}`).value,
+    photo_position: document.getElementById(`mf-pos-${id}`).value,
+    video_url:      document.getElementById(`mf-video-${id}`).value,
+    instagram_url:  document.getElementById(`mf-insta-${id}`).value,
   };
   try {
     const res = await proxyWrite(data);
