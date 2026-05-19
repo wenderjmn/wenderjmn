@@ -12,21 +12,65 @@ body{background:#f0f0ea;font-family:Arial,sans-serif;color:#1a2318;font-size:15p
 .capa h1{color:#5eead4;font-size:26px;margin-bottom:8px}
 .capa p{color:#94a3b8;font-size:14px}
 .capa .badge{display:inline-block;background:#0d9488;color:#fff;padding:6px 16px;border-radius:20px;font-size:13px;font-weight:700;margin-top:14px}
+.indice{background:#fff;border-radius:14px;padding:24px 28px;margin-bottom:36px;border:1px solid #e2e0d8}
+.indice h3{font-size:15px;color:#0d9488;margin-bottom:14px;border-bottom:1px solid #e2e0d8;padding-bottom:10px}
+.indice-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:600px){.indice-grid{grid-template-columns:1fr}}
+.indice a{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;text-decoration:none;color:#1a2318;font-size:13px;background:#f8faf8;border:1px solid #e2e0d8}
+.indice a .i-num{background:#0d9488;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.indice a .i-tipo{margin-left:auto;font-size:11px;color:#6b7c67;font-weight:700}
 .secao{background:#fff;border-radius:14px;margin-bottom:40px;overflow:hidden;border:1px solid #e2e0d8;box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .secao-hdr{background:#1a2318;padding:18px 28px;display:flex;align-items:center;gap:14px}
 .secao-hdr .num{background:#0d9488;color:#fff;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
 .secao-hdr h2{color:#fff;font-size:16px;margin:0}
 .secao-hdr .tag{margin-left:auto;background:#0d9488;color:#fff;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;white-space:nowrap}
-.meta{padding:16px 28px;background:#f8faf8;border-bottom:1px solid #e2e0d8;display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+.meta{padding:14px 28px;background:#f8faf8;border-bottom:1px solid #e2e0d8;display:flex;flex-wrap:wrap;gap:14px;align-items:center}
 .meta-item{font-size:13px;color:#4a5e42}
 .meta-item strong{color:#1a2318}
-.meta-item .chip{background:#e2f4f1;color:#0d6e63;padding:3px 10px;border-radius:12px;font-weight:700;font-size:12px}
-.preview-wrap{padding:28px;background:#f4f3ef}
-iframe{width:100%;border:none;border-radius:10px;background:#fff;display:block}
+.chip{background:#e2f4f1;color:#0d6e63;padding:3px 10px;border-radius:12px;font-weight:700;font-size:12px}
 .nota{padding:14px 28px;background:#fefce8;border-top:1px solid #fde68a;font-size:13px;color:#713f12}
 .nota strong{color:#92400e}
-
-/* WhatsApp section */
+.email-preview{padding:24px 28px;background:#f4f3ef}
+.email-box{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+.em-header{background:#0d9488;padding:28px 36px;text-align:center}
+.em-header.dark{background:#0f172a}
+.em-header.red{background:#e11d48}
+.em-header h1{color:#fff;font-size:20px;margin:0;font-weight:700}
+.em-header .tagline{color:#b2f0eb;font-size:12px;margin-top:4px}
+.em-body{padding:36px}
+.em-body p{font-size:15px;line-height:1.75;color:#1c1917;margin-bottom:16px}
+.em-body p:last-child{margin-bottom:0}
+.em-footer{background:#0f172a;padding:22px 36px;text-align:center}
+.em-footer p{color:#94a3b8;font-size:12px;margin:4px 0}
+.em-footer strong{color:#f1f5f9}
+.perfil-box{background:#f0fdfa;border:1px solid #99f6e4;border-left:4px solid #0d9488;border-radius:10px;padding:18px 22px;margin:20px 0}
+.perfil-box .emoji{font-size:32px;display:block;margin-bottom:8px}
+.perfil-box .tipo{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0d9488;margin-bottom:4px}
+.perfil-box .titulo{font-size:18px;font-weight:700;color:#1c1917;margin-bottom:8px}
+.perfil-box .desc{font-size:14px;color:#57534e;line-height:1.6}
+.em-btn{display:inline-block;background:#0d9488;color:#fff;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:700;font-size:14px;margin:20px 0}
+.em-btn.green{background:#25D366}
+.depo{background:#f4f3ef;border-radius:10px;padding:18px 22px;margin:14px 0}
+.depo .depo-nome{font-weight:700;font-size:13px;color:#0d9488;margin-bottom:6px}
+.depo .depo-texto{font-size:14px;color:#1c1917;line-height:1.6;font-style:italic}
+.destaque{background:#f0fdfa;border-left:4px solid #0d9488;padding:14px 18px;border-radius:0 8px 8px 0;font-style:italic;color:#0f766e;font-size:14px;margin:18px 0}
+.ciencia-box{background:#fff7ed;border-left:4px solid #d97706;padding:14px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+.ciencia-box .c-titulo{font-weight:700;color:#92400e;font-size:13px;margin-bottom:6px}
+.ciencia-box .c-texto{font-size:14px;color:#1c1917;line-height:1.6}
+.lista-item{display:flex;gap:12px;margin:10px 0;align-items:flex-start}
+.lista-item .li-num{flex-shrink:0;width:28px;height:28px;background:#0d9488;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.lista-item .li-text{font-size:14px;line-height:1.6;color:#1c1917;padding-top:4px}
+.countdown-box{background:#0f172a;color:#fff;border-radius:12px;padding:24px;text-align:center;margin:20px 0}
+.countdown-box .num{font-size:52px;font-weight:700;color:#5eead4;line-height:1}
+.countdown-box .label{font-size:13px;color:#94a3b8;margin-top:6px}
+.hora-box{background:#0f172a;color:#5eead4;border-radius:12px;padding:18px;text-align:center;margin:18px 0;font-size:32px;font-weight:700}
+.hora-box .sub{font-size:13px;color:#94a3b8;margin-top:4px;font-weight:400}
+.alerta-box{background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:14px 18px;text-align:center;margin:16px 0}
+.alerta-box strong{color:#92400e;font-size:15px}
+.checklist{list-style:none;padding:0;margin:14px 0}
+.checklist li{padding:8px 0;border-bottom:1px solid #f0f0ec;color:#374151;font-size:14px;padding-left:28px;position:relative}
+.checklist li::before{content:"✅";position:absolute;left:0}
+.info-lista p{font-size:14px;color:#1c1917;margin:8px 0;line-height:1.6}
 .wpp-secao{background:#fff;border-radius:14px;margin-bottom:40px;border:1px solid #e2e0d8;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden}
 .wpp-hdr{background:#075e54;padding:18px 28px}
 .wpp-hdr h2{color:#25d366;font-size:18px;margin-bottom:4px}
@@ -42,17 +86,6 @@ iframe{width:100%;border:none;border-radius:10px;background:#fff;display:block}
 .wpp-bubble{background:#fff;border-radius:0 12px 12px 12px;padding:14px 18px;max-width:85%;box-shadow:0 1px 2px rgba(0,0,0,.15);white-space:pre-wrap;font-size:14px;line-height:1.65;color:#111;font-family:inherit;position:relative}
 .wpp-bubble::before{content:'';position:absolute;top:0;left:-8px;border-right:8px solid #fff;border-bottom:8px solid transparent}
 .wpp-time{text-align:right;font-size:11px;color:#667781;margin-top:6px}
-
-/* índice */
-.indice{background:#fff;border-radius:14px;padding:24px 28px;margin-bottom:36px;border:1px solid #e2e0d8}
-.indice h3{font-size:15px;color:#0d9488;margin-bottom:14px;border-bottom:1px solid #e2e0d8;padding-bottom:10px}
-.indice-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-@media(max-width:600px){.indice-grid{grid-template-columns:1fr}}
-.indice a{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;text-decoration:none;color:#1a2318;font-size:13px;background:#f8faf8;border:1px solid #e2e0d8;transition:background .15s}
-.indice a:hover{background:#e2f4f1}
-.indice a .i-num{background:#0d9488;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
-.indice a .i-tipo{margin-left:auto;font-size:11px;color:#6b7c67;font-weight:700}
-
 .rodape{text-align:center;padding:24px;color:#6b7c67;font-size:12px}
 </style>
 </head>
@@ -60,212 +93,327 @@ iframe{width:100%;border:none;border-radius:10px;background:#fff;display:block}
 <div class="page">
 
   <div class="capa">
-    <h1>📋 Validação de Conteúdo</h1>
-    <p>Sequência completa de e-mails e WhatsApp — Lançamento Masterclass 11/06/2026</p>
+    <h1>Validação de Conteúdo</h1>
+    <p>Sequência completa de e-mails e WhatsApp — Masterclass 11/06/2026</p>
     <div class="badge">Programa EmagreSer · Para validação das mentoras</div>
   </div>
 
-  <!-- ÍNDICE -->
   <div class="indice">
-    <h3>📑 Índice de conteúdos</h3>
+    <h3>Índice de conteúdos</h3>
     <div class="indice-grid">
       <a href="#e1"><span class="i-num">1</span> Boas-vindas (D+0) <span class="i-tipo">E-MAIL</span></a>
-      <a href="#e2"><span class="i-num">2</span> Por que você não consegue manter (D+1) <span class="i-tipo">E-MAIL</span></a>
+      <a href="#e2"><span class="i-num">2</span> Por que não consegue manter (D+1) <span class="i-tipo">E-MAIL</span></a>
       <a href="#e3"><span class="i-num">3</span> Prova social — depoimentos (D+2) <span class="i-tipo">E-MAIL</span></a>
-      <a href="#e4"><span class="i-num">4</span> O que acontece no seu cérebro (D+3) <span class="i-tipo">E-MAIL</span></a>
+      <a href="#e4"><span class="i-num">4</span> O que acontece no cérebro (D+3) <span class="i-tipo">E-MAIL</span></a>
       <a href="#e5"><span class="i-num">5</span> Por que o cérebro sabota (D+5) <span class="i-tipo">E-MAIL</span></a>
       <a href="#e6"><span class="i-num">6</span> O que mudou em 7 dias (D+7) <span class="i-tipo">E-MAIL</span></a>
-      <a href="#e7"><span class="i-num">7</span> O que você vai aprender (D+10) <span class="i-tipo">E-MAIL</span></a>
+      <a href="#e7"><span class="i-num">7</span> O que vai aprender (D+10) <span class="i-tipo">E-MAIL</span></a>
       <a href="#e8"><span class="i-num">8</span> Faltam 3 dias (08/06) <span class="i-tipo">E-MAIL</span></a>
       <a href="#e9"><span class="i-num">9</span> Amanhã é o grande dia (10/06) <span class="i-tipo">E-MAIL</span></a>
       <a href="#e10"><span class="i-num">10</span> HOJE às 20h (11/06 manhã) <span class="i-tipo">E-MAIL</span></a>
       <a href="#e11"><span class="i-num">11</span> Em 1 hora começa (11/06 19h) <span class="i-tipo">E-MAIL</span></a>
-      <a href="#wpp"><span class="i-num">💬</span> Sequência WhatsApp (8 mensagens) <span class="i-tipo">WPP</span></a>
+      <a href="#wpp"><span class="i-num">W</span> Sequência WhatsApp (8 msgs) <span class="i-tipo">WPP</span></a>
     </div>
   </div>
 
-  <!-- ── E-MAILS ── -->
-
   <!-- E1 -->
   <div class="secao" id="e1">
-    <div class="secao-hdr">
-      <div class="num">1</div>
-      <h2>Boas-vindas — Resultado do mapeamento</h2>
-      <span class="tag">D+0 · Imediato</span>
-    </div>
+    <div class="secao-hdr"><div class="num">1</div><h2>Boas-vindas — Resultado do mapeamento</h2><span class="tag">D+0 · Imediato</span></div>
     <div class="meta">
-      <div class="meta-item"><strong>Assunto:</strong> Seu mapeamento está pronto, {{nome}} 🎉</div>
+      <div class="meta-item"><strong>Assunto:</strong> Seu mapeamento está pronto, [Nome] 🎉</div>
       <div class="meta-item"><strong>Slug:</strong> <span class="chip">boas_vindas</span></div>
     </div>
-    <div class="preview-wrap">
-      <iframe srcdoc='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:0;background:#f4f3ef;font-family:&apos;DM Sans&apos;,Arial,sans-serif;color:#1c1917}table{border-collapse:collapse}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden}.header{background:#0d9488;padding:32px 40px;text-align:center}.header h1{color:#fff;font-size:22px;margin:0;font-weight:700}.body{padding:40px}.lead{font-size:17px;line-height:1.7;color:#1c1917;margin-bottom:24px}.perfil-box{background:#f0fdfa;border:1px solid #99f6e4;border-left:4px solid #0d9488;border-radius:10px;padding:20px 24px;margin:24px 0}.perfil-box .emoji{font-size:36px;display:block;margin-bottom:8px}.perfil-box .tipo{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0d9488;margin-bottom:4px}.perfil-box .titulo{font-size:20px;font-weight:700;color:#1c1917;margin-bottom:8px}.perfil-box .desc{font-size:15px;color:#57534e;line-height:1.6}.btn{display:inline-block;background:#0d9488;color:#fff;text-decoration:none;padding:16px 32px;border-radius:10px;font-weight:700;font-size:15px;letter-spacing:.04em;margin:24px 0}.info{font-size:14px;color:#57534e;line-height:1.7}.footer{background:#0f172a;padding:24px 40px;text-align:center}.footer p{color:#94a3b8;font-size:12px;margin:4px 0}</style></head><body><table width="100%"><tr><td style="padding:24px 16px"><div class="wrap"><div class="header"><h1>Programa EmagreSer</h1></div><div class="body"><p class="lead">Oi, <strong>Ana</strong>! 👋</p><p class="lead">Você completou o mapeamento comportamental e seu resultado está pronto. Veja o padrão que o seu cérebro vem repetindo:</p><div class="perfil-box"><span class="emoji">🍫</span><div class="tipo">Perfil A — A Recompensadora</div><div class="titulo">Você usa a comida como prêmio e alívio emocional</div><div class="desc">Você come para celebrar, para compensar o estresse, para se recompensar por um dia difícil. A comida virou o seu maior aliado emocional — e é por isso que parece impossível controlar.</div></div><p class="info">Esse padrão não é fraqueza. É neurobiologia. E o Programa EmagreSer foi criado exatamente para reprogramá-lo.</p><p class="info"><strong>O próximo passo é a Masterclass "O Código dos Sabotadores: Fim do Efeito Sanfona"</strong><br>📅 11/06 às 20h (horário de Brasília)<br>🎁 Gratuita e exclusiva para quem fez o mapeamento</p><a href="#" class="btn">ENTRAR NO GRUPO VIP →</a><p class="info" style="font-size:13px;color:#a8a29e">Nos próximos dias você vai receber mais conteúdo exclusivo sobre o seu perfil. Fique de olho na caixa de entrada 👀</p></div><div class="footer"><p><strong style="color:#f1f5f9">Programa EmagreSer</strong></p><p>Psicóloga Daniely Albuquerque &amp; Nutricionista Ira Soraya</p><p style="margin-top:12px"><a href="#" style="color:#64748b">Descadastrar</a></p></div></div></td></tr></table></body></html>' height="620" onload="this.style.height=this.contentDocument.body.scrollHeight+40+'px'"></iframe>
+    <div class="email-preview">
+      <div class="email-box">
+        <div class="em-header"><h1>Programa EmagreSer</h1></div>
+        <div class="em-body">
+          <p>Oi, <strong>Ana</strong>! 👋</p>
+          <p>Você completou o mapeamento comportamental e seu resultado está pronto. Veja o padrão que o seu cérebro vem repetindo:</p>
+          <div class="perfil-box">
+            <span class="emoji">🍫</span>
+            <div class="tipo">Perfil A — A Recompensadora</div>
+            <div class="titulo">Você usa a comida como prêmio e alívio emocional</div>
+            <div class="desc">Você come para celebrar, para compensar o estresse, para se recompensar por um dia difícil. A comida virou o seu maior aliado emocional — e é por isso que parece impossível controlar.</div>
+          </div>
+          <p>Esse padrão não é fraqueza. É neurobiologia. E o Programa EmagreSer foi criado exatamente para reprogramá-lo.</p>
+          <p><strong>O próximo passo é a Masterclass "O Código dos Sabotadores: Fim do Efeito Sanfona"</strong><br>
+          📅 11/06 às 20h (horário de Brasília)<br>
+          🎁 Gratuita e exclusiva para quem fez o mapeamento</p>
+          <a href="#" class="em-btn">ENTRAR NO GRUPO VIP →</a>
+          <p style="font-size:13px;color:#a8a29e">Nos próximos dias você vai receber mais conteúdo exclusivo sobre o seu perfil. Fique de olho na caixa de entrada 👀</p>
+        </div>
+        <div class="em-footer"><p><strong>Programa EmagreSer</strong></p><p>Psicóloga Daniely Albuquerque &amp; Nutricionista Ira Soraya</p><p style="margin-top:10px"><a href="#" style="color:#64748b;font-size:11px">Descadastrar</a></p></div>
+      </div>
     </div>
-    <div class="nota"><strong>📝 Nota para validação:</strong> Os campos {{nome}}, {{emoji}}, {{tipo}}, {{titulo}}, {{descricao}} são substituídos automaticamente pelo perfil da lead. O exemplo acima mostra o Perfil A. Os botões levam ao grupo VIP do WhatsApp.</div>
+    <div class="nota"><strong>📝 Nota:</strong> Nome, emoji, tipo e descrição são substituídos automaticamente pelo perfil real da lead. Exemplo usa Perfil A.</div>
   </div>
 
   <!-- E2 -->
   <div class="secao" id="e2">
-    <div class="secao-hdr">
-      <div class="num">2</div>
-      <h2>Por que você não consegue manter o resultado</h2>
-      <span class="tag">D+1 · 24h após cadastro</span>
-    </div>
+    <div class="secao-hdr"><div class="num">2</div><h2>Por que você não consegue manter o resultado</h2><span class="tag">D+1 · 24h após cadastro</span></div>
     <div class="meta">
-      <div class="meta-item"><strong>Assunto:</strong> Por que você não consegue manter o resultado, {{nome}}?</div>
+      <div class="meta-item"><strong>Assunto:</strong> Por que você não consegue manter o resultado, [Nome]?</div>
       <div class="meta-item"><strong>Slug:</strong> <span class="chip">nutricao_d1</span></div>
     </div>
-    <div class="preview-wrap">
-      <iframe srcdoc='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><style>body{margin:0;padding:0;background:#f4f3ef;font-family:Arial,sans-serif;color:#1c1917}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden}.header{background:#0d9488;padding:32px 40px;text-align:center}.header h1{color:#fff;font-size:20px;margin:0}.body{padding:40px}.p{font-size:16px;line-height:1.75;color:#1c1917;margin-bottom:18px}.destaque{background:#f0fdfa;border-left:4px solid #0d9488;padding:16px 20px;border-radius:0 8px 8px 0;font-style:italic;color:#0f766e;font-size:15px;margin:24px 0}.btn{display:inline-block;background:#0d9488;color:#fff;text-decoration:none;padding:16px 32px;border-radius:10px;font-weight:700;font-size:15px;margin:24px 0}.footer{background:#0f172a;padding:24px 40px;text-align:center}.footer p{color:#94a3b8;font-size:12px;margin:4px 0}</style></head><body><table width="100%"><tr><td style="padding:24px 16px"><div class="wrap"><div class="header"><h1>Programa EmagreSer</h1></div><div class="body"><p class="p">Oi, <strong>Ana</strong>,</p><p class="p">A vida toda, te fizeram acreditar que emagrecer é uma prova de caráter. Que se você não consegue manter o peso, é porque te falta disciplina, força de vontade ou dedicação.</p><p class="p"><strong>Eu preciso te dizer: isso não é verdade.</strong></p><p class="p">O seu comportamento diante da comida não é um defeito de personalidade. Ele é controlado pelo seu cérebro — feridas abertas por anos de estresse acumulado, privações extremas e emoções que você nunca teve tempo de processar.</p><div class="destaque">"Não existe força de vontade no mundo que vença, sozinha, o mecanismo de sobrevivência instalado no seu cérebro."</div><p class="p">Quando o cansaço bate e o estresse sufoca, a sua parte racional perde o controle. O seu lado emocional assume o comando buscando apenas um segundo de alívio.</p><p class="p"><strong>O inimigo nunca foi você.</strong> O verdadeiro vilão é um mecanismo invisível que nunca te ensinaram a gerenciar.</p><p class="p">Na Masterclass do dia 11/06, Daniely e Ira vão mostrar ao vivo como cada perfil sabotador funciona e o que fazer nos primeiros 7 dias para quebrar esse ciclo.</p><a href="#" class="btn">GARANTIR MINHA VAGA NA MASTERCLASS →</a></div><div class="footer"><p><strong style="color:#f1f5f9">Programa EmagreSer</strong></p><p>Psicóloga Daniely Albuquerque &amp; Nutricionista Ira Soraya</p></div></div></td></tr></table></body></html>' height="560" onload="this.style.height=this.contentDocument.body.scrollHeight+40+'px'"></iframe>
+    <div class="email-preview">
+      <div class="email-box">
+        <div class="em-header"><h1>Programa EmagreSer</h1></div>
+        <div class="em-body">
+          <p>Oi, <strong>Ana</strong>,</p>
+          <p>A vida toda, te fizeram acreditar que emagrecer é uma prova de caráter. Que se você não consegue manter o peso, é porque te falta disciplina, força de vontade ou dedicação.</p>
+          <p><strong>Eu preciso te dizer: isso não é verdade.</strong></p>
+          <p>O seu comportamento diante da comida não é um defeito de personalidade. Ele é controlado pelo seu cérebro — feridas abertas por anos de estresse acumulado, privações extremas e emoções que você nunca teve tempo de processar.</p>
+          <div class="destaque">"Não existe força de vontade no mundo que vença, sozinha, o mecanismo de sobrevivência instalado no seu cérebro."</div>
+          <p>Quando o cansaço bate e o estresse sufoca, a sua parte racional perde o controle. O seu lado emocional assume o comando buscando apenas um segundo de alívio.</p>
+          <p><strong>O inimigo nunca foi você.</strong> O verdadeiro vilão é um mecanismo invisível que nunca te ensinaram a gerenciar.</p>
+          <p>Na Masterclass do dia 11/06, Daniely e Ira vão mostrar ao vivo como cada perfil sabotador funciona e o que fazer nos primeiros 7 dias para quebrar esse ciclo.</p>
+          <a href="#" class="em-btn">GARANTIR MINHA VAGA NA MASTERCLASS →</a>
+        </div>
+        <div class="em-footer"><p><strong>Programa EmagreSer</strong></p><p>Psicóloga Daniely Albuquerque &amp; Nutricionista Ira Soraya</p></div>
+      </div>
     </div>
   </div>
 
   <!-- E3 -->
   <div class="secao" id="e3">
-    <div class="secao-hdr">
-      <div class="num">3</div>
-      <h2>Prova social — depoimentos reais</h2>
-      <span class="tag">D+2 · 48h após cadastro</span>
-    </div>
+    <div class="secao-hdr"><div class="num">3</div><h2>Prova social — depoimentos reais</h2><span class="tag">D+2 · 48h após cadastro</span></div>
     <div class="meta">
-      <div class="meta-item"><strong>Assunto:</strong> {{nome}}, elas também achavam que era falta de força de vontade</div>
+      <div class="meta-item"><strong>Assunto:</strong> [Nome], elas também achavam que era falta de força de vontade</div>
       <div class="meta-item"><strong>Slug:</strong> <span class="chip">prova_social_d2</span></div>
     </div>
-    <div class="preview-wrap">
-      <iframe srcdoc='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><style>body{margin:0;padding:0;background:#f4f3ef;font-family:Arial,sans-serif;color:#1c1917}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden}.header{background:#0d9488;padding:32px 40px;text-align:center}.header h1{color:#fff;font-size:20px;margin:0}.body{padding:40px}.p{font-size:16px;line-height:1.75;margin-bottom:18px}.depo{background:#f4f3ef;border-radius:10px;padding:20px 24px;margin:16px 0}.depo .nome{font-weight:700;font-size:14px;color:#0d9488;margin-bottom:6px}.depo .texto{font-size:15px;color:#1c1917;line-height:1.6;font-style:italic}.btn{display:inline-block;background:#0d9488;color:#fff;text-decoration:none;padding:16px 32px;border-radius:10px;font-weight:700;font-size:15px;margin:24px 0}.footer{background:#0f172a;padding:24px 40px;text-align:center}.footer p{color:#94a3b8;font-size:12px;margin:4px 0}</style></head><body><table width="100%"><tr><td style="padding:24px 16px"><div class="wrap"><div class="header"><h1>Programa EmagreSer</h1></div><div class="body"><p class="p">Oi, <strong>Ana</strong>,</p><p class="p">Mulheres que lideravam equipes, resolviam tudo para todos, mas não conseguiam "mandar na própria boca". Que se sentiam uma fraude. Que achavam que o problema era delas.</p><p class="p">Até descobrirem o seu perfil sabotador.</p><div class="depo"><div class="nome">Bruna, 40 anos</div><div class="texto">"Para mim mudou tudo. Eu entendia o que acontecia na minha cabeça. Não era fraqueza — era o meu cérebro tentando me proteger de um jeito que eu nunca aprendi a gerenciar."</div></div><div class="depo"><div class="nome">Kesya</div><div class="texto">"Imagina, você daqui 90 dias, viver o mesmo que essas mulheres maravilhosas. Foi o que eu ganhei com o programa."</div></div><p class="p">A diferença entre elas e as que ainda estão presas no ciclo não é força de vontade. É <strong>estratégia certa para o perfil certo.</strong></p><p class="p">É exatamente isso que Daniely e Ira vão ensinar na Masterclass do dia 11/06.</p><a href="#" class="btn">QUERO PARAR DE RECOMEÇAR TAMBÉM →</a></div><div class="footer"><p><strong style="color:#f1f5f9">Programa EmagreSer</strong></p><p>Psicóloga Daniely Albuquerque &amp; Nutricionista Ira Soraya</p></div></div></td></tr></table></body></html>' height="580" onload="this.style.height=this.contentDocument.body.scrollHeight+40+'px'"></iframe>
+    <div class="email-preview">
+      <div class="email-box">
+        <div class="em-header"><h1>Programa EmagreSer</h1></div>
+        <div class="em-body">
+          <p>Oi, <strong>Ana</strong>,</p>
+          <p>Mulheres que lideravam equipes, resolviam tudo para todos, mas não conseguiam "mandar na própria boca". Que se sentiam uma fraude. Que achavam que o problema era delas.</p>
+          <p>Até descobrirem o seu perfil sabotador.</p>
+          <div class="depo"><div class="depo-nome">Bruna, 40 anos</div><div class="depo-texto">"Para mim mudou tudo. Eu entendia o que acontecia na minha cabeça. Não era fraqueza — era o meu cérebro tentando me proteger de um jeito que eu nunca aprendi a gerenciar."</div></div>
+          <div class="depo"><div class="depo-nome">Kesya</div><div class="depo-texto">"Imagina, você daqui 90 dias, viver o mesmo que essas mulheres maravilhosas. Foi o que eu ganhei com o programa."</div></div>
+          <p>A diferença entre elas e as que ainda estão presas no ciclo não é força de vontade. É <strong>estratégia certa para o perfil certo.</strong></p>
+          <p>É exatamente isso que Daniely e Ira vão ensinar na Masterclass do dia 11/06.</p>
+          <a href="#" class="em-btn">QUERO PARAR DE RECOMEÇAR TAMBÉM →</a>
+        </div>
+        <div class="em-footer"><p><strong>Programa EmagreSer</strong></p><p>Psicóloga Daniely Albuquerque &amp; Nutricionista Ira Soraya</p></div>
+      </div>
     </div>
-    <div class="nota"><strong>📝 Nota para validação:</strong> Os nomes "Bruna" e "Kesya" são depoimentos reais do programa? Confirmar ou substituir por nomes/depoimentos que as mentoras queiram usar.</div>
+    <div class="nota"><strong>📝 Nota:</strong> "Bruna" e "Kesya" são depoimentos reais? Confirmar ou substituir antes de publicar.</div>
   </div>
 
   <!-- E4 -->
   <div class="secao" id="e4">
-    <div class="secao-hdr">
-      <div class="num">4</div>
-      <h2>O que acontece no seu cérebro quando você perde o controle</h2>
-      <span class="tag">D+3 · 72h após cadastro</span>
-    </div>
+    <div class="secao-hdr"><div class="num">4</div><h2>O que acontece no seu cérebro quando você perde o controle</h2><span class="tag">D+3 · 72h após cadastro</span></div>
     <div class="meta">
-      <div class="meta-item"><strong>Assunto:</strong> {{nome}}, o que acontece no seu cérebro quando você perde o controle?</div>
+      <div class="meta-item"><strong>Assunto:</strong> [Nome], o que acontece no seu cérebro quando você perde o controle?</div>
       <div class="meta-item"><strong>Slug:</strong> <span class="chip">urgencia_d3</span></div>
     </div>
-    <div class="preview-wrap">
-      <iframe srcdoc='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><style>body{margin:0;padding:0;background:#f4f3ef;font-family:Arial,sans-serif;color:#1c1917}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden}.header{background:#0d9488;padding:32px 40px;text-align:center}.header h1{color:#fff;font-size:20px;margin:0}.body{padding:40px}.p{font-size:16px;line-height:1.75;margin-bottom:18px}.ciencia{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid #d97706;border-radius:0 8px 8px 0;padding:16px 20px;margin:16px 0}.ciencia .titulo{font-weight:700;color:#92400e;font-size:14px;margin-bottom:6px}.ciencia .texto{font-size:15px;color:#1c1917;line-height:1.6}.btn{display:inline-block;background:#0d9488;color:#fff;text-decoration:none;padding:16px 32px;border-radius:10px;font-weight:700;font-size:15px;margin:24px 0}.footer{background:#0f172a;padding:24px 40px;text-align:center}.footer p{color:#94a3b8;font-size:12px;margin:4px 0}</style></head><body><table width="100%"><tr><td style="padding:24px 16px"><div class="wrap"><div class="header"><h1>Programa EmagreSer</h1></div><div class="body"><p class="p">Oi, <strong>Ana</strong>,</p><p class="p">Você já se perguntou por que, no final do dia, mesmo com toda a sua determinação, você perde o controle?</p><p class="p">A ciência explica — e a resposta vai mudar a forma como você se vê:</p><div class="ciencia"><div class="titulo">⚡ Seu estoque de decisões acabou</div><div class="texto">A sua capacidade de dizer "não" funciona como a bateria de um celular. Depois de horas resolvendo problemas, a sua parte racional fica sem energia. Quem assume é o lado emocional — que só quer alívio imediato.</div></div><div class="ciencia"><div class="titulo">🧠 Modo de sobrevivência ativado</div><div class="texto">Quando você vive sob estresse constante, seu cérebro entende que está em perigo. O comer emocional não é falta de foco — é o seu corpo tentando se acalmar da única forma que aprendeu.</div></div><div class="ciencia"><div class="titulo">🔄 A armadilha da proibição</div><div class="texto">Quanto mais você proíbe um alimento, mais o seu cérebro fica obcecado por ele. A dieta restritiva é o que alimenta a obsessão. É biológico.</div></div><p class="p">No dia 11/06, Daniely e Ira vão mostrar ao vivo o protocolo para reprogramar esses 3 mecanismos no seu perfil específico.</p><a href="#" class="btn">GARANTIR MINHA VAGA →</a></div><div class="footer"><p><strong style="color:#f1f5f9">Programa EmagreSer</strong></p><p>Psicóloga Daniely Albuquerque &amp; Nutricionista Ira Soraya</p></div></div></td></tr></table></body></html>' height="660" onload="this.style.height=this.contentDocument.body.scrollHeight+40+'px'"></iframe>
+    <div class="email-preview">
+      <div class="email-box">
+        <div class="em-header"><h1>Programa EmagreSer</h1></div>
+        <div class="em-body">
+          <p>Oi, <strong>Ana</strong>,</p>
+          <p>Você já se perguntou por que, no final do dia, mesmo com toda a sua determinação, você perde o controle? A ciência explica:</p>
+          <div class="ciencia-box"><div class="c-titulo">⚡ Seu estoque de decisões acabou</div><div class="c-texto">A sua capacidade de dizer "não" funciona como a bateria de um celular. Depois de horas resolvendo problemas, a sua parte racional fica sem energia. Quem assume é o lado emocional — que só quer alívio imediato.</div></div>
+          <div class="ciencia-box"><div class="c-titulo">🧠 Modo de sobrevivência ativado</div><div class="c-texto">Quando você vive sob estresse constante, seu cérebro entende que está em perigo. O comer emocional não é falta de foco — é o seu corpo tentando se acalmar da única forma que aprendeu.</div></div>
+          <div class="ciencia-box"><div class="c-titulo">🔄 A armadilha da proibição</div><div class="c-texto">Quanto mais você proíbe um alimento, mais o seu cérebro fica obcecado por ele. A dieta restritiva é o que alimenta a obsessão. É biológico.</div></div>
+          <p>No dia 11/06, Daniely e Ira vão mostrar ao vivo o protocolo para reprogramar esses 3 mecanismos no seu perfil específico.</p>
+          <a href="#" class="em-btn">GARANTIR MINHA VAGA →</a>
+        </div>
+        <div class="em-footer"><p><strong>Programa EmagreSer</strong></p><p>Psicóloga Daniely Albuquerque &amp; Nutricionista Ira Soraya</p></div>
+      </div>
     </div>
   </div>
 
   <!-- E5 -->
   <div class="secao" id="e5">
-    <div class="secao-hdr">
-      <div class="num">5</div>
-      <h2>Por que seu cérebro sabota você</h2>
-      <span class="tag">D+5 · 120h após cadastro</span>
-    </div>
+    <div class="secao-hdr"><div class="num">5</div><h2>Por que seu cérebro sabota você</h2><span class="tag">D+5 · 120h após cadastro</span></div>
     <div class="meta">
-      <div class="meta-item"><strong>Assunto:</strong> Por que seu cérebro sabota você, {{nome}}?</div>
+      <div class="meta-item"><strong>Assunto:</strong> Por que seu cérebro sabota você, [Nome]?</div>
       <div class="meta-item"><strong>Slug:</strong> <span class="chip">conteudo_d5</span></div>
     </div>
-    <div class="preview-wrap">
-      <iframe srcdoc='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:0;background:#f4f3ef;font-family:Arial,sans-serif}*{box-sizing:border-box}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:0 0 12px 12px;overflow:hidden}.hdr{background:#0f172a;padding:28px 24px;text-align:center}.logo{color:#5eead4;font-family:Georgia,serif;font-size:22px;font-weight:700;letter-spacing:.5px}.tagline{color:#94a3b8;font-size:12px;margin-top:4px}.bdy{padding:36px 32px}.h2{color:#0f172a;font-size:20px;line-height:1.35;margin:0 0 18px;font-weight:700}p{color:#374151;font-size:15px;line-height:1.75;margin:0 0 16px}.box{background:#f0fdfa;border-left:4px solid #0d9488;padding:18px 20px;border-radius:0 10px 10px 0;margin:24px 0}.box p{margin:0;color:#0f4c45;font-weight:600}.perfil-tag{display:inline-block;background:#0d9488;color:#fff;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;margin-bottom:20px}.lista{padding-left:20px;color:#374151;font-size:15px;line-height:1.8;margin:0 0 20px}.btn{display:block;background:#0d9488;color:#fff;text-decoration:none;padding:16px 32px;border-radius:10px;text-align:center;font-weight:700;font-size:16px;margin:28px auto;max-width:300px}.ftr{background:#f8fafc;padding:22px 24px;text-align:center;border-top:1px solid #e2e8f0}.ftr p{font-size:12px;color:#94a3b8;margin:4px 0}.socials{margin:10px 0}.socials a{color:#0d9488;text-decoration:none;font-size:12px;margin:0 8px}</style></head><body><div class="wrap"><div class="hdr"><div class="logo">Programa EmagreSer</div><div class="tagline">Psicologia + Nutrição para um emagrecimento definitivo</div></div><div class="bdy"><div class="perfil-tag">🍫 Perfil A — A Recompensadora</div><h2 class="h2">Oi, Ana! Sabe por que seu cérebro te sabota — mesmo quando você quer tanto mudar?</h2><p>A resposta não está na falta de força de vontade.<br>Está na forma como seu cérebro <strong>aprendeu a sobreviver</strong> ao longo dos anos.</p><div class="box"><p>O seu padrão (Perfil A) não é um defeito. É um mecanismo de proteção que ficou desatualizado — e agora trabalha contra você.</p></div><p>Existem 3 gatilhos principais que ativam o sabotador em qualquer perfil:</p><ul class="lista"><li><strong>Gatilho emocional</strong> — cansaço, estresse, frustração ou tédio acendem o "modo automático"</li><li><strong>Gatilho de restrição</strong> — quanto mais você tenta controlar, mais o cérebro resiste</li><li><strong>Gatilho de recompensa</strong> — seu cérebro associou comida a prazer e alívio desde a infância</li></ul><p>A boa notícia: esses gatilhos podem ser <strong>reconfigurados</strong>. Não com dieta. Com as ferramentas certas — psicológicas e nutricionais ao mesmo tempo.</p><p>É exatamente isso que a Masterclass <strong>"O Código dos Sabotadores"</strong> vai mostrar no dia 11/06.</p><a href="#" class="btn">👉 Entrar no Grupo VIP</a></div><div class="ftr"><p><strong>Daniely Albuquerque</strong> (Psicóloga) &amp; <strong>Ira Soraya</strong> (Nutricionista)</p><div class="socials"><a href="#">@oficialemagreser</a> · <a href="#">@psidanielyalbuquerque</a> · <a href="#">@irasorayanutri</a></div></div></div></body></html>' height="660" onload="this.style.height=this.contentDocument.body.scrollHeight+40+'px'"></iframe>
+    <div class="email-preview">
+      <div class="email-box">
+        <div class="em-header dark"><h1>Programa EmagreSer</h1><div class="tagline">Psicologia + Nutrição para um emagrecimento definitivo</div></div>
+        <div class="em-body">
+          <div style="display:inline-block;background:#0d9488;color:#fff;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;margin-bottom:18px">🍫 Perfil A — A Recompensadora</div>
+          <p><strong>Oi, Ana!</strong> Sabe por que seu cérebro te sabota — mesmo quando você quer tanto mudar?</p>
+          <p>A resposta não está na falta de força de vontade. Está na forma como seu cérebro <strong>aprendeu a sobreviver</strong> ao longo dos anos.</p>
+          <div class="destaque">O seu padrão (Perfil A) não é um defeito. É um mecanismo de proteção que ficou desatualizado — e agora trabalha contra você.</div>
+          <p>Existem 3 gatilhos principais que ativam o sabotador em qualquer perfil:</p>
+          <ul style="padding-left:20px;color:#374151;font-size:14px;line-height:1.9;margin:12px 0">
+            <li><strong>Gatilho emocional</strong> — cansaço, estresse, frustração ou tédio acendem o "modo automático"</li>
+            <li><strong>Gatilho de restrição</strong> — quanto mais você tenta controlar, mais o cérebro resiste</li>
+            <li><strong>Gatilho de recompensa</strong> — seu cérebro associou comida a prazer e alívio desde a infância</li>
+          </ul>
+          <p>A boa notícia: esses gatilhos podem ser <strong>reconfigurados</strong>. Não com dieta. Com as ferramentas certas.</p>
+          <p>É exatamente isso que a Masterclass <strong>"O Código dos Sabotadores"</strong> vai mostrar no dia 11/06.</p>
+          <a href="#" class="em-btn">👉 Entrar no Grupo VIP</a>
+        </div>
+        <div class="em-footer"><p><strong>Daniely Albuquerque</strong> (Psicóloga) &amp; <strong>Ira Soraya</strong> (Nutricionista)</p></div>
+      </div>
     </div>
   </div>
 
   <!-- E6 -->
   <div class="secao" id="e6">
-    <div class="secao-hdr">
-      <div class="num">6</div>
-      <h2>O que mudou na vida delas em 7 dias</h2>
-      <span class="tag">D+7 · 168h após cadastro</span>
-    </div>
+    <div class="secao-hdr"><div class="num">6</div><h2>O que mudou na vida delas em 7 dias</h2><span class="tag">D+7 · 168h após cadastro</span></div>
     <div class="meta">
-      <div class="meta-item"><strong>Assunto:</strong> {{nome}}, o que mudou na vida delas em 7 dias</div>
+      <div class="meta-item"><strong>Assunto:</strong> [Nome], o que mudou na vida delas em 7 dias</div>
       <div class="meta-item"><strong>Slug:</strong> <span class="chip">depoimento_d7</span></div>
     </div>
-    <div class="preview-wrap">
-      <iframe srcdoc='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><style>body{margin:0;padding:0;background:#f4f3ef;font-family:Arial,sans-serif}*{box-sizing:border-box}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:0 0 12px 12px;overflow:hidden}.hdr{background:#0f172a;padding:28px 24px;text-align:center}.logo{color:#5eead4;font-family:Georgia,serif;font-size:22px;font-weight:700;letter-spacing:.5px}.tagline{color:#94a3b8;font-size:12px;margin-top:4px}.bdy{padding:36px 32px}.h2{color:#0f172a;font-size:20px;line-height:1.35;margin:0 0 18px;font-weight:700}p{color:#374151;font-size:15px;line-height:1.75;margin:0 0 16px}.depo{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:22px;margin:16px 0}.depo-texto{color:#1a2318;font-size:15px;line-height:1.7;font-style:italic;margin:0 0 12px}.depo-nome{font-size:13px;font-weight:700;color:#0d9488}.depo-perfil{font-size:12px;color:#6b7c67}.btn{display:block;background:#0d9488;color:#fff;text-decoration:none;padding:16px 32px;border-radius:10px;text-align:center;font-weight:700;font-size:16px;margin:28px auto;max-width:300px}.ftr{background:#f8fafc;padding:22px 24px;text-align:center;border-top:1px solid #e2e8f0}.ftr p{font-size:12px;color:#94a3b8;margin:4px 0}</style></head><body><div class="wrap"><div class="hdr"><div class="logo">Programa EmagreSer</div><div class="tagline">Psicologia + Nutrição para um emagrecimento definitivo</div></div><div class="bdy"><h2 class="h2">Ana, 7 dias. Veja o que pode mudar quando você entende seu padrão.</h2><p>Não é sobre dieta. Não é sobre academia. É sobre entender <strong>por que você come do jeito que come</strong> — e ter um plano real para mudar isso.</p><div class="depo"><p class="depo-texto">"Sempre achei que era falta de força de vontade. Depois que entendi meu perfil sabotador, tudo fez sentido. Pela primeira vez em anos, me sinto no controle."</p><div class="depo-nome">Ana Paula, 38 anos</div><div class="depo-perfil">Perfil A — A Recompensadora</div></div><div class="depo"><p class="depo-texto">"Eu comia sem perceber. Terminava o prato e não sabia o que tinha comido. Aprendi a identificar o gatilho e agora consigo pausar antes de agir."</p><div class="depo-nome">Fernanda, 44 anos</div><div class="depo-perfil">Perfil B — Piloto Automático</div></div><div class="depo"><p class="depo-texto">"Me privava o dia todo e à noite perdia tudo. Hoje entendo por que isso acontecia — e tenho uma estratégia que funciona de verdade."</p><div class="depo-nome">Mariana, 41 anos</div><div class="depo-perfil">Perfil D — Compensadora Noturna</div></div><p>Na Masterclass do dia 11/06, a Daniely e a Ira vão revelar as estratégias exatas que transformaram essas histórias.</p><a href="#" class="btn">📲 Entrar no Grupo VIP</a></div><div class="ftr"><p><strong>Daniely Albuquerque</strong> (Psicóloga) &amp; <strong>Ira Soraya</strong> (Nutricionista)</p></div></div></body></html>' height="700" onload="this.style.height=this.contentDocument.body.scrollHeight+40+'px'"></iframe>
+    <div class="email-preview">
+      <div class="email-box">
+        <div class="em-header dark"><h1>Programa EmagreSer</h1></div>
+        <div class="em-body">
+          <p><strong>Ana</strong>, 7 dias. Veja o que pode mudar quando você entende seu padrão.</p>
+          <p>Não é sobre dieta. Não é sobre academia. É sobre entender <strong>por que você come do jeito que come</strong> — e ter um plano real para mudar isso.</p>
+          <div class="depo"><div class="depo-texto">"Sempre achei que era falta de força de vontade. Depois que entendi meu perfil sabotador, tudo fez sentido. Pela primeira vez em anos, me sinto no controle."</div><div class="depo-nome">Ana Paula, 38 anos — Perfil A · A Recompensadora</div></div>
+          <div class="depo"><div class="depo-texto">"Eu comia sem perceber. Terminava o prato e não sabia o que tinha comido. Aprendi a identificar o gatilho e agora consigo pausar antes de agir."</div><div class="depo-nome">Fernanda, 44 anos — Perfil B · Piloto Automático</div></div>
+          <div class="depo"><div class="depo-texto">"Me privava o dia todo e à noite perdia tudo. Hoje entendo por que isso acontecia — e tenho uma estratégia que funciona de verdade."</div><div class="depo-nome">Mariana, 41 anos — Perfil D · Compensadora Noturna</div></div>
+          <p>Na Masterclass do dia 11/06, a Daniely e a Ira vão revelar as estratégias exatas que transformaram essas histórias.</p>
+          <a href="#" class="em-btn">📲 Entrar no Grupo VIP</a>
+        </div>
+        <div class="em-footer"><p><strong>Daniely Albuquerque</strong> (Psicóloga) &amp; <strong>Ira Soraya</strong> (Nutricionista)</p></div>
+      </div>
     </div>
-    <div class="nota"><strong>📝 Nota para validação:</strong> Os depoimentos de Ana Paula, Fernanda e Mariana são fictícios ou baseados em pacientes reais? Confirmar nomes/histórias com as mentoras antes de publicar.</div>
+    <div class="nota"><strong>📝 Nota:</strong> Os depoimentos de Ana Paula, Fernanda e Mariana são reais ou fictícios? Confirmar antes de publicar.</div>
   </div>
 
   <!-- E7 -->
   <div class="secao" id="e7">
-    <div class="secao-hdr">
-      <div class="num">7</div>
-      <h2>O que você vai aprender na Masterclass</h2>
-      <span class="tag">D+10 · 240h após cadastro</span>
-    </div>
+    <div class="secao-hdr"><div class="num">7</div><h2>O que você vai aprender na Masterclass</h2><span class="tag">D+10 · 240h após cadastro</span></div>
     <div class="meta">
-      <div class="meta-item"><strong>Assunto:</strong> {{nome}}, o que você vai aprender no dia 11/06 🗓️</div>
+      <div class="meta-item"><strong>Assunto:</strong> [Nome], o que você vai aprender no dia 11/06</div>
       <div class="meta-item"><strong>Slug:</strong> <span class="chip">antecipacao_d10</span></div>
     </div>
-    <div class="preview-wrap">
-      <iframe srcdoc='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><style>body{margin:0;padding:0;background:#f4f3ef;font-family:Arial,sans-serif}*{box-sizing:border-box}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:0 0 12px 12px;overflow:hidden}.hdr{background:#0f172a;padding:28px 24px;text-align:center}.logo{color:#5eead4;font-family:Georgia,serif;font-size:22px;font-weight:700;letter-spacing:.5px}.tagline{color:#94a3b8;font-size:12px;margin-top:4px}.bdy{padding:36px 32px}.h2{color:#0f172a;font-size:20px;line-height:1.35;margin:0 0 18px;font-weight:700}p{color:#374151;font-size:15px;line-height:1.75;margin:0 0 16px}.item{display:flex;gap:14px;margin:12px 0;align-items:flex-start}.item-num{flex-shrink:0;width:32px;height:32px;background:#0d9488;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;line-height:1}.item-text{color:#1a2318;font-size:15px;line-height:1.6;padding-top:5px}.destaque{background:#0f172a;color:#fff;border-radius:12px;padding:24px;margin:24px 0;text-align:center}.destaque .data{font-size:24px;font-weight:700;color:#5eead4;margin-bottom:6px}.destaque .hora{font-size:15px;color:#94a3b8}.btn{display:block;background:#0d9488;color:#fff;text-decoration:none;padding:16px 32px;border-radius:10px;text-align:center;font-weight:700;font-size:16px;margin:28px auto;max-width:300px}.ftr{background:#f8fafc;padding:22px 24px;text-align:center;border-top:1px solid #e2e8f0}.ftr p{font-size:12px;color:#94a3b8;margin:4px 0}</style></head><body><div class="wrap"><div class="hdr"><div class="logo">Programa EmagreSer</div><div class="tagline">Psicologia + Nutrição para um emagrecimento definitivo</div></div><div class="bdy"><h2 class="h2">Ana, aqui está tudo que a Daniely e a Ira vão revelar na Masterclass</h2><p>A Masterclass <strong>"O Código dos Sabotadores"</strong> não é mais uma palestra sobre alimentação saudável.</p><p>É uma aula ao vivo onde você vai descobrir:</p><div class="item"><div class="item-num">1</div><div class="item-text"><strong>O mapa completo do seu sabotador</strong> — por que você age assim e o que acontece no seu cérebro antes de cada episódio</div></div><div class="item"><div class="item-num">2</div><div class="item-text"><strong>O protocolo psicológico da Daniely</strong> — as 3 ferramentas que ela usa com pacientes para quebrar o ciclo de uma vez por todas</div></div><div class="item"><div class="item-num">3</div><div class="item-text"><strong>O plano nutricional da Ira</strong> — como comer de forma que respeite o seu perfil comportamental (sem restrição que leva à compulsão)</div></div><div class="item"><div class="item-num">4</div><div class="item-text"><strong>O próximo passo concreto</strong> — o que fazer nos 30 dias seguintes para ter resultados reais e duradouros</div></div><div class="destaque"><div class="data">11 de junho</div><div class="hora">às 20h (horário de Brasília)</div></div><a href="#" class="btn">📲 Quero entrar no grupo VIP</a></div><div class="ftr"><p><strong>Daniely Albuquerque</strong> (Psicóloga) &amp; <strong>Ira Soraya</strong> (Nutricionista)</p></div></div></body></html>' height="700" onload="this.style.height=this.contentDocument.body.scrollHeight+40+'px'"></iframe>
+    <div class="email-preview">
+      <div class="email-box">
+        <div class="em-header dark"><h1>Programa EmagreSer</h1></div>
+        <div class="em-body">
+          <p><strong>Ana</strong>, aqui está tudo que a Daniely e a Ira vão revelar na Masterclass:</p>
+          <p>A Masterclass <strong>"O Código dos Sabotadores"</strong> não é mais uma palestra sobre alimentação saudável. É uma aula ao vivo onde você vai descobrir:</p>
+          <div class="lista-item"><div class="li-num">1</div><div class="li-text"><strong>O mapa completo do seu sabotador</strong> — por que você age assim e o que acontece no seu cérebro antes de cada episódio</div></div>
+          <div class="lista-item"><div class="li-num">2</div><div class="li-text"><strong>O protocolo psicológico da Daniely</strong> — as 3 ferramentas que ela usa com pacientes para quebrar o ciclo de uma vez por todas</div></div>
+          <div class="lista-item"><div class="li-num">3</div><div class="li-text"><strong>O plano nutricional da Ira</strong> — como comer de forma que respeite o seu perfil comportamental (sem restrição que leva à compulsão)</div></div>
+          <div class="lista-item"><div class="li-num">4</div><div class="li-text"><strong>O próximo passo concreto</strong> — o que fazer nos 30 dias seguintes para ter resultados reais e duradouros</div></div>
+          <div class="hora-box">11 de junho<div class="sub">às 20h (horário de Brasília)</div></div>
+          <a href="#" class="em-btn">📲 Quero entrar no grupo VIP</a>
+        </div>
+        <div class="em-footer"><p><strong>Daniely Albuquerque</strong> (Psicóloga) &amp; <strong>Ira Soraya</strong> (Nutricionista)</p></div>
+      </div>
     </div>
   </div>
 
   <!-- E8 -->
   <div class="secao" id="e8">
-    <div class="secao-hdr">
-      <div class="num">8</div>
-      <h2>Faltam 3 dias — contagem regressiva</h2>
-      <span class="tag">08/06 · Data fixa</span>
-    </div>
+    <div class="secao-hdr"><div class="num">8</div><h2>Faltam 3 dias — contagem regressiva</h2><span class="tag">08/06 · Data fixa</span></div>
     <div class="meta">
-      <div class="meta-item"><strong>Assunto:</strong> {{nome}}, faltam 3 dias para a Masterclass! 🗓️</div>
+      <div class="meta-item"><strong>Assunto:</strong> [Nome], faltam 3 dias para a Masterclass!</div>
       <div class="meta-item"><strong>Slug:</strong> <span class="chip">lembrete_3dias</span></div>
     </div>
-    <div class="preview-wrap">
-      <iframe srcdoc='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><style>body{margin:0;padding:0;background:#f4f3ef;font-family:Arial,sans-serif}*{box-sizing:border-box}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:0 0 12px 12px;overflow:hidden}.hdr{background:#0f172a;padding:28px 24px;text-align:center}.logo{color:#5eead4;font-family:Georgia,serif;font-size:22px;font-weight:700;letter-spacing:.5px}.tagline{color:#94a3b8;font-size:12px;margin-top:4px}.bdy{padding:36px 32px}.h2{color:#0f172a;font-size:20px;line-height:1.35;margin:0 0 18px;font-weight:700}p{color:#374151;font-size:15px;line-height:1.75;margin:0 0 16px}.countdown{background:#0f172a;color:#fff;border-radius:14px;padding:28px;text-align:center;margin:24px 0}.countdown .num{font-size:56px;font-weight:700;color:#5eead4;line-height:1}.countdown .label{font-size:14px;color:#94a3b8;margin-top:6px}.checklist{list-style:none;padding:0;margin:20px 0}.checklist li{padding:10px 0;border-bottom:1px solid #f0f0ec;color:#374151;font-size:15px;padding-left:28px;position:relative}.checklist li::before{content:"✅";position:absolute;left:0}.btn{display:block;background:#0d9488;color:#fff;text-decoration:none;padding:16px 32px;border-radius:10px;text-align:center;font-weight:700;font-size:16px;margin:28px auto;max-width:300px}.ftr{background:#f8fafc;padding:22px 24px;text-align:center;border-top:1px solid #e2e8f0}.ftr p{font-size:12px;color:#94a3b8;margin:4px 0}</style></head><body><div class="wrap"><div class="hdr"><div class="logo">Programa EmagreSer</div><div class="tagline">Psicologia + Nutrição para um emagrecimento definitivo</div></div><div class="bdy"><h2 class="h2">Ana, a contagem regressiva começou! ⏳</h2><p>A Masterclass <strong>"O Código dos Sabotadores"</strong> acontece em:</p><div class="countdown"><div class="num">3</div><div class="label">dias — 11 de junho às 20h</div></div><p>Você fez o mapeamento do seu perfil sabotador. Esse foi o primeiro passo. Agora vem o mais importante: aprender o que fazer com essa informação.</p><p>Antes da live, confira seu checklist:</p><ul class="checklist"><li>Você está no grupo VIP do WhatsApp?</li><li>Anotou a data: 11/06 às 20h?</li><li>Você terá 1 hora livre nesse horário?</li></ul><a href="#" class="btn">📲 Entrar no Grupo VIP</a></div><div class="ftr"><p><strong>Daniely Albuquerque</strong> (Psicóloga) &amp; <strong>Ira Soraya</strong> (Nutricionista)</p></div></div></body></html>' height="660" onload="this.style.height=this.contentDocument.body.scrollHeight+40+'px'"></iframe>
+    <div class="email-preview">
+      <div class="email-box">
+        <div class="em-header dark"><h1>Programa EmagreSer</h1></div>
+        <div class="em-body">
+          <p><strong>Ana</strong>, a contagem regressiva começou! ⏳</p>
+          <p>A Masterclass <strong>"O Código dos Sabotadores"</strong> acontece em:</p>
+          <div class="countdown-box"><div class="num">3</div><div class="label">dias — 11 de junho às 20h</div></div>
+          <p>Você fez o mapeamento do seu perfil sabotador. Esse foi o primeiro passo. Agora vem o mais importante: aprender o que fazer com essa informação.</p>
+          <p>Antes da live, confira seu checklist:</p>
+          <ul class="checklist">
+            <li>Você está no grupo VIP do WhatsApp?</li>
+            <li>Anotou a data: 11/06 às 20h?</li>
+            <li>Você terá 1 hora livre nesse horário?</li>
+          </ul>
+          <a href="#" class="em-btn">📲 Entrar no Grupo VIP</a>
+        </div>
+        <div class="em-footer"><p><strong>Daniely Albuquerque</strong> (Psicóloga) &amp; <strong>Ira Soraya</strong> (Nutricionista)</p></div>
+      </div>
     </div>
   </div>
 
   <!-- E9 -->
   <div class="secao" id="e9">
-    <div class="secao-hdr">
-      <div class="num">9</div>
-      <h2>Amanhã é o grande dia</h2>
-      <span class="tag">10/06 · Data fixa</span>
-    </div>
+    <div class="secao-hdr"><div class="num">9</div><h2>Amanhã é o grande dia</h2><span class="tag">10/06 · Data fixa</span></div>
     <div class="meta">
-      <div class="meta-item"><strong>Assunto:</strong> {{nome}}, AMANHÃ é o grande dia 🌟</div>
+      <div class="meta-item"><strong>Assunto:</strong> [Nome], AMANHÃ é o grande dia 🌟</div>
       <div class="meta-item"><strong>Slug:</strong> <span class="chip">amanha_masterclass</span></div>
     </div>
-    <div class="preview-wrap">
-      <iframe srcdoc='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><style>body{margin:0;padding:0;background:#f4f3ef;font-family:Arial,sans-serif}*{box-sizing:border-box}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:0 0 12px 12px;overflow:hidden}.hdr{background:#0f172a;padding:28px 24px;text-align:center}.logo{color:#5eead4;font-family:Georgia,serif;font-size:22px;font-weight:700;letter-spacing:.5px}.tagline{color:#94a3b8;font-size:12px;margin-top:4px}.bdy{padding:36px 32px}.h2{color:#0f172a;font-size:20px;line-height:1.35;margin:0 0 18px;font-weight:700}p{color:#374151;font-size:15px;line-height:1.75;margin:0 0 16px}.alerta{background:#fef3c7;border:1px solid #f59e0b;border-radius:12px;padding:20px;margin:20px 0;text-align:center}.alerta strong{color:#92400e;font-size:17px}.hora-box{background:#0f172a;color:#fff;border-radius:14px;padding:24px;text-align:center;margin:24px 0}.hora-box .hora{font-size:36px;font-weight:700;color:#5eead4}.hora-box .data{font-size:14px;color:#94a3b8;margin-top:6px}.btn{display:block;background:#0d9488;color:#fff;text-decoration:none;padding:16px 32px;border-radius:10px;text-align:center;font-weight:700;font-size:16px;margin:28px auto;max-width:300px}.ftr{background:#f8fafc;padding:22px 24px;text-align:center;border-top:1px solid #e2e8f0}.ftr p{font-size:12px;color:#94a3b8;margin:4px 0}</style></head><body><div class="wrap"><div class="hdr"><div class="logo">Programa EmagreSer</div><div class="tagline">Psicologia + Nutrição para um emagrecimento definitivo</div></div><div class="bdy"><h2 class="h2">Ana, amanhã você vai entender por que tentou tantas vezes e não conseguiu — e o que fazer diferente</h2><div class="alerta"><strong>⚠️ Amanhã, 11 de junho — Masterclass ao vivo</strong></div><div class="hora-box"><div class="hora">20h00</div><div class="data">11 de junho de 2026 · Ao vivo</div></div><p>A Daniely e a Ira vão abrir o código do seu sabotador — aquele padrão invisível que derruba você toda vez que parece que está funcionando.</p><p>Amanhã você vai sair da live com:</p><p>✅ O nome exato do seu padrão de sabotagem<br>✅ As ferramentas psicológicas para quebrar o ciclo<br>✅ Um plano nutricional que respeita seu comportamento<br>✅ O próximo passo concreto para resultados reais</p><p><strong>O link da transmissão será enviado pelo grupo VIP do WhatsApp.</strong></p><a href="#" class="btn">📲 Entrar agora no Grupo VIP</a></div><div class="ftr"><p><strong>Daniely Albuquerque</strong> (Psicóloga) &amp; <strong>Ira Soraya</strong> (Nutricionista)</p></div></div></body></html>' height="680" onload="this.style.height=this.contentDocument.body.scrollHeight+40+'px'"></iframe>
+    <div class="email-preview">
+      <div class="email-box">
+        <div class="em-header dark"><h1>Programa EmagreSer</h1></div>
+        <div class="em-body">
+          <p><strong>Ana</strong>, amanhã você vai entender por que tentou tantas vezes e não conseguiu — e o que fazer diferente.</p>
+          <div class="alerta-box"><strong>⚠️ Amanhã, 11 de junho — Masterclass ao vivo</strong></div>
+          <div class="hora-box">20h00<div class="sub">11 de junho de 2026 · Ao vivo</div></div>
+          <p>Amanhã você vai sair da live com:</p>
+          <div class="info-lista">
+            <p>✅ O nome exato do seu padrão de sabotagem</p>
+            <p>✅ As ferramentas psicológicas para quebrar o ciclo</p>
+            <p>✅ Um plano nutricional que respeita seu comportamento</p>
+            <p>✅ O próximo passo concreto para resultados reais</p>
+          </div>
+          <p><strong>O link da transmissão será enviado pelo grupo VIP do WhatsApp.</strong></p>
+          <a href="#" class="em-btn">📲 Entrar agora no Grupo VIP</a>
+        </div>
+        <div class="em-footer"><p><strong>Daniely Albuquerque</strong> (Psicóloga) &amp; <strong>Ira Soraya</strong> (Nutricionista)</p></div>
+      </div>
     </div>
   </div>
 
   <!-- E10 -->
   <div class="secao" id="e10">
-    <div class="secao-hdr">
-      <div class="num">10</div>
-      <h2>HOJE às 20h — Masterclass ao vivo</h2>
-      <span class="tag">11/06 às 08h · Data fixa</span>
-    </div>
+    <div class="secao-hdr"><div class="num">10</div><h2>HOJE às 20h — Masterclass ao vivo</h2><span class="tag">11/06 às 08h · Data fixa</span></div>
     <div class="meta">
       <div class="meta-item"><strong>Assunto:</strong> HOJE às 20h — Masterclass "O Código dos Sabotadores" 🔴</div>
       <div class="meta-item"><strong>Slug:</strong> <span class="chip">masterclass_hoje</span></div>
     </div>
-    <div class="preview-wrap">
-      <iframe srcdoc='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><style>body{margin:0;padding:0;background:#f4f3ef;font-family:Arial,sans-serif;color:#1c1917}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden}.header{background:#0d9488;padding:32px 40px;text-align:center}.header h1{color:#fff;font-size:20px;margin:0}.body{padding:40px;text-align:center}.emoji{font-size:48px;display:block;margin-bottom:16px}.titulo{font-family:Georgia,serif;font-size:26px;font-weight:700;color:#1c1917;margin-bottom:16px;line-height:1.3}.p{font-size:16px;line-height:1.75;margin-bottom:18px;text-align:left}.info-box{background:#f0fdfa;border:2px solid #0d9488;border-radius:12px;padding:24px;margin:24px 0;text-align:left}.info-box .item{display:flex;gap:12px;margin-bottom:12px;font-size:15px;color:#1c1917}.btn{display:inline-block;background:#0d9488;color:#fff;text-decoration:none;padding:18px 36px;border-radius:10px;font-weight:700;font-size:16px;margin:24px 0}.aviso{font-size:13px;color:#e11d48;font-weight:700;margin-top:8px}.footer{background:#0f172a;padding:24px 40px;text-align:center}.footer p{color:#94a3b8;font-size:12px;margin:4px 0}</style></head><body><table width="100%"><tr><td style="padding:24px 16px"><div class="wrap"><div class="header"><h1>Programa EmagreSer</h1></div><div class="body"><span class="emoji">🔴</span><div class="titulo">Hoje é o dia, Ana!</div><p class="p">A Masterclass <strong>"O Código dos Sabotadores: Fim do Efeito Sanfona"</strong> começa hoje às 20h.</p><div class="info-box"><div class="item">📅 <span><strong>Data:</strong> 11 de junho de 2026</span></div><div class="item">🕗 <span><strong>Hora:</strong> 20h00 (horário de Brasília)</span></div><div class="item">🎯 <span><strong>Você vai aprender:</strong> O que fazer nos primeiros 7 dias após o mapeamento do seu perfil</span></div><div class="item">🎁 <span><strong>Bônus:</strong> Condições especiais para o Programa EmagreSer exclusivas para quem veio pelo mapeamento</span></div></div><a href="#" class="btn">ACESSAR O GRUPO VIP AGORA →</a><p class="aviso">O link da transmissão será enviado no grupo VIP.</p></div><div class="footer"><p><strong style="color:#f1f5f9">Programa EmagreSer</strong></p><p>Psicóloga Daniely Albuquerque &amp; Nutricionista Ira Soraya</p></div></div></td></tr></table></body></html>' height="640" onload="this.style.height=this.contentDocument.body.scrollHeight+40+'px'"></iframe>
+    <div class="email-preview">
+      <div class="email-box">
+        <div class="em-header"><h1>Programa EmagreSer</h1></div>
+        <div class="em-body" style="text-align:center">
+          <p style="font-size:44px;margin-bottom:10px">🔴</p>
+          <p style="font-size:22px;font-weight:700;color:#1c1917">Hoje é o dia, Ana!</p>
+          <p>A Masterclass <strong>"O Código dos Sabotadores: Fim do Efeito Sanfona"</strong> começa hoje às 20h.</p>
+          <div style="text-align:left;background:#f0fdfa;border:2px solid #0d9488;border-radius:12px;padding:18px;margin:18px 0">
+            <div class="info-lista">
+              <p>📅 <strong>Data:</strong> 11 de junho de 2026</p>
+              <p>🕗 <strong>Hora:</strong> 20h00 (horário de Brasília)</p>
+              <p>🎯 <strong>Você vai aprender:</strong> O que fazer nos primeiros 7 dias após o mapeamento do seu perfil</p>
+              <p>🎁 <strong>Bônus:</strong> Condições especiais para o Programa EmagreSer exclusivas para quem veio pelo mapeamento</p>
+            </div>
+          </div>
+          <a href="#" class="em-btn">ACESSAR O GRUPO VIP AGORA →</a>
+          <p style="color:#e11d48;font-weight:700;font-size:13px">O link da transmissão será enviado no grupo VIP.</p>
+        </div>
+        <div class="em-footer"><p><strong>Programa EmagreSer</strong></p><p>Psicóloga Daniely Albuquerque &amp; Nutricionista Ira Soraya</p></div>
+      </div>
     </div>
   </div>
 
   <!-- E11 -->
   <div class="secao" id="e11">
-    <div class="secao-hdr">
-      <div class="num">11</div>
-      <h2>Em 1 hora começa — alerta final</h2>
-      <span class="tag">11/06 às 19h · 1h antes</span>
-    </div>
+    <div class="secao-hdr"><div class="num">11</div><h2>Em 1 hora começa — alerta final</h2><span class="tag">11/06 às 19h · 1h antes</span></div>
     <div class="meta">
-      <div class="meta-item"><strong>Assunto:</strong> 🔴 Em 1 hora começa — entre agora, {{nome}}</div>
+      <div class="meta-item"><strong>Assunto:</strong> 🔴 Em 1 hora começa — entre agora, [Nome]</div>
       <div class="meta-item"><strong>Slug:</strong> <span class="chip">masterclass_1h</span></div>
     </div>
-    <div class="preview-wrap">
-      <iframe srcdoc='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><style>body{margin:0;padding:0;background:#f4f3ef;font-family:Arial,sans-serif;color:#1c1917}.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden}.header{background:#e11d48;padding:24px 40px;text-align:center}.header h1{color:#fff;font-size:18px;margin:0}.body{padding:40px;text-align:center}.titulo{font-size:28px;font-weight:700;color:#1c1917;margin-bottom:16px}.p{font-size:16px;line-height:1.75;margin-bottom:18px}.btn{display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:18px 36px;border-radius:10px;font-weight:700;font-size:16px;margin:24px 0}.footer{background:#0f172a;padding:24px 40px;text-align:center}.footer p{color:#94a3b8;font-size:12px;margin:4px 0}</style></head><body><table width="100%"><tr><td style="padding:24px 16px"><div class="wrap"><div class="header"><h1>🔴 AO VIVO EM 1 HORA</h1></div><div class="body"><div class="titulo">Ana, não perde isso!</div><p class="p">Em menos de 1 hora começa a Masterclass <strong>"O Código dos Sabotadores"</strong>.</p><p class="p">O link da transmissão está no grupo VIP do WhatsApp. Se você ainda não entrou, faça isso agora:</p><a href="#" class="btn">📱 ENTRAR NO GRUPO VIP</a><p style="font-size:14px;color:#57534e">Daniely e Ira estão te esperando. 💚</p></div><div class="footer"><p><strong style="color:#f1f5f9">Programa EmagreSer</strong></p><p>Psicóloga Daniely Albuquerque &amp; Nutricionista Ira Soraya</p></div></div></td></tr></table></body></html>' height="440" onload="this.style.height=this.contentDocument.body.scrollHeight+40+'px'"></iframe>
+    <div class="email-preview">
+      <div class="email-box">
+        <div class="em-header red"><h1>🔴 AO VIVO EM 1 HORA</h1></div>
+        <div class="em-body" style="text-align:center">
+          <p style="font-size:22px;font-weight:700;color:#1c1917">Ana, não perde isso!</p>
+          <p>Em menos de 1 hora começa a Masterclass <strong>"O Código dos Sabotadores"</strong>.</p>
+          <p>O link da transmissão está no grupo VIP do WhatsApp. Se você ainda não entrou, faça isso agora:</p>
+          <a href="#" class="em-btn green">📱 ENTRAR NO GRUPO VIP</a>
+          <p style="font-size:14px;color:#57534e">Daniely e Ira estão te esperando. 💚</p>
+        </div>
+        <div class="em-footer"><p><strong>Programa EmagreSer</strong></p><p>Psicóloga Daniely Albuquerque &amp; Nutricionista Ira Soraya</p></div>
+      </div>
     </div>
   </div>
 
-  <!-- ── WHATSAPP ── -->
+  <!-- WHATSAPP -->
   <div class="wpp-secao" id="wpp">
     <div class="wpp-hdr">
       <h2>💬 Sequência WhatsApp — 8 mensagens</h2>
@@ -274,12 +422,8 @@ iframe{width:100%;border:none;border-radius:10px;background:#fff;display:block}
     <div class="wpp-msgs">
 
       <div class="wpp-msg">
-        <div class="wpp-msg-hdr">
-          <div class="n">1</div>
-          <div class="info"><strong>Resultado do Perfil</strong><span>D+0 — Imediato após cadastro</span></div>
-        </div>
-        <div class="wpp-bubble-wrap">
-          <div class="wpp-bubble">Oi, Ana! 🎉
+        <div class="wpp-msg-hdr"><div class="n">1</div><div class="info"><strong>Resultado do Perfil</strong><span>D+0 — Imediato após cadastro</span></div></div>
+        <div class="wpp-bubble-wrap"><div class="wpp-bubble">Oi, Ana! 🎉
 
 Seu mapeamento revelou que você é:
 
@@ -293,17 +437,12 @@ A Masterclass *"O Código dos Sabotadores"* é dia 11/06 às 20h e vai mostrar e
 
 Entre no grupo VIP para receber o link da transmissão 👇
 https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ
-          <div class="wpp-time">✓✓ 14:32</div></div>
-        </div>
+<div class="wpp-time">✓✓ D+0 imediato</div></div></div>
       </div>
 
       <div class="wpp-msg">
-        <div class="wpp-msg-hdr">
-          <div class="n">2</div>
-          <div class="info"><strong>Dica personalizada do perfil</strong><span>D+1 — ~26h após cadastro</span></div>
-        </div>
-        <div class="wpp-bubble-wrap">
-          <div class="wpp-bubble">Ana, uma coisa rápida 💡
+        <div class="wpp-msg-hdr"><div class="n">2</div><div class="info"><strong>Dica personalizada do perfil</strong><span>D+1 — ~26h após cadastro</span></div></div>
+        <div class="wpp-bubble-wrap"><div class="wpp-bubble">Ana, uma coisa rápida 💡
 
 Quem tem o *Perfil A — A Recompensadora* geralmente sente que "já sabe o que precisa fazer" mas trava na hora de executar.
 
@@ -311,17 +450,12 @@ O problema não é falta de informação. É o *padrão neurológico* por trás 
 
 Na Masterclass vamos falar exatamente sobre como quebrar isso. Já garantiu seu lugar no grupo? 👇
 https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ
-          <div class="wpp-time">✓✓ 14:32</div></div>
-        </div>
+<div class="wpp-time">✓✓ D+1 (~26h)</div></div></div>
       </div>
 
       <div class="wpp-msg">
-        <div class="wpp-msg-hdr">
-          <div class="n">3</div>
-          <div class="info"><strong>Prova social / depoimento</strong><span>D+3 — ~74h após cadastro</span></div>
-        </div>
-        <div class="wpp-bubble-wrap">
-          <div class="wpp-bubble">Ana, deixa eu te contar algo 🙌
+        <div class="wpp-msg-hdr"><div class="n">3</div><div class="info"><strong>Prova social / depoimento</strong><span>D+3 — ~74h após cadastro</span></div></div>
+        <div class="wpp-bubble-wrap"><div class="wpp-bubble">Ana, deixa eu te contar algo 🙌
 
 A Carla, que também tem o *Perfil A — A Recompensadora*, me escreveu essa semana:
 
@@ -331,17 +465,12 @@ _"Eu tentei tudo. Dieta, academia, aplicativos. Nada funcionava porque eu não e
 
 Está no grupo VIP? O link da live vai sair lá 👇
 https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ
-          <div class="wpp-time">✓✓ 14:32</div></div>
-        </div>
+<div class="wpp-time">✓✓ D+3 (~74h)</div></div></div>
       </div>
 
       <div class="wpp-msg">
-        <div class="wpp-msg-hdr">
-          <div class="n">4</div>
-          <div class="info"><strong>Pergunta de engajamento</strong><span>D+5 — ~122h após cadastro</span></div>
-        </div>
-        <div class="wpp-bubble-wrap">
-          <div class="wpp-bubble">Ana, me conta uma coisa 👇
+        <div class="wpp-msg-hdr"><div class="n">4</div><div class="info"><strong>Pergunta de engajamento</strong><span>D+5 — ~122h após cadastro</span></div></div>
+        <div class="wpp-bubble-wrap"><div class="wpp-bubble">Ana, me conta uma coisa 👇
 
 Qual dessas situações te identifica mais?
 
@@ -351,17 +480,12 @@ Qual dessas situações te identifica mais?
 🌙 *D* — Você restringe muito e compensa depois
 
 Responde aqui com a letra! Vou te mandar uma dica personalizada 😊
-          <div class="wpp-time">✓✓ 14:32</div></div>
-        </div>
+<div class="wpp-time">✓✓ D+5 (~122h)</div></div></div>
       </div>
 
       <div class="wpp-msg">
-        <div class="wpp-msg-hdr">
-          <div class="n">5</div>
-          <div class="info"><strong>Contagem regressiva — 3 dias</strong><span>08/06 às 09h · Data fixa</span></div>
-        </div>
-        <div class="wpp-bubble-wrap">
-          <div class="wpp-bubble">⚠️ Ana, faltam *3 dias* para a Masterclass!
+        <div class="wpp-msg-hdr"><div class="n">5</div><div class="info"><strong>Contagem regressiva — 3 dias</strong><span>08/06 às 09h · Data fixa</span></div></div>
+        <div class="wpp-bubble-wrap"><div class="wpp-bubble">⚠️ Ana, faltam *3 dias* para a Masterclass!
 
 📅 *11 de junho, 20h*
 
@@ -369,17 +493,12 @@ Responde aqui com a letra! Vou te mandar uma dica personalizada 😊
 
 Será online, ao vivo e *gratuito*. Mas o link só vai para quem está no grupo VIP 👇
 https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ
-          <div class="wpp-time">✓✓ 09:00</div></div>
-        </div>
+<div class="wpp-time">✓✓ 08/06 às 09h</div></div></div>
       </div>
 
       <div class="wpp-msg">
-        <div class="wpp-msg-hdr">
-          <div class="n">6</div>
-          <div class="info"><strong>Véspera — "Amanhã é o dia!"</strong><span>10/06 às 09h · Data fixa</span></div>
-        </div>
-        <div class="wpp-bubble-wrap">
-          <div class="wpp-bubble">Ana! 🔥 *Amanhã é o grande dia!*
+        <div class="wpp-msg-hdr"><div class="n">6</div><div class="info"><strong>Véspera — "Amanhã é o dia!"</strong><span>10/06 às 09h · Data fixa</span></div></div>
+        <div class="wpp-bubble-wrap"><div class="wpp-bubble">Ana! 🔥 *Amanhã é o grande dia!*
 
 Masterclass *"O Código dos Sabotadores"*
 📅 11/06 às 20h — ao vivo
@@ -388,17 +507,12 @@ Separa um cantinho tranquilo, bloqueia sua agenda e venha aprender o que nenhuma
 
 O link da transmissão vai sair amanhã no grupo VIP 👇
 https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ
-          <div class="wpp-time">✓✓ 09:00</div></div>
-        </div>
+<div class="wpp-time">✓✓ 10/06 às 09h</div></div></div>
       </div>
 
       <div class="wpp-msg">
-        <div class="wpp-msg-hdr">
-          <div class="n">7</div>
-          <div class="info"><strong>Dia da Masterclass — manhã</strong><span>11/06 às 08h · Data fixa</span></div>
-        </div>
-        <div class="wpp-bubble-wrap">
-          <div class="wpp-bubble">🔴 *HOJE É O DIA*, Ana!
+        <div class="wpp-msg-hdr"><div class="n">7</div><div class="info"><strong>Dia da Masterclass — manhã</strong><span>11/06 às 08h · Data fixa</span></div></div>
+        <div class="wpp-bubble-wrap"><div class="wpp-bubble">🔴 *HOJE É O DIA*, Ana!
 
 Masterclass *"O Código dos Sabotadores"*
 ⏰ Hoje às 20h — ao vivo
@@ -409,37 +523,32 @@ Não esquece: anota as dúvidas que você quer tirar ao vivo! ✏️
 
 👇
 https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ
-          <div class="wpp-time">✓✓ 08:00</div></div>
-        </div>
+<div class="wpp-time">✓✓ 11/06 às 08h</div></div></div>
       </div>
 
       <div class="wpp-msg">
-        <div class="wpp-msg-hdr">
-          <div class="n">8</div>
-          <div class="info"><strong>1 hora antes — link final</strong><span>11/06 às 19h · 1h antes</span></div>
-        </div>
-        <div class="wpp-bubble-wrap">
-          <div class="wpp-bubble">⏰ *Em 1 hora começa!*
+        <div class="wpp-msg-hdr"><div class="n">8</div><div class="info"><strong>1 hora antes — link final</strong><span>11/06 às 19h · 1h antes</span></div></div>
+        <div class="wpp-bubble-wrap"><div class="wpp-bubble">⏰ *Em 1 hora começa!*
 
 Ana, corre que falta pouco!
 
 O link da live está no grupo VIP agora 👇
 https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ
-          <div class="wpp-time">✓✓ 19:00</div></div>
-        </div>
+<div class="wpp-time">✓✓ 11/06 às 19h</div></div></div>
       </div>
 
     </div>
-    <div class="nota" style="padding:16px 28px"><strong>📝 Notas para validação:</strong><br><br>
-      • Msgs 1 a 4: o nome <strong>Ana</strong>, emoji e tipo de perfil são substituídos automaticamente pelo perfil real da lead<br>
-      • Msg 3: o nome "Carla" é fictício — confirmar se querem manter ou usar depoimento real<br>
-      • Msg 4: pergunta de engajamento não tem resposta automática ainda — se a lead responder, será respondida manualmente<br>
-      • O link do grupo VIP é o real: https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ
+    <div class="nota" style="padding:16px 28px">
+      <strong>📝 Notas para validação:</strong><br><br>
+      • Msgs 1 a 4: nome, emoji e perfil são substituídos automaticamente pelo perfil real de cada lead<br>
+      • Msg 3: nome "Carla" — confirmar se é depoimento real ou substituir por outro<br>
+      • Msg 4: pergunta de engajamento — respostas das leads são respondidas manualmente (sem automação)<br>
+      • Link do grupo VIP: https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ
     </div>
   </div>
 
   <div class="rodape">
-    Documento gerado em <?php echo date('d/m/Y'); ?> para validação interna · Programa EmagreSer
+    Documento de validação interna · Programa EmagreSer · Masterclass 11/06/2026
   </div>
 
 </div>
