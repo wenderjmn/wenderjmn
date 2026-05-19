@@ -858,7 +858,7 @@ async function leads() {
   main.innerHTML = `<div class="page-title">Leads</div><div class="page-sub">Todos os leads capturados pela landing page.</div>
     <input class="search-bar" id="lead-search" placeholder="Buscar por nome, e-mail ou perfil…" oninput="filterLeads(this.value)">
     <div id="leads-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
-  const rows = await sb('leads', 'select=id,name,email,phone,sabotador,cidade,estado,created_at,source&order=created_at.desc');
+  const rows = await sb('leads', 'select=id,name,email,phone,sabotador,cidade,estado,created_at,source,utm_medium,source_campaign&order=created_at.desc');
   window._allLeads = rows;
   renderLeads(rows);
 }
@@ -866,17 +866,26 @@ async function leads() {
 function renderLeads(rows) {
   document.getElementById('leads-body').innerHTML = `
     <div class="table-wrap"><table>
-      <thead><tr><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>Perfil</th><th>Cidade</th><th>Data</th></tr></thead>
+      <thead><tr><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>Perfil</th><th>Origem</th><th>Cidade</th><th>Data</th></tr></thead>
       <tbody>
-        ${rows.map(l => `
+        ${rows.map(l => {
+          const src = l.source && l.source !== 'site' ? l.source : null;
+          const med = l.utm_medium || null;
+          const camp = l.source_campaign || null;
+          const srcIcons = {'instagram':'📸','facebook':'📘','google':'🔍','whatsapp':'💬','youtube':'▶️'};
+          const icon = src ? (srcIcons[src.toLowerCase()] || '🌐') : '🌐';
+          const origem = [src||'direto', med, camp].filter(Boolean).join(' / ');
+          return `
           <tr>
             <td><strong style="font-size:.88rem">${escHtml(l.name||'')}</strong></td>
             <td style="font-size:.82rem">${escHtml(l.email||'')}</td>
             <td style="font-size:.82rem">${escHtml(l.phone||'')}</td>
             <td><span class="lead-sabotador">${escHtml(l.sabotador||'—')}</span></td>
+            <td style="font-size:.78rem" title="${escHtml(origem)}">${icon} ${escHtml(src||'direto')}${med?`<br><span style="color:var(--text3);font-size:.72rem">${escHtml(med)}</span>`:''}</td>
             <td style="font-size:.78rem;color:var(--text3)">${escHtml(l.cidade||'')} ${escHtml(l.estado||'')}</td>
             <td style="font-size:.75rem;color:var(--text3);white-space:nowrap">${l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '—'}</td>
-          </tr>`).join('')}
+          </tr>`;
+        }).join('')}
       </tbody>
     </table></div>
     <p style="font-size:.78rem;color:var(--text3);margin-top:12px">${rows.length} lead(s) encontrado(s)</p>`;
