@@ -360,7 +360,7 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
 <!-- BARRA DE ANÚNCIO -->
 <div id="anuncio-bar">
   <div class="ann-inner">
-    <span id="anuncio-text">🔥 Masterclass "O Código dos Sabotadores: Fim do Efeito Sanfona" — 06/06 às 20h · Vagas limitadas para o grupo VIP</span>
+    <span id="anuncio-text">🔥 Masterclass "O Código dos Sabotadores: Fim do Efeito Sanfona" — 11/06 às 20h · Vagas limitadas para o grupo VIP</span>
     <span class="ann-cd">Faltam: <strong id="countdown">--</strong></span>
   </div>
   <button id="ann-close" onclick="this.parentElement.remove()" aria-label="Fechar">✕</button>
@@ -492,7 +492,7 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
     <h2>O caminho para parar de recomeçar</h2>
     <div class="como-grid">
       <div class="passo-card"><div class="passo-num">1</div><h3 data-key="processo_p1_titulo">Faça o mapeamento gratuito agora</h3><p data-key="processo_p1_desc">Em menos de 3 minutos, respondendo a 10 perguntas sobre situações reais do seu dia, identificaremos qual o seu principal perfil sabotador.</p></div>
-      <div class="passo-card"><div class="passo-num">2</div><h3 data-key="processo_p2_titulo">Assista à Masterclass — 06/06</h3><p data-key="processo_p2_desc">Daniely e Ira explicarão ao vivo como cada perfil é tratado no Programa EmagreSer.</p></div>
+      <div class="passo-card"><div class="passo-num">2</div><h3 data-key="processo_p2_titulo">Assista à Masterclass — 11/06</h3><p data-key="processo_p2_desc">Daniely e Ira explicarão ao vivo como cada perfil é tratado no Programa EmagreSer.</p></div>
       <div class="passo-card"><div class="passo-num">3</div><h3 data-key="processo_p3_titulo">Entre no programa e pare de recomeçar</h3><p data-key="processo_p3_desc">12 semanas de encontros ao vivo com Daniely e Ira. Este é o seu último emagrecimento.</p></div>
     </div>
   </div>
@@ -646,7 +646,7 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
     <div class="mc-inner">
       <div class="section-label" data-key="masterclass_label">POR QUE AGORA</div>
       <div class="mc-nome" data-key="masterclass_nome">"O Código dos Sabotadores: Fim do Efeito Sanfona"</div>
-      <div class="mc-data" data-key="masterclass_data">06/06 às 20h (horário de Brasília)</div>
+      <div class="mc-data" data-key="masterclass_data">11/06 às 20h (horário de Brasília)</div>
       <p class="mc-desc" data-key="masterclass_desc">Nessa super aula, Daniely e Ira vão apresentar ao vivo o código dos sabotadores.</p>
       <div class="mc-items">
         <div class="mc-item"><div class="mc-icon">▶</div><div class="mc-text" data-key="masterclass_item1"><strong>Mapeamento ao vivo</strong> — Daniely e Ira analisarão casos reais que traduzem em profundidade cada perfil sabotador.</div></div>
@@ -1221,7 +1221,7 @@ document.getElementById('lp').addEventListener('input',function(){
 
 /* ── COUNTDOWN ── */
 function startCountdown(){
-  const iso=k('live_data')||'2026-06-06T20:00:00';
+  const iso=k('live_data')||'2026-06-11T20:00:00';
   const target=new Date(iso.includes('T')&&!iso.includes('+')&&!iso.includes('Z')?iso+'-03:00':iso);
   const el=document.getElementById('countdown');
   if(!el)return;

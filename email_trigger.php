@@ -68,10 +68,10 @@ $vars = [
 ];
 
 // ── DATAS FIXAS ───────────────────────────────────────────────────
-$masterclass      = new DateTime('2026-06-06 08:00:00', new DateTimeZone('America/Sao_Paulo'));
-$masterclass_1h   = new DateTime('2026-06-06 19:00:00', new DateTimeZone('America/Sao_Paulo'));
-$masterclass_3d   = new DateTime('2026-06-03 09:00:00', new DateTimeZone('America/Sao_Paulo'));
-$masterclass_eve  = new DateTime('2026-06-05 09:00:00', new DateTimeZone('America/Sao_Paulo'));
+$masterclass      = new DateTime('2026-06-11 08:00:00', new DateTimeZone('America/Sao_Paulo'));
+$masterclass_1h   = new DateTime('2026-06-11 19:00:00', new DateTimeZone('America/Sao_Paulo'));
+$masterclass_3d   = new DateTime('2026-06-08 09:00:00', new DateTimeZone('America/Sao_Paulo'));
+$masterclass_eve  = new DateTime('2026-06-10 09:00:00', new DateTimeZone('America/Sao_Paulo'));
 
 // ── SEQUÊNCIA DE E-MAILS (11 e-mails) ───────────────────────────
 $email_sequence = [
@@ -121,7 +121,7 @@ if ($phone && strlen($phone) >= 10) {
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
         'to_phone'     => $tel,
-        'message'      => "Oi, {$name}! 🎉\n\nSeu mapeamento revelou que você é:\n\n*{$p['emoji']} {$p['tipo']}*\n\n_{$p['titulo']}_\n\nIsso não é fraqueza — é o seu cérebro operando de um jeito que você nunca aprendeu a gerenciar.\n\nA Masterclass *\"O Código dos Sabotadores\"* é dia 06/06 às 20h e vai mostrar exatamente o que fazer para quebrar esse ciclo. 🔓\n\nEntre no grupo VIP para receber o link da transmissão 👇\n" . WPP_LINK,
+        'message'      => "Oi, {$name}! 🎉\n\nSeu mapeamento revelou que você é:\n\n*{$p['emoji']} {$p['tipo']}*\n\n_{$p['titulo']}_\n\nIsso não é fraqueza — é o seu cérebro operando de um jeito que você nunca aprendeu a gerenciar.\n\nA Masterclass *\"O Código dos Sabotadores\"* é dia 11/06 às 20h e vai mostrar exatamente o que fazer para quebrar esse ciclo. 🔓\n\nEntre no grupo VIP para receber o link da transmissão 👇\n" . WPP_LINK,
         'scheduled_at' => $now->format(DateTime::ATOM),
         'status'       => 'pending',
     ];
@@ -141,7 +141,7 @@ if ($phone && strlen($phone) >= 10) {
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
         'to_phone'     => $tel,
-        'message'      => "{$name}, deixa eu te contar algo 🙌\n\nA Carla, que também tem o *{$p['tipo']}*, me escreveu essa semana:\n\n_\"Eu tentei tudo. Dieta, academia, aplicativos. Nada funcionava porque eu não entendia por que eu sabotava. Depois que entendi meu padrão, tudo mudou.\"_\n\nÉ exatamente sobre isso que a Dra. Daniely vai falar na Masterclass dia 06/06. 🎯\n\nEstá no grupo VIP? O link da live vai sair lá 👇\n" . WPP_LINK,
+        'message'      => "{$name}, deixa eu te contar algo 🙌\n\nA Carla, que também tem o *{$p['tipo']}*, me escreveu essa semana:\n\n_\"Eu tentei tudo. Dieta, academia, aplicativos. Nada funcionava porque eu não entendia por que eu sabotava. Depois que entendi meu padrão, tudo mudou.\"_\n\nÉ exatamente sobre isso que a Dra. Daniely vai falar na Masterclass dia 11/06. 🎯\n\nEstá no grupo VIP? O link da live vai sair lá 👇\n" . WPP_LINK,
         'scheduled_at' => $d3->format(DateTime::ATOM),
         'status'       => 'pending',
     ];
@@ -160,7 +160,7 @@ if ($phone && strlen($phone) >= 10) {
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
         'to_phone'     => $tel,
-        'message'      => "⚠️ {$name}, faltam *3 dias* para a Masterclass!\n\n📅 *06 de junho, 20h*\n\n\"O Código dos Sabotadores\" com a Dra. Daniely de Albuquerque e a Nutri Ira Soraya\n\nSerá online, ao vivo e *gratuito*. Mas o link só vai para quem está no grupo VIP 👇\n" . WPP_LINK,
+        'message'      => "⚠️ {$name}, faltam *3 dias* para a Masterclass!\n\n📅 *11 de junho, 20h*\n\n\"O Código dos Sabotadores\" com a Dra. Daniely de Albuquerque e a Nutri Ira Soraya\n\nSerá online, ao vivo e *gratuito*. Mas o link só vai para quem está no grupo VIP 👇\n" . WPP_LINK,
         'scheduled_at' => $masterclass_3d->format(DateTime::ATOM),
         'status'       => 'pending',
     ];
@@ -169,7 +169,7 @@ if ($phone && strlen($phone) >= 10) {
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
         'to_phone'     => $tel,
-        'message'      => "{$name}! 🔥 *Amanhã é o grande dia!*\n\nMasterclass *\"O Código dos Sabotadores\"*\n📅 06/06 às 20h — ao vivo\n\nSepara um cantinho tranquilo, bloqueia sua agenda e venha aprender o que nenhuma dieta te ensinou.\n\nO link da transmissão vai sair amanhã no grupo VIP 👇\n" . WPP_LINK,
+        'message'      => "{$name}! 🔥 *Amanhã é o grande dia!*\n\nMasterclass *\"O Código dos Sabotadores\"*\n📅 11/06 às 20h — ao vivo\n\nSepara um cantinho tranquilo, bloqueia sua agenda e venha aprender o que nenhuma dieta te ensinou.\n\nO link da transmissão vai sair amanhã no grupo VIP 👇\n" . WPP_LINK,
         'scheduled_at' => $masterclass_eve->format(DateTime::ATOM),
         'status'       => 'pending',
     ];

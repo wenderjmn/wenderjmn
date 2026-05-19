@@ -27,7 +27,7 @@ if (!$is_cli) {
 }
 
 // ── Datas da campanha de reengajamento ───────────────────────────
-// Hoje + N dias (baseado em 18/05/2026, masterclass 06/06/2026)
+// Hoje + N dias (baseado em 18/05/2026, masterclass 11/06/2026)
 $tz   = new DateTimeZone('America/Sao_Paulo');
 $base = new DateTime('now', $tz);
 
@@ -38,9 +38,9 @@ $campaign_schedule = [
     ['prova_social_d2',          4],   // D+4
     ['reengajamento_masterclass', 8],  // D+8
     // Fixos próximos à masterclass
-    ['reengajamento_masterclass', null, '2026-06-03 09:00:00'], // 3 dias antes
-    ['masterclass_hoje',         null, '2026-06-06 08:00:00'],  // manhã do dia
-    ['masterclass_1h',           null, '2026-06-06 19:00:00'],  // 1h antes
+    ['reengajamento_masterclass', null, '2026-06-08 09:00:00'], // 3 dias antes
+    ['masterclass_hoje',         null, '2026-06-11 08:00:00'],  // manhã do dia
+    ['masterclass_1h',           null, '2026-06-11 19:00:00'],  // 1h antes
 ];
 
 // ── Processa CSV ─────────────────────────────────────────────────
@@ -62,7 +62,7 @@ button{background:#0d9488;color:#fff;border:none;padding:14px 28px;border-radius
 <div class="info">
 <strong>Formato aceito:</strong> CSV com colunas: <code>nome, email, telefone</code> (ou <code>name, email, phone</code>)<br>
 Colunas extras como <code>cidade, estado</code> também são aceitas.<br><br>
-<strong>Campanha:</strong> 7 e-mails ao longo de ~19 dias até a masterclass (06/06).
+<strong>Campanha:</strong> 7 e-mails ao longo de ~19 dias até a masterclass (11/06).
 </div>
 <form method="post" enctype="multipart/form-data">
 <label>Arquivo CSV das leads antigas:</label>
