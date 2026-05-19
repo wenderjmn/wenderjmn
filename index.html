@@ -288,7 +288,7 @@ section[id]{scroll-margin-top:68px}
 .mentora-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--shadow)}
 .mentora-photo{width:100%;height:360px;background:var(--bg3);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--text3)}
 @media(max-width:768px){.mentora-photo{height:300px}}
-.mentora-photo img{width:100%;height:100%;object-fit:cover;object-position:center top}
+.mentora-photo img{width:100%;height:100%;object-fit:cover;object-position:center center}
 .mentora-info{padding:22px}
 .mentora-name{font-family:var(--fd);font-size:1.15rem;margin-bottom:3px}
 .mentora-role{font-size:.75rem;color:var(--teal);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px}
@@ -329,6 +329,10 @@ section[id]{scroll-margin-top:68px}
 /* FOOTER */
 footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
 @media(max-width:768px){footer{padding-bottom:80px}}
+.footer-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;text-decoration:none}
+.footer-logo img{height:38px;width:auto;display:block;filter:brightness(0) invert(1);opacity:.85}
+.footer-logo-text{font-family:var(--fd);font-size:1.05rem;color:#f1f5f9;font-weight:700}
+.footer-logo-text span{color:var(--teal)}
 .footer-nome{font-family:var(--fd);font-size:1.1rem;color:#f1f5f9;margin-bottom:6px}
 .footer-credits{font-size:.74rem}
 
@@ -693,7 +697,10 @@ Você nunca teve o mapeamento certo.</h2>
 <!-- FOOTER -->
 <footer>
   <div class="container">
-    <p class="footer-nome" data-key="footer_nome">Programa EmagreSer</p>
+    <a href="#" class="footer-logo" aria-label="EmagreSer">
+      <img src="logo.png" alt="" onerror="this.style.display='none'">
+      <span class="footer-logo-text">Programa Emagre<span>Ser</span></span>
+    </a>
     <div class="footer-social" id="footer-social">
       <!-- preenchido via cfg keys: social_instagram, social_facebook -->
     </div>
@@ -792,14 +799,22 @@ async function init(){
   initFloating();
 }
 
+function safeHtml(v){
+  const esc=v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc.replace(/\\n/g,'<br>');
+}
 function applyConfig(){
   document.querySelectorAll('[data-key]').forEach(el=>{
     const v=cfg[el.dataset.key];
-    if(v)el.textContent=v;
+    if(!v)return;
+    if(v.includes('\\n'))el.innerHTML=safeHtml(v);
+    else el.textContent=v;
   });
   document.querySelectorAll('[data-key-inner]').forEach(el=>{
     const v=cfg[el.dataset.keyInner];
-    if(v)el.textContent=v;
+    if(!v)return;
+    if(v.includes('\\n'))el.innerHTML=safeHtml(v);
+    else el.textContent=v;
   });
   const ann=document.getElementById('anuncio-text');
   if(ann&&k('anuncio_bar'))ann.textContent=k('anuncio_bar');
