@@ -63,6 +63,7 @@ switch ($action) {
     case 'update_quiz_question':  require_auth(); update_quiz_question();  break;
     case 'update_testimonial':    require_auth(); update_testimonial();    break;
     case 'update_mentor':         require_auth(); update_mentor();         break;
+    case 'upload_file':           require_auth(); upload_file();           break;
 
     default:
         http_response_code(400);
@@ -258,6 +259,95 @@ function update_mentor() {
 
     $res = sb_request('PATCH', 'mentors?id=eq.' . rawurlencode($id), $data);
     echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
+}
+
+function upload_file() {
+    $user = $_SESSION['admin'];
+
+    $bucket = trim($_POST['bucket'] ?? '');
+    $allowed_buckets = ['mentoras', 'assets', 'depoimentos'];
+    if (!in_array($bucket, $allowed_buckets)) {
+        echo json_encode(['ok'=>false,'error'=>'Bucket inválido']); return;
+    }
+
+    // Permissão por bucket
+    if ($bucket === 'mentoras' && !$user['perms']['mentoras'] && $user['role'] !== 'super_admin') {
+        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Sem permissão para upload de fotos']); return;
+    }
+    if ($bucket === 'depoimentos' && !$user['perms']['videos'] && !$user['perms']['textos'] && $user['role'] !== 'super_admin') {
+        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Sem permissão para upload de depoimentos']); return;
+    }
+    if ($bucket === 'assets' && !$user['perms']['config'] && $user['role'] !== 'super_admin') {
+        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Sem permissão para upload de assets']); return;
+    }
+
+    if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+        $code = $_FILES['file']['error'] ?? 'sem arquivo';
+        echo json_encode(['ok'=>false,'error'=>'Erro no upload (código '.$code.')']); return;
+    }
+
+    $file = $_FILES['file'];
+    $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $allowed_exts = ['jpg','jpeg','png','webp','gif','svg'];
+    if (!in_array($ext, $allowed_exts)) {
+        echo json_encode(['ok'=>false,'error'=>'Extensão não permitida: '.$ext]); return;
+    }
+
+    // Valida MIME real (não só extensão)
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime  = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+    $allowed_mimes = ['image/jpeg','image/jpg','image/png','image/webp','image/gif','image/svg+xml'];
+    if (!in_array($mime, $allowed_mimes)) {
+        echo json_encode(['ok'=>false,'error'=>'Tipo de arquivo não permitido: '.$mime]); return;
+    }
+
+    // Sanitiza path e garante unicidade
+    $path = trim($_POST['path'] ?? '');
+    if (!$path) {
+        $path = uniqid('img_', true) . '.' . $ext;
+    } else {
+        $path = preg_replace('/[^a-zA-Z0-9._\-\/]/', '_', $path);
+        $path = ltrim($path, '/');
+    }
+
+    $upload_url = SUPABASE_URL . '/storage/v1/object/' . $bucket . '/' . $path;
+
+    $fp = fopen($file['tmp_name'], 'r');
+    $ch = curl_init($upload_url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_PUT            => true,
+        CURLOPT_INFILE         => $fp,
+        CURLOPT_INFILESIZE     => $file['size'],
+        CURLOPT_HTTPHEADER     => [
+            'apikey: '               . SUPABASE_SERVICE_KEY,
+            'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
+            'Content-Type: '         . $mime,
+            'x-upsert: true',
+        ],
+        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_SSL_VERIFYPEER => true,
+    ]);
+
+    $response = curl_exec($ch);
+    $status   = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr  = curl_error($ch);
+    curl_close($ch);
+    fclose($fp);
+
+    if ($curlErr) {
+        echo json_encode(['ok'=>false,'error'=>'cURL: '.$curlErr]); return;
+    }
+
+    if ($status === 200 || $status === 201) {
+        $public_url = SUPABASE_URL . '/storage/v1/object/public/' . $bucket . '/' . $path;
+        echo json_encode(['ok'=>true, 'url'=>$public_url, 'path'=>$path]);
+    } else {
+        $body = json_decode($response, true);
+        $msg  = $body['message'] ?? ($body['error'] ?? ('HTTP '.$status));
+        echo json_encode(['ok'=>false,'error'=>$msg]);
+    }
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
