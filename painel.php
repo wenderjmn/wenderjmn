@@ -7,11 +7,10 @@
 define('PANEL_TOKEN',          'es2026admin');
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', '***REMOVED_SUPABASE_KEY***');
-define('SMTP_HOST',            'mail.hostinger.com');
-define('SMTP_PORT',            587);
+// Resend.com — API de e-mail transacional
+define('RESEND_API_KEY',       'COLOQUE_SUA_RESEND_API_KEY_AQUI');
 define('SMTP_FROM',            'contato@emagreser.danielydealbuquerque.com.br');
 define('SMTP_FROM_NAME',       'Programa EmagreSer');
-define('SMTP_PASS',            'EmagreSer@2025!');
 define('ZAPI_INSTANCE',        '***REMOVED_ZAPI_INSTANCE***');
 define('ZAPI_TOKEN',           '***REMOVED_ZAPI_TOKEN***');
 define('ZAPI_CLIENT_TOKEN',    '***REMOVED_ZAPI_CLIENT_TOKEN***');
@@ -196,7 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msg = "ℹ️ Nenhum item na fila estava vencido agora. Use ⚡ Forçar em itens individuais se precisar enviar antes do horário.";
             $msg_type = 'ok';
         } else {
-            $msg = "✅ mail() aceito: {$sent_c} e-mail(s) | Confirmado no log: {$confirmed_c} | Falhas: {$fail_c} | WPP: {$wpp_sent_c}";
+            $msg = "✅ Enviados via Resend: {$sent_c} e-mail(s) | Confirmado no log: {$confirmed_c} | Falhas: {$fail_c} | WPP: {$wpp_sent_c}";
             if ($fail_c > 0 && $sent_c === 0) $msg_type = 'fail';
             elseif ($confirmed_c < $sent_c) { $msg .= " ⚠️ Diferença entre aceito e confirmado — verifique spam ou logs do servidor."; $msg_type = 'warn'; }
             else $msg_type = 'ok';
@@ -345,8 +344,8 @@ tr:last-child td{border-bottom:none}
       <?php endif; ?>
     </div>
     <div class="diag-row">
-      <?php $mail_avail = function_exists('mail'); ?>
-      <?= $mail_avail ? '<span class="diag-ok">✅</span> PHP mail() disponível' : '<span class="diag-fail">❌</span> PHP mail() não disponível' ?>
+      <?php $resend_ok = defined('RESEND_API_KEY') && RESEND_API_KEY !== 'COLOQUE_SUA_RESEND_API_KEY_AQUI' && strlen(RESEND_API_KEY) > 10; ?>
+      <?= $resend_ok ? '<span class="diag-ok">✅</span> Resend API Key configurada' : '<span class="diag-fail">❌</span> Resend API Key não configurada — coloque em painel.php e email_worker.php' ?>
     </div>
     <div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap">
       <form method="post" style="margin:0">
@@ -637,54 +636,38 @@ function sanitize_uuid(string $s): string {
 }
 
 function send_smtp(string $to, string $toName, string $subject, string $body): array {
-    $host = SMTP_HOST; $port = SMTP_PORT;
-    $user = SMTP_FROM; $pass = SMTP_PASS ?? '';
-    $from = SMTP_FROM; $fromName = SMTP_FROM_NAME;
+    $from = SMTP_FROM_NAME . ' <' . SMTP_FROM . '>';
+    $text = strip_tags(str_replace(['<br>','<br/>','<br />'], "\n", $body));
 
-    $boundary = md5(uniqid());
-    $domain   = substr(strrchr($from, '@'), 1);
-    $fromEnc  = '=?UTF-8?B?' . base64_encode($fromName) . '?=';
-    $toEnc    = $toName ? ('=?UTF-8?B?' . base64_encode($toName) . '?= <' . $to . '>') : $to;
-    $subjEnc  = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+    $payload = json_encode([
+        'from'     => $from,
+        'to'       => [$toName ? "{$toName} <{$to}>" : $to],
+        'reply_to' => SMTP_FROM,
+        'subject'  => $subject,
+        'html'     => $body,
+        'text'     => $text,
+    ]);
 
-    $rawMsg  = "From: {$fromEnc} <{$from}>\r\nTo: {$toEnc}\r\nReply-To: {$from}\r\n";
-    $rawMsg .= "Message-ID: <" . uniqid('es',true) . "@{$domain}>\r\nDate: " . date('r') . "\r\n";
-    $rawMsg .= "Subject: {$subjEnc}\r\nMIME-Version: 1.0\r\n";
-    $rawMsg .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
-    $rawMsg .= "List-Unsubscribe: <mailto:{$from}?subject=descadastro>\r\nX-Mailer: EmagreSer/1.0\r\n\r\n";
-    $rawMsg .= "--{$boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n";
-    $rawMsg .= quoted_printable_encode(strip_tags(str_replace(['<br>','<br/>','<br />'],"\n",$body))) . "\r\n\r\n";
-    $rawMsg .= "--{$boundary}\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n";
-    $rawMsg .= quoted_printable_encode($body) . "\r\n\r\n--{$boundary}--";
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_TIMEOUT        => 20,
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . RESEND_API_KEY,
+            'Content-Type: application/json',
+        ],
+    ]);
+    $res  = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err  = curl_error($ch);
+    curl_close($ch);
 
-    $sock = @fsockopen($host, $port, $errno, $errstr, 15);
-    if (!$sock) return ['ok'=>false,'msg'=>"Conexão SMTP falhou ({$host}:{$port}): {$errstr} [{$errno}]"];
-    stream_set_timeout($sock, 15);
-
-    $read  = function() use ($sock) { $r=''; while(($l=fgets($sock,512))!==false){$r.=$l;if(strlen($l)>=4&&$l[3]===' ')break;} return trim($r); };
-    $write = function(string $c) use ($sock) { fwrite($sock, $c."\r\n"); };
-
-    $g = $read(); if (substr($g,0,3)!=='220') { fclose($sock); return ['ok'=>false,'msg'=>"Greeting: {$g}"]; }
-    $write("EHLO ".gethostname()); $read();
-    $write("STARTTLS"); $tls=$read();
-    if (substr($tls,0,3)!=='220') { fclose($sock); return ['ok'=>false,'msg'=>"STARTTLS: {$tls}"]; }
-    if (!@stream_socket_enable_crypto($sock,true,STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT))
-        @stream_socket_enable_crypto($sock,true,STREAM_CRYPTO_METHOD_TLS_CLIENT);
-    $write("EHLO ".gethostname()); $read();
-    $write("AUTH LOGIN"); $read();
-    $write(base64_encode($user)); $read();
-    $write(base64_encode($pass)); $auth=$read();
-    if (substr($auth,0,3)!=='235') { fclose($sock); return ['ok'=>false,'msg'=>"Auth falhou: {$auth}"]; }
-    $write("MAIL FROM:<{$from}>"); $mf=$read();
-    if (substr($mf,0,3)!=='250') { fclose($sock); return ['ok'=>false,'msg'=>"MAIL FROM: {$mf}"]; }
-    $write("RCPT TO:<{$to}>"); $rt=$read();
-    if (substr($rt,0,3)!=='250') { fclose($sock); return ['ok'=>false,'msg'=>"RCPT TO: {$rt}"]; }
-    $write("DATA"); $dt=$read();
-    if (substr($dt,0,3)!=='354') { fclose($sock); return ['ok'=>false,'msg'=>"DATA: {$dt}"]; }
-    fwrite($sock, preg_replace('/^\.$/m','..', $rawMsg)."\r\n.\r\n");
-    $sent=$read(); $write("QUIT"); fclose($sock);
-    if (substr($sent,0,3)==='250') return ['ok'=>true,'msg'=>trim($sent)];
-    return ['ok'=>false,'msg'=>"Envio recusado: {$sent}"];
+    if ($err) return ['ok'=>false, 'msg'=>"cURL: {$err}"];
+    $data = json_decode($res, true);
+    if ($code === 200 || $code === 201) return ['ok'=>true, 'msg'=>'resend_id:' . ($data['id'] ?? 'ok')];
+    return ['ok'=>false, 'msg'=>"Resend [{$code}]: " . ($data['message'] ?? $res)];
 }
 
 function send_whatsapp(string $phone, string $message): array {
