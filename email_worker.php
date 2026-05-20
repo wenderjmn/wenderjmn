@@ -23,12 +23,6 @@ define('BATCH_SIZE', 20); // e-mails por rodada
 
 $log = [];
 
-// ── LIMPEZA DE TRAVADOS ───────────────────────────────────────────
-// Itens que ficaram em 'processing' de rodadas anteriores com crash
-// são resetados para 'pending' antes de iniciar nova rodada.
-sb_patch("email_queue?status=eq.processing",    ['status'=>'pending']);
-sb_patch("whatsapp_queue?status=eq.processing", ['status'=>'pending']);
-
 // ── PROCESSAR FILA DE E-MAILS ────────────────────────────────────
 $now_iso = gmdate('Y-m-d\TH:i:s\Z'); // sem '+' no timezone, evita quebra de URL
 $pending = sb_get("email_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=lt.3&order=scheduled_at.asc&limit=" . BATCH_SIZE);
