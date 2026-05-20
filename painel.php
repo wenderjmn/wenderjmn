@@ -7,8 +7,11 @@
 define('PANEL_TOKEN',          'es2026admin');
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', '***REMOVED_SUPABASE_KEY***');
+define('SMTP_HOST',            'mail.hostinger.com');
+define('SMTP_PORT',            587);
 define('SMTP_FROM',            'contato@emagreser.danielydealbuquerque.com.br');
 define('SMTP_FROM_NAME',       'Programa EmagreSer');
+define('SMTP_PASS',            'EmagreSer@2025!');
 define('ZAPI_INSTANCE',        '***REMOVED_ZAPI_INSTANCE***');
 define('ZAPI_TOKEN',           '***REMOVED_ZAPI_TOKEN***');
 define('ZAPI_CLIENT_TOKEN',    '***REMOVED_ZAPI_CLIENT_TOKEN***');
@@ -634,30 +637,54 @@ function sanitize_uuid(string $s): string {
 }
 
 function send_smtp(string $to, string $toName, string $subject, string $body): array {
-    $fromEnc  = '=?UTF-8?B?' . base64_encode(SMTP_FROM_NAME) . '?=';
+    $host = SMTP_HOST; $port = SMTP_PORT;
+    $user = SMTP_FROM; $pass = SMTP_PASS ?? '';
+    $from = SMTP_FROM; $fromName = SMTP_FROM_NAME;
+
+    $boundary = md5(uniqid());
+    $domain   = substr(strrchr($from, '@'), 1);
+    $fromEnc  = '=?UTF-8?B?' . base64_encode($fromName) . '?=';
     $toEnc    = $toName ? ('=?UTF-8?B?' . base64_encode($toName) . '?= <' . $to . '>') : $to;
     $subjEnc  = '=?UTF-8?B?' . base64_encode($subject) . '?=';
-    $boundary = md5(uniqid());
-    $domain   = substr(strrchr(SMTP_FROM, '@'), 1);
-    $headers  = "From: {$fromEnc} <" . SMTP_FROM . ">\r\n";
-    $headers .= "To: {$toEnc}\r\n";
-    $headers .= "Reply-To: " . SMTP_FROM . "\r\n";
-    $headers .= "Message-ID: <" . uniqid('es', true) . "@{$domain}>\r\n";
-    $headers .= "Date: " . date('r') . "\r\n";
-    $headers .= "MIME-Version: 1.0\r\n";
-    $headers .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
-    $headers .= "List-Unsubscribe: <mailto:" . SMTP_FROM . "?subject=descadastro>\r\n";
-    $headers .= "X-Mailer: EmagreSer-Automacao/1.0";
-    $msg  = "--{$boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n";
-    $msg .= quoted_printable_encode(strip_tags(str_replace(['<br>','<br/>','<br />'],"\n",$body))) . "\r\n\r\n";
-    $msg .= "--{$boundary}\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n";
-    $msg .= quoted_printable_encode($body) . "\r\n\r\n--{$boundary}--";
-    error_clear_last();
-    $ok = mail($to, $subjEnc, $msg, $headers, '-f' . SMTP_FROM);
-    if ($ok) return ['ok'=>true,'msg'=>'sent'];
-    $err = error_get_last();
-    $detail = $err ? $err['message'] : 'mail() retornou false';
-    return ['ok'=>false,'msg'=>$detail];
+
+    $rawMsg  = "From: {$fromEnc} <{$from}>\r\nTo: {$toEnc}\r\nReply-To: {$from}\r\n";
+    $rawMsg .= "Message-ID: <" . uniqid('es',true) . "@{$domain}>\r\nDate: " . date('r') . "\r\n";
+    $rawMsg .= "Subject: {$subjEnc}\r\nMIME-Version: 1.0\r\n";
+    $rawMsg .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
+    $rawMsg .= "List-Unsubscribe: <mailto:{$from}?subject=descadastro>\r\nX-Mailer: EmagreSer/1.0\r\n\r\n";
+    $rawMsg .= "--{$boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n";
+    $rawMsg .= quoted_printable_encode(strip_tags(str_replace(['<br>','<br/>','<br />'],"\n",$body))) . "\r\n\r\n";
+    $rawMsg .= "--{$boundary}\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n";
+    $rawMsg .= quoted_printable_encode($body) . "\r\n\r\n--{$boundary}--";
+
+    $sock = @fsockopen($host, $port, $errno, $errstr, 15);
+    if (!$sock) return ['ok'=>false,'msg'=>"Conexão SMTP falhou ({$host}:{$port}): {$errstr} [{$errno}]"];
+    stream_set_timeout($sock, 15);
+
+    $read  = function() use ($sock) { $r=''; while(($l=fgets($sock,512))!==false){$r.=$l;if(strlen($l)>=4&&$l[3]===' ')break;} return trim($r); };
+    $write = function(string $c) use ($sock) { fwrite($sock, $c."\r\n"); };
+
+    $g = $read(); if (substr($g,0,3)!=='220') { fclose($sock); return ['ok'=>false,'msg'=>"Greeting: {$g}"]; }
+    $write("EHLO ".gethostname()); $read();
+    $write("STARTTLS"); $tls=$read();
+    if (substr($tls,0,3)!=='220') { fclose($sock); return ['ok'=>false,'msg'=>"STARTTLS: {$tls}"]; }
+    if (!@stream_socket_enable_crypto($sock,true,STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT))
+        @stream_socket_enable_crypto($sock,true,STREAM_CRYPTO_METHOD_TLS_CLIENT);
+    $write("EHLO ".gethostname()); $read();
+    $write("AUTH LOGIN"); $read();
+    $write(base64_encode($user)); $read();
+    $write(base64_encode($pass)); $auth=$read();
+    if (substr($auth,0,3)!=='235') { fclose($sock); return ['ok'=>false,'msg'=>"Auth falhou: {$auth}"]; }
+    $write("MAIL FROM:<{$from}>"); $mf=$read();
+    if (substr($mf,0,3)!=='250') { fclose($sock); return ['ok'=>false,'msg'=>"MAIL FROM: {$mf}"]; }
+    $write("RCPT TO:<{$to}>"); $rt=$read();
+    if (substr($rt,0,3)!=='250') { fclose($sock); return ['ok'=>false,'msg'=>"RCPT TO: {$rt}"]; }
+    $write("DATA"); $dt=$read();
+    if (substr($dt,0,3)!=='354') { fclose($sock); return ['ok'=>false,'msg'=>"DATA: {$dt}"]; }
+    fwrite($sock, preg_replace('/^\.$/m','..', $rawMsg)."\r\n.\r\n");
+    $sent=$read(); $write("QUIT"); fclose($sock);
+    if (substr($sent,0,3)==='250') return ['ok'=>true,'msg'=>trim($sent)];
+    return ['ok'=>false,'msg'=>"Envio recusado: {$sent}"];
 }
 
 function send_whatsapp(string $phone, string $message): array {
