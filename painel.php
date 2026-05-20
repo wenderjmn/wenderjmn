@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (stripos($body,'<html')===false) $body='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"></head><body>'.$body.'</body></html>';
                     $result = send_smtp($item['to_email'], $item['to_name'] ?? '', $subject, $body);
                     if ($result['ok']) {
-                        $now = (new DateTime('now',new DateTimeZone('UTC')))->format(DateTime::ATOM);
+                        $now = gmdate('Y-m-d\TH:i:s\Z');
                         sb_patch("email_queue?id=eq.{$id}", ['status'=>'sent','sent_at'=>$now]);
                         sb_post('email_log',[['queue_id'=>$id,'lead_id'=>$item['lead_id'],'to_email'=>$item['to_email'],'template_slug'=>$item['template_slug'],'smtp_response'=>'forced']]);
                         $msg = "✅ E-mail forçado: {$item['to_email']} [{$item['template_slug']}]"; $msg_type = 'ok';
@@ -129,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $item   = $items[0];
                 $result = send_whatsapp($item['to_phone'], $item['message']);
                 if ($result['ok']) {
-                    $now = (new DateTime('now',new DateTimeZone('UTC')))->format(DateTime::ATOM);
+                    $now = gmdate('Y-m-d\TH:i:s\Z');
                     sb_patch("whatsapp_queue?id=eq.{$id}", ['status'=>'sent','sent_at'=>$now]);
                     $msg = "✅ WhatsApp forçado para {$item['to_phone']}"; $msg_type = 'ok';
                 } else {
@@ -142,43 +142,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ── PROCESSAR FILA AGORA (roda o worker inline) ──────────────────
     if ($action === 'process_now') {
-        $now_iso  = (new DateTime('now',new DateTimeZone('UTC')))->format(DateTime::ATOM);
+        // gmdate evita o '+' do timezone no URL que quebra a query Supabase
+        $now_iso  = gmdate('Y-m-d\TH:i:s\Z');
         $pending  = sb_get("email_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=lt.3&order=scheduled_at.asc&limit=20");
         $sent_c = 0; $fail_c = 0;
-        foreach ($pending as $item) {
-            sb_patch("email_queue?id=eq.{$item['id']}", ['attempts'=>($item['attempts']+1)]);
-            $tpls = sb_get("email_templates?slug=eq.".rawurlencode($item['template_slug'])."&limit=1");
-            if (empty($tpls)) { sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>'failed','error_msg'=>'template not found']); $fail_c++; continue; }
-            $tpl  = $tpls[0];
-            $vars = ['{{nome}}'=>htmlspecialchars($item['to_name']??'você'),'{{link_descadastro}}'=>'https://emagreser.danielydealbuquerque.com.br/descadastro.php?email='.urlencode($item['to_email'])];
-            $subject = str_replace(array_keys($vars),array_values($vars),$tpl['subject']);
-            $body    = str_replace(array_keys($vars),array_values($vars),$tpl['body_html']);
-            if (stripos($body,'<html')===false) $body='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"></head><body>'.$body.'</body></html>';
-            $result = send_smtp($item['to_email'], $item['to_name']??'', $subject, $body);
-            if ($result['ok']) {
-                sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>'sent','sent_at'=>$now_iso]);
-                sb_post('email_log',[['queue_id'=>$item['id'],'lead_id'=>$item['lead_id'],'to_email'=>$item['to_email'],'template_slug'=>$item['template_slug'],'smtp_response'=>'process_now']]);
-                $sent_c++;
-            } else {
-                $status = $item['attempts'] >= 2 ? 'failed' : 'pending';
-                sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>$status,'error_msg'=>$result['msg']]);
-                $fail_c++;
+        if (is_list($pending) || empty($pending)) {
+            foreach ($pending as $item) {
+                if (!is_array($item) || !isset($item['id'])) continue;
+                sb_patch("email_queue?id=eq.{$item['id']}", ['attempts'=>($item['attempts']+1)]);
+                $tpls = sb_get("email_templates?slug=eq.".rawurlencode($item['template_slug'])."&limit=1");
+                if (!is_list($tpls) || empty($tpls)) { sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>'failed','error_msg'=>'template not found']); $fail_c++; continue; }
+                $tpl  = $tpls[0];
+                $vars = ['{{nome}}'=>htmlspecialchars($item['to_name']??'você'),'{{link_descadastro}}'=>'https://emagreser.danielydealbuquerque.com.br/descadastro.php?email='.urlencode($item['to_email'])];
+                $subject = str_replace(array_keys($vars),array_values($vars),$tpl['subject']);
+                $body    = str_replace(array_keys($vars),array_values($vars),$tpl['body_html']);
+                if (stripos($body,'<html')===false) $body='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"></head><body>'.$body.'</body></html>';
+                $result = send_smtp($item['to_email'], $item['to_name']??'', $subject, $body);
+                if ($result['ok']) {
+                    sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>'sent','sent_at'=>$now_iso]);
+                    sb_post('email_log',[['queue_id'=>$item['id'],'lead_id'=>$item['lead_id'],'to_email'=>$item['to_email'],'template_slug'=>$item['template_slug'],'smtp_response'=>'process_now']]);
+                    $sent_c++;
+                } else {
+                    $status = $item['attempts'] >= 2 ? 'failed' : 'pending';
+                    sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>$status,'error_msg'=>$result['msg']]);
+                    $fail_c++;
+                }
+                usleep(300000);
             }
-            usleep(300000);
         }
         $wpp_pending = sb_get("whatsapp_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=lt.3&order=scheduled_at.asc&limit=10");
         $wpp_sent_c = 0;
-        foreach ($wpp_pending as $item) {
-            sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['attempts'=>($item['attempts']+1)]);
-            $result = send_whatsapp($item['to_phone'], $item['message']);
-            if ($result['ok']) {
-                sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['status'=>'sent','sent_at'=>$now_iso]);
-                $wpp_sent_c++;
-            } else {
-                $status = $item['attempts'] >= 2 ? 'failed' : 'pending';
-                sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['status'=>$status,'error_msg'=>$result['msg']]);
+        if (is_list($wpp_pending) || empty($wpp_pending)) {
+            foreach ($wpp_pending as $item) {
+                if (!is_array($item) || !isset($item['id'])) continue;
+                sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['attempts'=>($item['attempts']+1)]);
+                $result = send_whatsapp($item['to_phone'], $item['message']);
+                if ($result['ok']) {
+                    sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['status'=>'sent','sent_at'=>$now_iso]);
+                    $wpp_sent_c++;
+                } else {
+                    $status = $item['attempts'] >= 2 ? 'failed' : 'pending';
+                    sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['status'=>$status,'error_msg'=>$result['msg']]);
+                }
+                usleep(300000);
             }
-            usleep(300000);
         }
         $msg = "✅ Processado: {$sent_c} e-mail(s) enviados, {$fail_c} falha(s), {$wpp_sent_c} WPP enviados.";
         $msg_type = ($fail_c > 0 && $sent_c === 0) ? 'fail' : 'ok';

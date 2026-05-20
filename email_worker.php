@@ -1,11 +1,7 @@
 <?php
-/**
- * email_worker.php
- * Roda via cron a cada 10 minutos.
- * Cron Hostinger: */10 * * * * php /home/usuario/public_html/email_worker.php
- *
- * Envia e-mails pendentes via SMTP Hostinger e WhatsApp via Z-API.
- */
+// email_worker.php — Roda via cron a cada 10 minutos.
+// Cron Hostinger: */10 * * * * php /home/u426299340/public_html/email_worker.php
+// Envia e-mails pendentes via SMTP Hostinger e WhatsApp via Z-API.
 
 // ── CONFIGURAÇÕES ────────────────────────────────────────────────
 define('SUPABASE_URL',         getenv('SUPABASE_URL')         ?: 'https://drgrwpmhmrrhxuwxabow.supabase.co');
@@ -31,7 +27,7 @@ define('BATCH_SIZE', 20); // e-mails por rodada
 $log = [];
 
 // ── PROCESSAR FILA DE E-MAILS ────────────────────────────────────
-$now_iso = (new DateTime('now', new DateTimeZone('UTC')))->format(DateTime::ATOM);
+$now_iso = gmdate('Y-m-d\TH:i:s\Z'); // sem '+' no timezone, evita quebra de URL
 $pending = sb_get("email_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=lt.3&order=scheduled_at.asc&limit=" . BATCH_SIZE);
 
 foreach ($pending as $item) {
