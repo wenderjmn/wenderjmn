@@ -36,9 +36,17 @@ $lead = sb_get("leads?id=eq.{$lead_id}&select=*&limit=1");
 if (empty($lead)) { echo json_encode(['error' => 'lead not found']); exit; }
 $lead = $lead[0];
 
-// Evita enfileirar duas vezes
+// Evita enfileirar duas vezes pelo lead
 if (!empty($lead['sequence_queued_at'])) {
     echo json_encode(['ok' => true, 'msg' => 'already queued']); exit;
+}
+
+// Evita duplicata: checa se já existe sequência pendente para este e-mail
+$existing = sb_get("email_queue?to_email=eq." . urlencode($email) . "&status=eq.pending&select=id&limit=1");
+if (!empty($existing)) {
+    // Marca o lead como enfileirado para consistência
+    sb_patch("leads?id=eq.{$lead_id}", ['sequence_queued_at' => $now->format(DateTime::ATOM)]);
+    echo json_encode(['ok' => true, 'msg' => 'email already in queue for this address']); exit;
 }
 
 $now   = new DateTime('now', new DateTimeZone('America/Sao_Paulo'));
@@ -121,6 +129,7 @@ if ($phone && strlen($phone) >= 10) {
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
         'to_phone'     => $tel,
+        'to_name'      => $name,
         'message'      => "Oi, {$name}! 🎉\n\nSeu mapeamento revelou que você é:\n\n*{$p['emoji']} {$p['tipo']}*\n\n_{$p['titulo']}_\n\nIsso não é fraqueza — é o seu cérebro operando de um jeito que você nunca aprendeu a gerenciar.\n\nA Masterclass *\"O Código dos Sabotadores\"* é dia 11/06 às 20h e vai mostrar exatamente o que fazer para quebrar esse ciclo. 🔓\n\nEntre no grupo VIP para receber o link da transmissão 👇\n" . WPP_LINK,
         'scheduled_at' => $now->format(DateTime::ATOM),
         'status'       => 'pending',
@@ -131,6 +140,7 @@ if ($phone && strlen($phone) >= 10) {
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
         'to_phone'     => $tel,
+        'to_name'      => $name,
         'message'      => "{$name}, uma coisa rápida 💡\n\nQuem tem o *{$p['tipo']}* geralmente sente que \"já sabe o que precisa fazer\" mas trava na hora de executar.\n\nO problema não é falta de informação. É o *padrão neurológico* por trás das suas escolhas.\n\nNa Masterclass vamos falar exatamente sobre como quebrar isso. Já garantiu seu lugar no grupo? 👇\n" . WPP_LINK,
         'scheduled_at' => $d1->format(DateTime::ATOM),
         'status'       => 'pending',
@@ -141,6 +151,7 @@ if ($phone && strlen($phone) >= 10) {
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
         'to_phone'     => $tel,
+        'to_name'      => $name,
         'message'      => "{$name}, deixa eu te contar algo 🙌\n\nA Carla, que também tem o *{$p['tipo']}*, me escreveu essa semana:\n\n_\"Eu tentei tudo. Dieta, academia, aplicativos. Nada funcionava porque eu não entendia por que eu sabotava. Depois que entendi meu padrão, tudo mudou.\"_\n\nÉ exatamente sobre isso que a Dra. Daniely vai falar na Masterclass dia 11/06. 🎯\n\nEstá no grupo VIP? O link da live vai sair lá 👇\n" . WPP_LINK,
         'scheduled_at' => $d3->format(DateTime::ATOM),
         'status'       => 'pending',
@@ -151,6 +162,7 @@ if ($phone && strlen($phone) >= 10) {
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
         'to_phone'     => $tel,
+        'to_name'      => $name,
         'message'      => "{$name}, me conta uma coisa 👇\n\nQual dessas situações te identifica mais?\n\n🍫 *A* — Você come bem o dia todo e à noite desanda\n⚡ *B* — Você começa a semana firme e na quarta já desistiu\n🤖 *C* — Você come sem nem perceber, no automático\n🌙 *D* — Você restringe muito e compensa depois\n\nResponde aqui com a letra! Vou te mandar uma dica personalizada 😊",
         'scheduled_at' => $d5->format(DateTime::ATOM),
         'status'       => 'pending',
@@ -160,6 +172,7 @@ if ($phone && strlen($phone) >= 10) {
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
         'to_phone'     => $tel,
+        'to_name'      => $name,
         'message'      => "⚠️ {$name}, faltam *3 dias* para a Masterclass!\n\n📅 *11 de junho, 20h*\n\n\"O Código dos Sabotadores\" com a Dra. Daniely de Albuquerque e a Nutri Ira Soraya\n\nSerá online, ao vivo e *gratuito*. Mas o link só vai para quem está no grupo VIP 👇\n" . WPP_LINK,
         'scheduled_at' => $masterclass_3d->format(DateTime::ATOM),
         'status'       => 'pending',
@@ -169,6 +182,7 @@ if ($phone && strlen($phone) >= 10) {
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
         'to_phone'     => $tel,
+        'to_name'      => $name,
         'message'      => "{$name}! 🔥 *Amanhã é o grande dia!*\n\nMasterclass *\"O Código dos Sabotadores\"*\n📅 11/06 às 20h — ao vivo\n\nSepara um cantinho tranquilo, bloqueia sua agenda e venha aprender o que nenhuma dieta te ensinou.\n\nO link da transmissão vai sair amanhã no grupo VIP 👇\n" . WPP_LINK,
         'scheduled_at' => $masterclass_eve->format(DateTime::ATOM),
         'status'       => 'pending',
@@ -178,6 +192,7 @@ if ($phone && strlen($phone) >= 10) {
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
         'to_phone'     => $tel,
+        'to_name'      => $name,
         'message'      => "🔴 *HOJE É O DIA*, {$name}!\n\nMasterclass *\"O Código dos Sabotadores\"*\n⏰ Hoje às 20h — ao vivo\n\nO link da transmissão vai sair no grupo VIP antes do início.\n\nNão esquece: anota as dúvidas que você quer tirar ao vivo! ✏️\n\n👇\n" . WPP_LINK,
         'scheduled_at' => $masterclass->format(DateTime::ATOM),
         'status'       => 'pending',
@@ -187,6 +202,7 @@ if ($phone && strlen($phone) >= 10) {
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
         'to_phone'     => $tel,
+        'to_name'      => $name,
         'message'      => "⏰ *Em 1 hora começa!*\n\n{$name}, corre que falta pouco!\n\nO link da live está no grupo VIP agora 👇\n" . WPP_LINK,
         'scheduled_at' => $masterclass_1h->format(DateTime::ATOM),
         'status'       => 'pending',
