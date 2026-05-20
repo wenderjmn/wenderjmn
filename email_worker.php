@@ -5,10 +5,10 @@
 
 // ── CONFIGURAÇÕES ────────────────────────────────────────────────
 define('SUPABASE_URL',         getenv('SUPABASE_URL')         ?: 'https://drgrwpmhmrrhxuwxabow.supabase.co');
-define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
+define('SUPABASE_SERVICE_KEY', '***REMOVED_SUPABASE_KEY***');
 
 // Resend.com — API de e-mail transacional
-define('RESEND_API_KEY',  getenv('RESEND_API_KEY') ?: 'COLOQUE_SUA_RESEND_API_KEY_AQUI');
+define('RESEND_API_KEY',  '***REMOVED_RESEND_KEY***');
 define('SMTP_FROM',       'contato@emagreser.danielydealbuquerque.com.br');
 define('SMTP_FROM_NAME',  'Programa EmagreSer');
 
