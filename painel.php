@@ -187,8 +187,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 usleep(300000);
             }
         }
-        $msg = "✅ Processado: {$sent_c} e-mail(s) enviados, {$fail_c} falha(s), {$wpp_sent_c} WPP enviados.";
-        $msg_type = ($fail_c > 0 && $sent_c === 0) ? 'fail' : 'ok';
+        // Confirmação real: conta quantos foram gravados no email_log agora
+        $confirmed_c = count(sb_get("email_log?created_at=gte.{$now_iso}&select=id"));
+        if ($sent_c === 0 && $fail_c === 0 && $wpp_sent_c === 0) {
+            $msg = "ℹ️ Nenhum item na fila estava vencido agora. Use ⚡ Forçar em itens individuais se precisar enviar antes do horário.";
+            $msg_type = 'ok';
+        } else {
+            $msg = "✅ mail() aceito: {$sent_c} e-mail(s) | Confirmado no log: {$confirmed_c} | Falhas: {$fail_c} | WPP: {$wpp_sent_c}";
+            if ($fail_c > 0 && $sent_c === 0) $msg_type = 'fail';
+            elseif ($confirmed_c < $sent_c) { $msg .= " ⚠️ Diferença entre aceito e confirmado — verifique spam ou logs do servidor."; $msg_type = 'warn'; }
+            else $msg_type = 'ok';
+        }
     }
 }
 
@@ -346,13 +355,15 @@ tr:last-child td{border-bottom:none}
     <?php if ($log_lines): ?>
     <div class="log-pre"><?= htmlspecialchars(implode("\n", $log_lines)) ?></div>
     <?php endif; ?>
-    <?php if (!$log_exists): ?>
-    <div style="margin-top:10px;font-size:12px;color:#7c3aed">
-      <strong>Para configurar o cron no Hostinger:</strong><br>
-      Painel Hostinger → Agendamento de Tarefas (Cron Jobs) → Adicionar:<br>
-      <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">*/10 * * * * php /home/USUARIO/public_html/email_worker.php</code>
+    <div style="margin-top:10px;font-size:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px 14px">
+      <strong>Como configurar o cron no Hostinger:</strong><br><br>
+      1. Painel Hostinger → <strong>Sites → Avançado → Cron Jobs</strong><br>
+      2. Selecione o tipo <strong style="color:#7c3aed">PHP</strong> (não "Personalizado")<br>
+      3. No campo comando coloque apenas: <code style="background:#e2e8f0;padding:2px 5px;border-radius:3px">public_html/email_worker.php</code><br>
+      4. Frequência: selecione <strong>"A cada 10 minutos"</strong> nas Opções Comuns<br>
+      5. Salvar<br><br>
+      <span style="color:#dc2626">⚠️ Não use o tipo "Personalizado" — ele tenta executar o arquivo diretamente sem o PHP e gera erro "No such file or directory".</span>
     </div>
-    <?php endif; ?>
   </div>
 
   <!-- CARDS STATS -->
@@ -641,8 +652,12 @@ function send_smtp(string $to, string $toName, string $subject, string $body): a
     $msg .= quoted_printable_encode(strip_tags(str_replace(['<br>','<br/>','<br />'],"\n",$body))) . "\r\n\r\n";
     $msg .= "--{$boundary}\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n";
     $msg .= quoted_printable_encode($body) . "\r\n\r\n--{$boundary}--";
+    error_clear_last();
     $ok = mail($to, $subjEnc, $msg, $headers, '-f' . SMTP_FROM);
-    return $ok ? ['ok'=>true,'msg'=>'sent'] : ['ok'=>false,'msg'=>'mail() retornou false — verifique sendmail'];
+    if ($ok) return ['ok'=>true,'msg'=>'sent'];
+    $err = error_get_last();
+    $detail = $err ? $err['message'] : 'mail() retornou false';
+    return ['ok'=>false,'msg'=>$detail];
 }
 
 function send_whatsapp(string $phone, string $message): array {
