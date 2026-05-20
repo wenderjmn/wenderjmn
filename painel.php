@@ -379,23 +379,41 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
-  <!-- ALERTA DE TRAVADOS -->
-  <?php if ($email_stuck > 0 || $wpp_stuck > 0): ?>
-  <div class="alert warn" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-    <span>⚠️ Itens travados em <strong>processing</strong> (worker travou ou cron paralelo):
-      <?php if ($email_stuck > 0): ?> &nbsp;📧 <?= $email_stuck ?> e-mail(s)<?php endif; ?>
-      <?php if ($wpp_stuck > 0):   ?> &nbsp;💬 <?= $wpp_stuck ?> WPP<?php endif; ?>
-    </span>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <?php if ($email_stuck > 0): ?>
-      <form method="post" style="margin:0"><input type="hidden" name="action" value="reset_stuck_email"><button type="submit" class="btn btn-amber" style="width:auto;padding:6px 14px;font-size:12px">↺ Resetar e-mails travados</button></form>
-      <?php endif; ?>
-      <?php if ($wpp_stuck > 0): ?>
-      <form method="post" style="margin:0"><input type="hidden" name="action" value="reset_stuck_wpp"><button type="submit" class="btn btn-amber" style="width:auto;padding:6px 14px;font-size:12px">↺ Resetar WPP travados</button></form>
-      <?php endif; ?>
+  <!-- MANUTENÇÃO DA FILA — sempre visível -->
+  <div class="section">
+    <div class="section-hdr">🔧 Manutenção da Fila</div>
+    <div style="padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+
+      <!-- E-MAIL -->
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:10px">📧 E-mail</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <span style="font-size:12px">Travados: <strong style="color:<?= $email_stuck>0?'#d97706':'#059669' ?>"><?= $email_stuck ?></strong></span>
+          <span style="font-size:12px">Com falha: <strong style="color:<?= $email_fail>0?'#dc2626':'#059669' ?>"><?= $email_fail ?></strong></span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <form method="post" style="margin:0"><input type="hidden" name="action" value="reset_stuck_email"><button type="submit" class="btn btn-amber btn-sm" <?= $email_stuck==0?'disabled style="opacity:.45"':'' ?>>↺ Resetar travados</button></form>
+          <form method="post" style="margin:0"><input type="hidden" name="action" value="retry_failed"><button type="submit" class="btn btn-amber btn-sm" <?= $email_fail==0?'disabled style="opacity:.45"':'' ?>>↺ Retentar falhas</button></form>
+          <form method="post" style="margin:0" onsubmit="return confirm('Excluir todos com falha?')"><input type="hidden" name="action" value="delete_all_failed_email"><button type="submit" class="btn btn-red" <?= $email_fail==0?'disabled style="opacity:.45"':'' ?>>🗑️ Excluir falhas</button></form>
+        </div>
+      </div>
+
+      <!-- WHATSAPP -->
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:10px">💬 WhatsApp</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <span style="font-size:12px">Travados: <strong style="color:<?= $wpp_stuck>0?'#d97706':'#059669' ?>"><?= $wpp_stuck ?></strong></span>
+          <span style="font-size:12px">Com falha: <strong style="color:<?= $wpp_fail>0?'#dc2626':'#059669' ?>"><?= $wpp_fail ?></strong></span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <form method="post" style="margin:0"><input type="hidden" name="action" value="reset_stuck_wpp"><button type="submit" class="btn btn-amber btn-sm" <?= $wpp_stuck==0?'disabled style="opacity:.45"':'' ?>>↺ Resetar travados</button></form>
+          <form method="post" style="margin:0"><input type="hidden" name="action" value="retry_failed_wpp"><button type="submit" class="btn btn-amber btn-sm" <?= $wpp_fail==0?'disabled style="opacity:.45"':'' ?>>↺ Retentar falhas</button></form>
+          <form method="post" style="margin:0" onsubmit="return confirm('Excluir todos com falha?')"><input type="hidden" name="action" value="delete_all_failed_wpp"><button type="submit" class="btn btn-red" <?= $wpp_fail==0?'disabled style="opacity:.45"':'' ?>>🗑️ Excluir falhas</button></form>
+        </div>
+      </div>
+
     </div>
   </div>
-  <?php endif; ?>
 
   <!-- CARDS STATS -->
   <div class="cards">
@@ -441,14 +459,20 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
-  <?php if ($email_fail > 0): ?>
+  <!-- E-MAILS COM FALHA — sempre visível -->
   <div class="section">
-    <div class="section-hdr">⚠️ <?= $email_fail ?> e-mail(s) com falha
+    <div class="section-hdr">
+      <?php if ($email_fail > 0): ?>⚠️ <?= $email_fail ?> e-mail(s) com falha<?php else: ?>✅ E-mails com falha (nenhum)<?php endif; ?>
+      <?php if ($email_fail > 0): ?>
       <div style="display:flex;gap:8px">
         <form method="post" style="margin:0"><input type="hidden" name="action" value="retry_failed"><button type="submit" class="btn btn-amber btn-sm">↺ Retentar todos</button></form>
         <form method="post" style="margin:0" onsubmit="return confirm('Excluir todos com falha?')"><input type="hidden" name="action" value="delete_all_failed_email"><button type="submit" class="btn btn-red">🗑️ Excluir todos</button></form>
       </div>
+      <?php endif; ?>
     </div>
+    <?php if (empty($recent_fail)): ?>
+    <div style="padding:14px;color:#059669;text-align:center;font-size:13px">Nenhum e-mail com falha</div>
+    <?php else: ?>
     <table>
       <tr><th>E-mail</th><th>Template</th><th>Tentativas</th><th>Erro</th><th>Ações</th></tr>
       <?php foreach ($recent_fail as $r): ?>
@@ -466,18 +490,23 @@ tr:last-child td{border-bottom:none}
       </tr>
       <?php endforeach; ?>
     </table>
+    <?php endif; ?>
   </div>
-  <?php endif; ?>
 
-  <?php if ($wpp_fail > 0): ?>
+  <!-- WHATSAPP COM FALHA — sempre visível -->
   <div class="section">
-    <div class="section-hdr">⚠️ <?= $wpp_fail ?> WhatsApp(s) com falha
+    <div class="section-hdr">
+      <?php if ($wpp_fail > 0): ?>⚠️ <?= $wpp_fail ?> WhatsApp(s) com falha<?php else: ?>✅ WhatsApp com falha (nenhum)<?php endif; ?>
+      <?php if ($wpp_fail > 0): ?>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <form method="post" style="margin:0"><input type="hidden" name="action" value="retry_failed_wpp"><button type="submit" class="btn btn-amber btn-sm">↺ Retentar todos</button></form>
-        <?php if ($wpp_stuck > 0): ?><form method="post" style="margin:0"><input type="hidden" name="action" value="reset_stuck_wpp"><button type="submit" class="btn btn-amber btn-sm">🔓 Resetar travados (<?= $wpp_stuck ?>)</button></form><?php endif; ?>
         <form method="post" style="margin:0" onsubmit="return confirm('Excluir todos com falha?')"><input type="hidden" name="action" value="delete_all_failed_wpp"><button type="submit" class="btn btn-red">🗑️ Excluir todos</button></form>
       </div>
+      <?php endif; ?>
     </div>
+    <?php if (empty($wpp_fail_list)): ?>
+    <div style="padding:14px;color:#059669;text-align:center;font-size:13px">Nenhum WhatsApp com falha</div>
+    <?php else: ?>
     <table>
       <tr><th>Telefone</th><th>Mensagem</th><th>Tentativas</th><th>Erro</th><th>Ações</th></tr>
       <?php foreach ($wpp_fail_list as $r): ?>
@@ -495,8 +524,8 @@ tr:last-child td{border-bottom:none}
       </tr>
       <?php endforeach; ?>
     </table>
+    <?php endif; ?>
   </div>
-  <?php endif; ?>
 
   <!-- FILA DE E-MAILS AGRUPADA POR LEAD -->
   <div class="section">
