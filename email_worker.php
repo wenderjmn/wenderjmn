@@ -1,10 +1,11 @@
 <?php
-// email_worker.php — Roda via cron a cada 10 minutos.
-// Cron Hostinger: */10 * * * * php /home/u426299340/public_html/email_worker.php
-// Envia e-mails pendentes via SMTP Hostinger e WhatsApp via Z-API.
+// email_worker.php — Disparado via cron externo (cron-job.org) ou CLI.
+// URL externa: https://emagreser.danielydealbuquerque.com.br/email_worker.php?secret=***REMOVED_WORKER_SECRET***
+// CLI Hostinger (backup): php public_html/email_worker.php
 
 // ── CONFIGURAÇÕES ────────────────────────────────────────────────
-define('SUPABASE_URL',         getenv('SUPABASE_URL')         ?: 'https://drgrwpmhmrrhxuwxabow.supabase.co');
+define('WORKER_SECRET',    '***REMOVED_WORKER_SECRET***');
+define('SUPABASE_URL',     'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', '***REMOVED_SUPABASE_KEY***');
 
 // Resend.com — API de e-mail transacional
@@ -18,8 +19,28 @@ define('ZAPI_TOKEN',         '***REMOVED_ZAPI_TOKEN***');
 define('ZAPI_CLIENT_TOKEN',  '***REMOVED_ZAPI_CLIENT_TOKEN***');
 define('ZAPI_URL',           'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
 
-define('BATCH_SIZE', 20); // e-mails por rodada
+define('BATCH_SIZE', 20);
 // ────────────────────────────────────────────────────────────────
+
+// ── AUTENTICAÇÃO (quando chamado via HTTP) ───────────────────────
+$via_http = (php_sapi_name() !== 'cli');
+if ($via_http) {
+    $secret = $_GET['secret'] ?? $_SERVER['HTTP_X_WORKER_SECRET'] ?? '';
+    if ($secret !== WORKER_SECRET) {
+        http_response_code(403);
+        exit(json_encode(['error' => 'Forbidden']));
+    }
+    header('Content-Type: application/json');
+}
+
+// ── FILE LOCK — impede runs paralelos ───────────────────────────
+$lock_file = sys_get_temp_dir() . '/emagreser_worker.lock';
+$lock = fopen($lock_file, 'c');
+if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
+    $msg = 'Worker já está rodando — ignorando esta execução.';
+    if ($via_http) { echo json_encode(['ok' => false, 'msg' => $msg]); } else { echo $msg . "\n"; }
+    exit;
+}
 
 $log = [];
 
@@ -105,11 +126,19 @@ if (ZAPI_INSTANCE && ZAPI_TOKEN) {
     }
 }
 
-// Log simples
+// ── LOG + RESPOSTA ───────────────────────────────────────────────
+flock($lock, LOCK_UN);
+fclose($lock);
+
 $ts = date('Y-m-d H:i:s');
-$output = "[{$ts}] Worker rodou. " . count($pending) . " email(s) processados.\n" . implode("\n", $log) . "\n";
+$output = "[{$ts}] Worker rodou. " . count($pending) . " email(s), " . count($wpp_pending ?? []) . " WPP processados.\n" . implode("\n", $log) . "\n";
 file_put_contents(__DIR__ . '/email_worker.log', $output, FILE_APPEND);
-echo $output;
+
+if ($via_http) {
+    echo json_encode(['ok' => true, 'ts' => $ts, 'emails' => count($pending), 'log' => $log]);
+} else {
+    echo $output;
+}
 
 // ── ENVIO DE E-MAIL via Resend.com API ───────────────────────────────
 function send_smtp(string $to, string $toName, string $subject, string $body): array {

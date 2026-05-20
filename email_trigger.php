@@ -26,8 +26,15 @@ define('ZAPI_TOKEN',           '***REMOVED_ZAPI_TOKEN***');
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['error' => 'POST only']); exit; }
 
 $body = json_decode(file_get_contents('php://input'), true);
-$lead_id = $body['lead_id'] ?? null;
-$event   = $body['event']   ?? 'new_lead';
+
+// Suporte ao formato do Supabase Database Webhook (INSERT em leads)
+if (isset($body['type']) && $body['type'] === 'INSERT' && isset($body['record'])) {
+    $lead_id = $body['record']['id'] ?? null;
+} else {
+    // Formato legado: { lead_id, event }
+    $lead_id = $body['lead_id'] ?? null;
+}
+$event = 'new_lead';
 
 if (!$lead_id) { echo json_encode(['error' => 'lead_id required']); exit; }
 
