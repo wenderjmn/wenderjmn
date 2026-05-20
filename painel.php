@@ -6,7 +6,7 @@
 
 define('PANEL_TOKEN',          'es2026admin');
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
-define('SUPABASE_SERVICE_KEY', '***REMOVED_SUPABASE_KEY***');
+define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: 'SUPABASE_SERVICE_KEY_AQUI');
 // Resend.com — API de e-mail transacional
 define('RESEND_API_KEY',       'COLOQUE_SUA_RESEND_API_KEY_AQUI');
 define('SMTP_FROM',            'contato@emagreser.danielydealbuquerque.com.br');
