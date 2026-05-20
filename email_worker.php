@@ -23,13 +23,19 @@ define('BATCH_SIZE', 20); // e-mails por rodada
 
 $log = [];
 
+// ── LIMPEZA DE TRAVADOS ───────────────────────────────────────────
+// Itens que ficaram em 'processing' de rodadas anteriores com crash
+// são resetados para 'pending' antes de iniciar nova rodada.
+sb_patch("email_queue?status=eq.processing",    ['status'=>'pending']);
+sb_patch("whatsapp_queue?status=eq.processing", ['status'=>'pending']);
+
 // ── PROCESSAR FILA DE E-MAILS ────────────────────────────────────
 $now_iso = gmdate('Y-m-d\TH:i:s\Z'); // sem '+' no timezone, evita quebra de URL
 $pending = sb_get("email_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=lt.3&order=scheduled_at.asc&limit=" . BATCH_SIZE);
 
 foreach ($pending as $item) {
-    // Marca como processando (evita race condition)
-    sb_patch("email_queue?id=eq.{$item['id']}", ['attempts' => ($item['attempts'] + 1)]);
+    // Trava atômica: muda para 'processing' — cron paralelo não pega este item
+    sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>'processing', 'attempts' => ($item['attempts'] + 1)]);
 
     // Busca template
     $templates = sb_get("email_templates?slug=eq.{$item['template_slug']}&limit=1");
@@ -53,7 +59,7 @@ foreach ($pending as $item) {
         $body = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>' . $body . '</body></html>';
     }
 
-    // Envia via SMTP
+    // Envia via Resend.com API
     $result = send_smtp($item['to_email'], $item['to_name'] ?? '', $subject, $body);
 
     if ($result['ok']) {
@@ -67,7 +73,7 @@ foreach ($pending as $item) {
         ]]);
         $log[] = "✅ Email enviado para {$item['to_email']} [{$item['template_slug']}]";
     } else {
-        $status = $item['attempts'] >= 2 ? 'failed' : 'pending';
+        $status = ($item['attempts'] + 1) >= 3 ? 'failed' : 'pending';
         sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>$status,'error_msg'=>$result['msg']]);
         $log[] = "❌ Falha {$item['to_email']}: {$result['msg']}";
     }
@@ -80,7 +86,8 @@ if (ZAPI_INSTANCE && ZAPI_TOKEN) {
     $wpp_pending = sb_get("whatsapp_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=lt.3&order=scheduled_at.asc&limit=10");
 
     foreach ($wpp_pending as $item) {
-        sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['attempts' => ($item['attempts'] + 1)]);
+        // Trava atômica: impede reenvio duplicado se status=sent falhar
+        sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['status'=>'processing', 'attempts' => ($item['attempts'] + 1)]);
 
         $result = send_whatsapp($item['to_phone'], $item['message']);
 
@@ -88,7 +95,7 @@ if (ZAPI_INSTANCE && ZAPI_TOKEN) {
             sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['status'=>'sent','sent_at'=>$now_iso]);
             $log[] = "✅ WA enviado para {$item['to_phone']}";
         } else {
-            $status = $item['attempts'] >= 2 ? 'failed' : 'pending';
+            $status = ($item['attempts'] + 1) >= 3 ? 'failed' : 'pending';
             sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['status'=>$status,'error_msg'=>$result['msg']]);
             $log[] = "❌ WA falhou {$item['to_phone']}: {$result['msg']}";
         }

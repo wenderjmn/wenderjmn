@@ -56,6 +56,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sb_patch_raw("whatsapp_queue?status=eq.failed", ['status'=>'pending','attempts'=>0,'error_msg'=>null]);
         $msg = '✅ WhatsApp com falha recolocados na fila'; $msg_type = 'ok';
     }
+    if ($action === 'reset_stuck_wpp') {
+        sb_patch_raw("whatsapp_queue?status=eq.processing", ['status'=>'pending','attempts'=>0]);
+        $msg = '✅ WhatsApp travados resetados para fila'; $msg_type = 'ok';
+    }
+    if ($action === 'reset_stuck_email') {
+        sb_patch_raw("email_queue?status=eq.processing", ['status'=>'pending','attempts'=>0]);
+        $msg = '✅ E-mails travados resetados para fila'; $msg_type = 'ok';
+    }
 
     if ($action === 'delete_email') {
         $id = sanitize_uuid($_POST['item_id'] ?? '');
@@ -214,6 +222,9 @@ $wpp_sent      = count(sb_get("whatsapp_queue?status=eq.sent&select=id"));
 $wpp_pend      = count(sb_get("whatsapp_queue?status=eq.pending&select=id"));
 $wpp_fail      = count(sb_get("whatsapp_queue?status=eq.failed&select=id"));
 
+$email_stuck   = count(sb_get("email_queue?status=eq.processing&select=id"));
+$wpp_stuck     = count(sb_get("whatsapp_queue?status=eq.processing&select=id"));
+
 $recent_sent   = sb_get("email_log?select=to_email,template_slug,sent_at,smtp_response&order=sent_at.desc&limit=20");
 $recent_fail   = sb_get("email_queue?status=eq.failed&select=id,to_email,to_name,template_slug,error_msg,attempts,created_at&order=created_at.desc&limit=20");
 $wpp_fail_list = sb_get("whatsapp_queue?status=eq.failed&select=id,to_phone,message,error_msg,attempts,created_at&order=created_at.desc&limit=20");
@@ -368,6 +379,24 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
+  <!-- ALERTA DE TRAVADOS -->
+  <?php if ($email_stuck > 0 || $wpp_stuck > 0): ?>
+  <div class="alert warn" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <span>⚠️ Itens travados em <strong>processing</strong> (worker travou ou cron paralelo):
+      <?php if ($email_stuck > 0): ?> &nbsp;📧 <?= $email_stuck ?> e-mail(s)<?php endif; ?>
+      <?php if ($wpp_stuck > 0):   ?> &nbsp;💬 <?= $wpp_stuck ?> WPP<?php endif; ?>
+    </span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <?php if ($email_stuck > 0): ?>
+      <form method="post" style="margin:0"><input type="hidden" name="action" value="reset_stuck_email"><button type="submit" class="btn btn-amber" style="width:auto;padding:6px 14px;font-size:12px">↺ Resetar e-mails travados</button></form>
+      <?php endif; ?>
+      <?php if ($wpp_stuck > 0): ?>
+      <form method="post" style="margin:0"><input type="hidden" name="action" value="reset_stuck_wpp"><button type="submit" class="btn btn-amber" style="width:auto;padding:6px 14px;font-size:12px">↺ Resetar WPP travados</button></form>
+      <?php endif; ?>
+    </div>
+  </div>
+  <?php endif; ?>
+
   <!-- CARDS STATS -->
   <div class="cards">
     <div class="card"><div class="n"><?= $leads_total ?></div><div class="l">Leads cadastradas</div></div>
@@ -443,8 +472,9 @@ tr:last-child td{border-bottom:none}
   <?php if ($wpp_fail > 0): ?>
   <div class="section">
     <div class="section-hdr">⚠️ <?= $wpp_fail ?> WhatsApp(s) com falha
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
         <form method="post" style="margin:0"><input type="hidden" name="action" value="retry_failed_wpp"><button type="submit" class="btn btn-amber btn-sm">↺ Retentar todos</button></form>
+        <?php if ($wpp_stuck > 0): ?><form method="post" style="margin:0"><input type="hidden" name="action" value="reset_stuck_wpp"><button type="submit" class="btn btn-amber btn-sm">🔓 Resetar travados (<?= $wpp_stuck ?>)</button></form><?php endif; ?>
         <form method="post" style="margin:0" onsubmit="return confirm('Excluir todos com falha?')"><input type="hidden" name="action" value="delete_all_failed_wpp"><button type="submit" class="btn btn-red">🗑️ Excluir todos</button></form>
       </div>
     </div>
