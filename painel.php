@@ -109,10 +109,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $tpls = sb_get("email_templates?slug=eq." . rawurlencode($item['template_slug']) . "&limit=1");
                 if (!empty($tpls)) {
                     $tpl  = $tpls[0];
-                    $vars = [
+                    $extra = $item['extra_vars'] ?? [];
+                    if (is_string($extra)) $extra = json_decode($extra, true) ?: [];
+                    $vars = array_merge([
                         '{{nome}}'             => htmlspecialchars($item['to_name'] ?? 'você'),
                         '{{link_descadastro}}' => 'https://emagreser.danielydealbuquerque.com.br/descadastro.php?email='.urlencode($item['to_email']),
-                    ];
+                        '{{link_wpp}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
+                        '{{link_site}}'        => 'https://emagreser.danielydealbuquerque.com.br',
+                        '{{emoji}}'            => '', '{{tipo}}' => '', '{{titulo}}' => '', '{{descricao}}' => '',
+                    ], $extra);
                     $subject = str_replace(array_keys($vars), array_values($vars), $tpl['subject']);
                     $body    = str_replace(array_keys($vars), array_values($vars), $tpl['body_html']);
                     if (stripos($body,'<html')===false) $body='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"></head><body>'.$body.'</body></html>';
@@ -163,7 +168,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $tpls = sb_get("email_templates?slug=eq.".rawurlencode($item['template_slug'])."&limit=1");
                 if (!is_list($tpls) || empty($tpls)) { sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>'failed','error_msg'=>'template not found']); $fail_c++; continue; }
                 $tpl  = $tpls[0];
-                $vars = ['{{nome}}'=>htmlspecialchars($item['to_name']??'você'),'{{link_descadastro}}'=>'https://emagreser.danielydealbuquerque.com.br/descadastro.php?email='.urlencode($item['to_email'])];
+                $extra = $item['extra_vars'] ?? []; if (is_string($extra)) $extra = json_decode($extra, true) ?: [];
+                $vars = array_merge(['{{nome}}'=>htmlspecialchars($item['to_name']??'você'),'{{link_descadastro}}'=>'https://emagreser.danielydealbuquerque.com.br/descadastro.php?email='.urlencode($item['to_email']),'{{link_wpp}}'=>'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ','{{link_site}}'=>'https://emagreser.danielydealbuquerque.com.br','{{emoji}}'=>'','{{tipo}}'=>'','{{titulo}}'=>'','{{descricao}}'=>''], $extra);
                 $subject = str_replace(array_keys($vars),array_values($vars),$tpl['subject']);
                 $body    = str_replace(array_keys($vars),array_values($vars),$tpl['body_html']);
                 if (stripos($body,'<html')===false) $body='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"></head><body>'.$body.'</body></html>';
