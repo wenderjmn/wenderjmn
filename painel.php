@@ -86,6 +86,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         sb_delete("whatsapp_queue?status=eq.pending"); $msg = '🗑️ Fila de WhatsApp limpa';
     }
 
+    if ($action === 'save_site_config') {
+        $config_key   = trim($_POST['config_key'] ?? '');
+        $config_value = $_POST['config_value'] ?? '';
+        if ($config_key && preg_match('/^[a-z0-9_]+$/', $config_key)) {
+            $existing = sb_get("site_config?key=eq." . rawurlencode($config_key) . "&limit=1");
+            if (!empty($existing)) {
+                sb_patch("site_config?key=eq." . rawurlencode($config_key), ['value' => $config_value]);
+            } else {
+                sb_post('site_config', [['key' => $config_key, 'value' => $config_value]]);
+            }
+            $msg = "✅ Configuração '{$config_key}' salva com sucesso"; $msg_type = 'ok';
+        } else { $msg = '❌ Chave inválida (use apenas letras minúsculas, números e _)'; $msg_type = 'fail'; }
+    }
+
+    if ($action === 'delete_site_config') {
+        $config_key = trim($_POST['config_key'] ?? '');
+        if ($config_key && preg_match('/^[a-z0-9_]+$/', $config_key)) {
+            sb_delete("site_config?key=eq." . rawurlencode($config_key));
+            $msg = "🗑️ Configuração '{$config_key}' removida"; $msg_type = 'ok';
+        }
+    }
+
     if ($action === 'activate_leads') {
         $unqueued = sb_get("leads?sequence_queued_at=is.null&select=id,name,email,phone,sabotador&limit=100");
         $count = 0;
@@ -263,6 +285,9 @@ if (is_list($all_wpp_q) || empty($all_wpp_q)) {
     }
 }
 
+// Textos do site
+$site_cfg_rows = sb_get("site_config?order=key.asc&limit=200");
+
 // Diagnóstico do worker
 $log_file   = __DIR__ . '/email_worker.log';
 $log_exists = file_exists($log_file);
@@ -338,6 +363,8 @@ tr:last-child td{border-bottom:none}
 .log-pre{background:#1e293b;color:#a3e635;font-family:monospace;font-size:11px;padding:10px;border-radius:6px;margin-top:8px;max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
 
 .refresh-bar{background:#1e293b;color:#64748b;text-align:center;font-size:11px;padding:5px;position:sticky;bottom:0}
+.cfg-input{width:100%;padding:5px 8px;border:1px solid #d1d5db;border-radius:5px;font-size:12px;resize:vertical;min-height:32px;font-family:Arial,sans-serif}
+.cfg-key{font-family:monospace;font-size:11px;color:#7c3aed;white-space:nowrap;padding-right:8px}
 </style>
 </head>
 <body>
@@ -657,6 +684,55 @@ tr:last-child td{border-bottom:none}
       <?php endforeach; ?>
     </table>
     <?php endif; ?>
+  </div>
+
+  <!-- TEXTOS DO SITE (site_config) -->
+  <div class="section">
+    <div class="section-hdr">✏️ Textos e Configurações do Site
+      <span style="font-size:11px;font-weight:400;color:#6b7c67"><?= count($site_cfg_rows) ?> chave(s) cadastrada(s)</span>
+    </div>
+    <div style="padding:14px">
+      <p style="font-size:12px;color:#6b7c67;margin-bottom:12px">Edite os textos da landing page. As alterações ficam disponíveis após recarregar o site (⌘R / F5).</p>
+      <?php if (empty($site_cfg_rows)): ?>
+      <div style="color:#6b7c67;font-size:13px;text-align:center;padding:16px 0">Nenhuma configuração encontrada. Adicione abaixo.</div>
+      <?php else: ?>
+      <table style="margin-bottom:14px">
+        <tr><th style="width:200px">Chave</th><th>Valor</th><th style="width:100px">Ação</th></tr>
+        <?php foreach ($site_cfg_rows as $row): ?>
+        <tr>
+          <td class="cfg-key"><?= htmlspecialchars($row['key']) ?></td>
+          <td>
+            <form method="post" style="margin:0;display:flex;gap:6px;align-items:flex-start">
+              <input type="hidden" name="action" value="save_site_config">
+              <input type="hidden" name="config_key" value="<?= htmlspecialchars($row['key']) ?>">
+              <textarea name="config_value" class="cfg-input" rows="<?= substr_count($row['value']??'',"\n")>0?3:1 ?>"><?= htmlspecialchars($row['value'] ?? '') ?></textarea>
+              <button type="submit" class="btn btn-green btn-sm" style="white-space:nowrap;margin-top:1px">💾 Salvar</button>
+            </form>
+          </td>
+          <td style="text-align:center">
+            <form method="post" style="margin:0" onsubmit="return confirm('Excluir a chave \'<?= htmlspecialchars($row['key']) ?>\'?')">
+              <input type="hidden" name="action" value="delete_site_config">
+              <input type="hidden" name="config_key" value="<?= htmlspecialchars($row['key']) ?>">
+              <button type="submit" class="btn-red">🗑️</button>
+            </form>
+          </td>
+        </tr>
+        <?php endforeach; ?>
+      </table>
+      <?php endif; ?>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px">
+        <div style="font-weight:700;font-size:12px;margin-bottom:8px">+ Adicionar nova chave</div>
+        <form method="post" style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start">
+          <input type="hidden" name="action" value="save_site_config">
+          <input type="text" name="config_key" placeholder="nome_da_chave" style="padding:5px 8px;border:1px solid #d1d5db;border-radius:5px;font-size:12px;width:200px">
+          <input type="text" name="config_value" placeholder="Valor do texto..." style="padding:5px 8px;border:1px solid #d1d5db;border-radius:5px;font-size:12px;flex:1;min-width:200px">
+          <button type="submit" class="btn btn-blue btn-sm" style="white-space:nowrap">+ Adicionar</button>
+        </form>
+        <div style="margin-top:10px;font-size:11px;color:#6b7c67">
+          <strong>Chaves principais:</strong> hero_headline · hero_subheadline · roma_titulo · roma_descricao · masterclass_nome · masterclass_data · whatsapp_link · fb_pixel_id · ga_measurement_id · live_data
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>
