@@ -202,20 +202,27 @@ $wpp_fail_list = sb_get("whatsapp_queue?status=eq.failed&select=id,to_phone,mess
 
 // Fila completa para agrupar por lead
 $all_email_q   = sb_get("email_queue?status=eq.pending&select=id,to_email,to_name,lead_id,template_slug,scheduled_at,attempts&order=scheduled_at.asc&limit=200");
-$all_wpp_q     = sb_get("whatsapp_queue?status=eq.pending&select=id,to_phone,to_name,lead_id,message,scheduled_at,attempts&order=scheduled_at.asc&limit=200");
+$all_wpp_q     = sb_get("whatsapp_queue?status=eq.pending&select=id,to_phone,lead_id,message,scheduled_at,attempts&order=scheduled_at.asc&limit=200");
 
-// Agrupa por lead
+// Agrupa por lead (garante que é lista válida — descarta erros do Supabase)
+function is_list(array $a): bool { return !empty($a) && array_keys($a) === range(0, count($a)-1); }
 $email_by_lead = [];
-foreach ($all_email_q as $r) {
-    $k = $r['to_email'];
-    if (!isset($email_by_lead[$k])) $email_by_lead[$k] = ['name'=>$r['to_name']??$k,'email'=>$k,'items'=>[]];
-    $email_by_lead[$k]['items'][] = $r;
+if (is_list($all_email_q) || empty($all_email_q)) {
+    foreach ($all_email_q as $r) {
+        if (!is_array($r) || !isset($r['to_email'])) continue;
+        $k = $r['to_email'];
+        if (!isset($email_by_lead[$k])) $email_by_lead[$k] = ['name'=>$r['to_name']??$k,'email'=>$k,'items'=>[]];
+        $email_by_lead[$k]['items'][] = $r;
+    }
 }
 $wpp_by_lead = [];
-foreach ($all_wpp_q as $r) {
-    $k = $r['to_phone'];
-    if (!isset($wpp_by_lead[$k])) $wpp_by_lead[$k] = ['name'=>$r['to_name']??$k,'phone'=>$k,'items'=>[]];
-    $wpp_by_lead[$k]['items'][] = $r;
+if (is_list($all_wpp_q) || empty($all_wpp_q)) {
+    foreach ($all_wpp_q as $r) {
+        if (!is_array($r) || !isset($r['to_phone'])) continue;
+        $k = $r['to_phone'];
+        if (!isset($wpp_by_lead[$k])) $wpp_by_lead[$k] = ['name'=>$k,'phone'=>$k,'items'=>[]];
+        $wpp_by_lead[$k]['items'][] = $r;
+    }
 }
 
 // Diagnóstico do worker
