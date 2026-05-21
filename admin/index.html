@@ -186,6 +186,7 @@ tbody td{padding:10px 12px;vertical-align:top}
       <div class="nav-item" data-page="leads" onclick="goPage('leads')"><span class="nav-item-icon">👥</span> Leads</div>
       <div class="nav-item" data-page="templates" onclick="goPage('templates')"><span class="nav-item-icon">📧</span> Templates E-mail</div>
       <div class="nav-item" data-page="whatsapp" onclick="goPage('whatsapp')"><span class="nav-item-icon">📱</span> WhatsApp</div>
+      <div class="nav-item" data-page="usuarios" onclick="goPage('usuarios')"><span class="nav-item-icon">👤</span> Usuários</div>
     </nav>
     <div class="sidebar-footer">
       <button class="btn-logout" onclick="doLogout()">🚪 Sair</button>
@@ -271,7 +272,7 @@ function goPage(name) {
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === name);
   });
-  const pages = { dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras, config: configPage, leads, templates: emailTemplates, whatsapp: wppPage };
+  const pages = { dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras, config: configPage, leads, templates: emailTemplates, whatsapp: wppPage, usuarios: usuariosPage };
   if (pages[name]) pages[name]();
 }
 
@@ -1383,6 +1384,203 @@ function tplAutoPreview() {
   const panel = document.getElementById('tpl-preview-panel');
   if (!panel || panel.style.display === 'none') return;
   tplPreview();
+}
+
+/* ── USUÁRIOS ────────────────────────────────────────────────────── */
+const PERM_LIST = [
+  {key:'perm_dashboard', label:'Dashboard'},
+  {key:'perm_leads',     label:'Leads'},
+  {key:'perm_textos',    label:'Textos da LP'},
+  {key:'perm_quiz',      label:'Quiz'},
+  {key:'perm_videos',    label:'Depoimentos'},
+  {key:'perm_mentoras',  label:'Mentoras'},
+  {key:'perm_config',    label:'Configurações'},
+  {key:'perm_usuarios',  label:'Usuários'},
+];
+
+const ROLE_LABELS = { super_admin:'🔑 Super Admin', admin:'🛡 Admin', editor:'✏️ Editor' };
+
+async function usuariosPage() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page-title">Usuários do Painel</div>
+    <div class="page-sub">Gerencie quem tem acesso ao painel administrativo e quais permissões cada um possui.</div>
+    <button class="btn-add" onclick="showCreateUser()">+ Novo Usuário</button>
+    <div id="new-user-form" class="card hidden" style="margin-bottom:20px"></div>
+    <div id="users-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  await loadUsers();
+}
+
+async function loadUsers() {
+  const r = await proxyWrite({ action: 'list_users' });
+  const el = document.getElementById('users-body');
+  if (!r.ok) { el.innerHTML = `<div class="card" style="color:var(--red)">${escHtml(r.error||'Sem permissão para ver usuários')}</div>`; return; }
+
+  el.innerHTML = (r.data||[]).map(u => `
+    <div class="card" id="ucard-${u.id}" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+        <div style="width:38px;height:38px;border-radius:50%;background:${u.active?'rgba(232,119,58,.15)':'#f3f4f6'};display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">${u.active?'👤':'🚫'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:.95rem;color:${u.active?'var(--text)':'var(--text3)'}">${escHtml(u.username)}</div>
+          <div style="font-size:.75rem;color:var(--text3);margin-top:2px">${ROLE_LABELS[u.role]||u.role} · ${u.active?'<span style="color:var(--green)">Ativo</span>':'<span style="color:var(--red)">Inativo</span>'} · Último acesso: ${u.last_login ? new Date(u.last_login).toLocaleString('pt-BR') : 'nunca'}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="toggleEditUser('${u.id}')" style="background:#f3f4f6;border:1px solid var(--border);border-radius:7px;padding:7px 14px;font-size:12px;cursor:pointer;font-weight:600">✏️ Editar</button>
+          <button onclick="showResetPass('${u.id}')" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:7px;padding:7px 14px;font-size:12px;cursor:pointer;font-weight:600">🔑 Senha</button>
+          <button onclick="toggleActive('${u.id}', ${!u.active})" style="background:${u.active?'#fef2f2':'#f0fdf4'};border:1px solid ${u.active?'#fecaca':'#bbf7d0'};color:${u.active?'#dc2626':'#16a34a'};border-radius:7px;padding:7px 14px;font-size:12px;cursor:pointer;font-weight:600">${u.active?'🚫 Desativar':'✅ Ativar'}</button>
+          <button onclick="deleteUser('${u.id}', '${escHtml(u.username)}')" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:7px;padding:7px 14px;font-size:12px;cursor:pointer">🗑</button>
+        </div>
+      </div>
+      <!-- Permissões (leitura) -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="uperms-${u.id}">
+        ${PERM_LIST.map(p => `<span style="font-size:.72rem;padding:3px 9px;border-radius:10px;background:${u[p.key]?'rgba(232,119,58,.1)':'#f3f4f6'};color:${u[p.key]?'var(--cta)':'var(--text3)'};">${p.label}</span>`).join('')}
+      </div>
+      <!-- Form edição (oculto) -->
+      <div id="uedit-${u.id}" class="hidden" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        ${userEditForm(u)}
+      </div>
+      <!-- Form reset senha (oculto) -->
+      <div id="ureset-${u.id}" class="hidden" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        ${resetPassForm(u.id)}
+      </div>
+    </div>`).join('') || '<div class="card" style="color:var(--text3);text-align:center">Nenhum usuário encontrado.</div>';
+}
+
+function userEditForm(u) {
+  return `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="field-group" style="margin:0">
+        <label>Cargo</label>
+        <select id="urole-${u.id}" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:.85rem">
+          <option value="editor" ${u.role==='editor'?'selected':''}>✏️ Editor</option>
+          <option value="admin" ${u.role==='admin'?'selected':''}>🛡 Admin</option>
+          <option value="super_admin" ${u.role==='super_admin'?'selected':''}>🔑 Super Admin</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:.8rem;font-weight:600;color:var(--text2);display:block;margin-bottom:8px">Permissões</label>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">
+        ${PERM_LIST.map(p => `
+          <label style="display:flex;align-items:center;gap:7px;font-size:.82rem;cursor:pointer;padding:6px 10px;border-radius:6px;background:#f9fafb;border:1px solid var(--border)">
+            <input type="checkbox" id="up-${p.key}-${u.id}" ${u[p.key]?'checked':''} style="width:14px;height:14px;accent-color:var(--cta)">
+            ${p.label}
+          </label>`).join('')}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveUserEdit('${u.id}')" class="btn-save" style="padding:8px 18px;font-size:.82rem">Salvar alterações</button>
+      <button onclick="toggleEditUser('${u.id}')" class="inline-cancel">Cancelar</button>
+    </div>`;
+}
+
+function resetPassForm(id) {
+  return `
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+      <div class="field-group" style="margin:0;flex:1;min-width:200px">
+        <label>Nova senha <span style="font-weight:400;color:var(--text3);font-size:.75rem">(mín. 8 caracteres)</span></label>
+        <input type="password" id="unewpass-${id}" placeholder="••••••••" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;font-size:.88rem">
+      </div>
+      <button onclick="saveResetPass('${id}')" class="btn-save" style="padding:8px 18px;font-size:.82rem;flex-shrink:0">Redefinir senha</button>
+      <button onclick="showResetPass('${id}')" class="inline-cancel">Cancelar</button>
+    </div>`;
+}
+
+function showCreateUser() {
+  const el = document.getElementById('new-user-form');
+  el.classList.remove('hidden');
+  el.innerHTML = `
+    <div class="card-title">Novo Usuário</div>
+    <div class="grid2" style="margin-bottom:12px">
+      <div class="field-group">
+        <label>Nome de usuário</label>
+        <input id="nu-username" placeholder="ex: ana.silva" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.88rem">
+      </div>
+      <div class="field-group">
+        <label>Senha inicial <span style="font-weight:400;color:var(--text3);font-size:.75rem">(mín. 8 caracteres)</span></label>
+        <input type="password" id="nu-password" placeholder="••••••••" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.88rem">
+      </div>
+    </div>
+    <div class="field-group" style="margin-bottom:12px">
+      <label>Cargo</label>
+      <select id="nu-role" style="border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.88rem">
+        <option value="editor">✏️ Editor — pode editar conteúdo</option>
+        <option value="admin">🛡 Admin — acesso amplo</option>
+        <option value="super_admin">🔑 Super Admin — acesso total</option>
+      </select>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:.8rem;font-weight:600;color:var(--text2);display:block;margin-bottom:8px">Permissões</label>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px">
+        ${PERM_LIST.map(p => `
+          <label style="display:flex;align-items:center;gap:7px;font-size:.82rem;cursor:pointer;padding:6px 10px;border-radius:6px;background:#f9fafb;border:1px solid var(--border)">
+            <input type="checkbox" id="np-${p.key}" style="width:14px;height:14px;accent-color:var(--cta)">
+            ${p.label}
+          </label>`).join('')}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="createUser()" class="btn-save" style="padding:9px 20px">Criar usuário</button>
+      <button onclick="document.getElementById('new-user-form').classList.add('hidden')" class="inline-cancel">Cancelar</button>
+    </div>`;
+}
+
+function toggleEditUser(id) {
+  const el = document.getElementById(`uedit-${id}`);
+  el.classList.toggle('hidden');
+  document.getElementById(`ureset-${id}`)?.classList.add('hidden');
+}
+
+function showResetPass(id) {
+  const el = document.getElementById(`ureset-${id}`);
+  el.classList.toggle('hidden');
+  document.getElementById(`uedit-${id}`)?.classList.add('hidden');
+}
+
+async function createUser() {
+  const data = {
+    action:   'create_user',
+    username: document.getElementById('nu-username').value.trim(),
+    password: document.getElementById('nu-password').value,
+    role:     document.getElementById('nu-role').value,
+  };
+  PERM_LIST.forEach(p => { if (document.getElementById(`np-${p.key}`)?.checked) data[p.key] = '1'; });
+  const r = await proxyWrite(data);
+  if (r.ok) { toast('Usuário criado!'); document.getElementById('new-user-form').classList.add('hidden'); await loadUsers(); }
+  else toast(r.error || 'Erro ao criar', 'error');
+}
+
+async function saveUserEdit(id) {
+  const data = {
+    action: 'update_user',
+    id,
+    role: document.getElementById(`urole-${id}`).value,
+  };
+  PERM_LIST.forEach(p => { if (document.getElementById(`up-${p.key}-${id}`)?.checked) data[p.key] = '1'; });
+  const r = await proxyWrite(data);
+  if (r.ok) { toast('Usuário atualizado!'); await loadUsers(); }
+  else toast(r.error || 'Erro ao salvar', 'error');
+}
+
+async function saveResetPass(id) {
+  const password = document.getElementById(`unewpass-${id}`)?.value;
+  if (!password || password.length < 8) { toast('Senha deve ter ao menos 8 caracteres', 'error'); return; }
+  const r = await proxyWrite({ action: 'reset_password', id, password });
+  if (r.ok) { toast('Senha redefinida!'); document.getElementById(`ureset-${id}`)?.classList.add('hidden'); }
+  else toast(r.error || 'Erro ao redefinir', 'error');
+}
+
+async function toggleActive(id, active) {
+  const r = await proxyWrite({ action: 'toggle_user', id, active: active ? '1' : '0' });
+  if (r.ok) { toast(active ? 'Usuário ativado!' : 'Usuário desativado.'); await loadUsers(); }
+  else toast(r.error || 'Erro', 'error');
+}
+
+async function deleteUser(id, username) {
+  if (!confirm(`Excluir o usuário "${username}" permanentemente? Essa ação não pode ser desfeita.`)) return;
+  const r = await proxyWrite({ action: 'delete_user', id });
+  if (r.ok) { toast('Usuário excluído.'); await loadUsers(); }
+  else toast(r.error || 'Erro ao excluir', 'error');
 }
 
 /* ── WHATSAPP QUEUE ──────────────────────────────────────────────── */

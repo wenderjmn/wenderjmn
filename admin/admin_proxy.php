@@ -75,6 +75,14 @@ switch ($action) {
     case 'wpp_retry_failed':  require_auth(); wpp_retry_failed();  break;
     case 'wpp_cancel_msg':    require_auth(); wpp_cancel_msg();    break;
 
+    // Gestão de usuários (apenas super_admin ou perm_usuarios)
+    case 'list_users':    require_auth(); list_users();    break;
+    case 'create_user':   require_auth(); create_user();   break;
+    case 'update_user':   require_auth(); update_user();   break;
+    case 'reset_password':require_auth(); reset_password();break;
+    case 'toggle_user':   require_auth(); toggle_user();   break;
+    case 'delete_user':   require_auth(); delete_user();   break;
+
     default:
         http_response_code(400);
         echo json_encode(['ok'=>false,'error'=>'Ação desconhecida']);
@@ -395,6 +403,146 @@ function delete_email_template() {
     if (!$slug) { echo json_encode(['ok'=>false,'error'=>'slug required']); return; }
     $r = sb_request('DELETE', 'email_templates', null, 'slug=eq.' . urlencode($slug));
     echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+// ── GESTÃO DE USUÁRIOS ────────────────────────────────────────────────────────
+function require_user_admin() {
+    $user = $_SESSION['admin'];
+    if ($user['role'] !== 'super_admin' && !$user['perms']['usuarios']) {
+        http_response_code(403);
+        echo json_encode(['ok'=>false,'error'=>'Sem permissão para gerenciar usuários']);
+        exit;
+    }
+}
+
+function list_users() {
+    require_user_admin();
+    $r = sb_request('GET', 'admin_users', null,
+        'select=id,username,role,active,perm_dashboard,perm_leads,perm_videos,perm_textos,perm_quiz,perm_mentoras,perm_config,perm_usuarios,last_login,created_at&order=created_at.asc'
+    );
+    echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
+}
+
+function create_user() {
+    require_user_admin();
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $role     = $_POST['role'] ?? 'editor';
+
+    if (!$username || !$password) {
+        echo json_encode(['ok'=>false,'error'=>'Usuário e senha são obrigatórios']); return;
+    }
+    if (!preg_match('/^[a-zA-Z0-9_\.]{3,40}$/', $username)) {
+        echo json_encode(['ok'=>false,'error'=>'Usuário inválido (3-40 chars, letras/números/_ apenas)']); return;
+    }
+    if (strlen($password) < 8) {
+        echo json_encode(['ok'=>false,'error'=>'Senha deve ter ao menos 8 caracteres']); return;
+    }
+    if (!in_array($role, ['super_admin','admin','editor'])) $role = 'editor';
+
+    // Só super_admin pode criar outro super_admin
+    $current = $_SESSION['admin'];
+    if ($role === 'super_admin' && $current['role'] !== 'super_admin') {
+        echo json_encode(['ok'=>false,'error'=>'Apenas super_admin pode criar outro super_admin']); return;
+    }
+
+    $perms = collect_perms();
+
+    $data = array_merge([
+        'username'      => $username,
+        'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+        'role'          => $role,
+        'active'        => true,
+        'created_at'    => date('c'),
+        'updated_at'    => date('c'),
+    ], $perms);
+
+    $r = sb_request('POST', 'admin_users', [$data]);
+    if ($r['status'] === 201 || $r['status'] === 200) {
+        echo json_encode(['ok'=>true]);
+    } else {
+        $msg = $r['body'][0]['message'] ?? $r['body']['message'] ?? ('HTTP '.$r['status']);
+        // Username duplicado
+        if (strpos($msg, 'duplicate') !== false || strpos($msg, 'unique') !== false) {
+            $msg = 'Nome de usuário já existe';
+        }
+        echo json_encode(['ok'=>false,'error'=>$msg]);
+    }
+}
+
+function update_user() {
+    require_user_admin();
+    $id   = trim($_POST['id'] ?? '');
+    $role = $_POST['role'] ?? 'editor';
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+
+    // Não pode rebaixar a si mesmo
+    if ($id === $_SESSION['admin']['id'] && $role !== $_SESSION['admin']['role']) {
+        echo json_encode(['ok'=>false,'error'=>'Você não pode alterar o próprio cargo']); return;
+    }
+
+    if (!in_array($role, ['super_admin','admin','editor'])) $role = 'editor';
+    $current = $_SESSION['admin'];
+    if ($role === 'super_admin' && $current['role'] !== 'super_admin') {
+        echo json_encode(['ok'=>false,'error'=>'Apenas super_admin pode promover para super_admin']); return;
+    }
+
+    $data = array_merge(['role' => $role, 'updated_at' => date('c')], collect_perms());
+    $r = sb_request('PATCH', 'admin_users?id=eq.' . rawurlencode($id), $data);
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+function reset_password() {
+    require_user_admin();
+    $id       = trim($_POST['id'] ?? '');
+    $password = $_POST['password'] ?? '';
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    if (strlen($password) < 8) {
+        echo json_encode(['ok'=>false,'error'=>'Senha deve ter ao menos 8 caracteres']); return;
+    }
+    $r = sb_request('PATCH', 'admin_users?id=eq.' . rawurlencode($id),
+        ['password_hash' => password_hash($password, PASSWORD_DEFAULT), 'updated_at' => date('c')]
+    );
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+function toggle_user() {
+    require_user_admin();
+    $id     = trim($_POST['id'] ?? '');
+    $active = $_POST['active'] === '1';
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    // Não pode desativar a si mesmo
+    if ($id === $_SESSION['admin']['id']) {
+        echo json_encode(['ok'=>false,'error'=>'Você não pode desativar sua própria conta']); return;
+    }
+    $r = sb_request('PATCH', 'admin_users?id=eq.' . rawurlencode($id),
+        ['active' => $active, 'updated_at' => date('c')]
+    );
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+function delete_user() {
+    require_user_admin();
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    if ($id === $_SESSION['admin']['id']) {
+        echo json_encode(['ok'=>false,'error'=>'Você não pode excluir sua própria conta']); return;
+    }
+    $r = sb_request('DELETE', 'admin_users?id=eq.' . rawurlencode($id));
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+function collect_perms(): array {
+    return [
+        'perm_dashboard' => isset($_POST['perm_dashboard']),
+        'perm_leads'     => isset($_POST['perm_leads']),
+        'perm_videos'    => isset($_POST['perm_videos']),
+        'perm_textos'    => isset($_POST['perm_textos']),
+        'perm_quiz'      => isset($_POST['perm_quiz']),
+        'perm_mentoras'  => isset($_POST['perm_mentoras']),
+        'perm_config'    => isset($_POST['perm_config']),
+        'perm_usuarios'  => isset($_POST['perm_usuarios']),
+    ];
 }
 
 // ── WHATSAPP QUEUE ────────────────────────────────────────────────────────────
