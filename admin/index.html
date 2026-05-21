@@ -185,6 +185,7 @@ tbody td{padding:10px 12px;vertical-align:top}
       <div class="nav-item" data-page="config" onclick="goPage('config')"><span class="nav-item-icon">⚙️</span> Configurações</div>
       <div class="nav-item" data-page="leads" onclick="goPage('leads')"><span class="nav-item-icon">👥</span> Leads</div>
       <div class="nav-item" data-page="templates" onclick="goPage('templates')"><span class="nav-item-icon">📧</span> Templates E-mail</div>
+      <div class="nav-item" data-page="whatsapp" onclick="goPage('whatsapp')"><span class="nav-item-icon">📱</span> WhatsApp</div>
     </nav>
     <div class="sidebar-footer">
       <button class="btn-logout" onclick="doLogout()">🚪 Sair</button>
@@ -270,7 +271,7 @@ function goPage(name) {
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === name);
   });
-  const pages = { dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras, config: configPage, leads, templates: emailTemplates };
+  const pages = { dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras, config: configPage, leads, templates: emailTemplates, whatsapp: wppPage };
   if (pages[name]) pages[name]();
 }
 
@@ -1382,6 +1383,116 @@ function tplAutoPreview() {
   const panel = document.getElementById('tpl-preview-panel');
   if (!panel || panel.style.display === 'none') return;
   tplPreview();
+}
+
+/* ── WHATSAPP QUEUE ──────────────────────────────────────────────── */
+async function wppPage() {
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page-title">WhatsApp — Fila de Mensagens</div>
+    <div class="page-sub">Acompanhe os envios, desbloqueie mensagens travadas e reenvie falhas.</div>
+    <div id="wpp-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  await wppLoad();
+}
+
+async function wppLoad() {
+  const r = await proxyWrite({ action: 'wpp_stats' });
+  const el = document.getElementById('wpp-body');
+  if (!r.ok) { el.innerHTML = `<div class="card" style="color:var(--red)">Erro ao carregar fila: ${escHtml(r.error||'')}</div>`; return; }
+
+  const c = r.counts || {};
+  const total = (c.pending||0) + (c.processing||0) + (c.sent||0) + (c.failed||0);
+
+  el.innerHTML = `
+    <!-- Stats -->
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stat-card"><div class="stat-num">${c.sent||0}</div><div class="stat-label">✅ Enviadas</div></div>
+      <div class="stat-card"><div class="stat-num">${c.pending||0}</div><div class="stat-label">⏳ Pendentes</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:${(c.failed||0)>0?'var(--red)':'var(--cta)'}">${c.failed||0}</div><div class="stat-label">❌ Falhas</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:${(c.processing||0)>0?'#f59e0b':'var(--cta)'}">${c.processing||0}</div><div class="stat-label">🔄 Em processamento</div></div>
+    </div>
+
+    <!-- Ações -->
+    <div class="card" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:16px 20px">
+      <span style="font-size:.85rem;color:var(--text2);font-weight:600">Ações da fila:</span>
+      <button onclick="wppResetStuck()" style="background:#fff7ed;border:1px solid #fed7aa;color:#c2410c;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600"
+        title="Desbloqueia mensagens travadas em 'processando' e as coloca de volta na fila">
+        🔓 Desbloquear travadas ${c.processing ? `(${c.processing})` : ''}
+      </button>
+      <button onclick="wppRetryFailed()" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600"
+        title="Recoloca todas as mensagens com falha na fila para reenvio">
+        🔁 Reenviar falhas ${c.failed ? `(${c.failed})` : ''}
+      </button>
+      <button onclick="wppLoad()" style="background:#f3f4f6;border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer">
+        ↻ Atualizar
+      </button>
+      <span style="font-size:.78rem;color:var(--text3);margin-left:auto">${total} mensagens no total</span>
+    </div>
+
+    <!-- Fila pendente/falha -->
+    ${(r.queue||[]).length ? `
+    <div class="card">
+      <div class="card-title">📋 Fila (pendentes, falhas, em processamento) <span>${(r.queue||[]).length}</span></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Lead</th><th>Telefone</th><th>Mensagem</th><th>Status</th><th>Agendado para</th><th>Tentativas</th><th></th></tr></thead>
+        <tbody>
+          ${(r.queue||[]).map(m => {
+            const statusColor = {pending:'#6b7280', processing:'#f59e0b', failed:'#ef4444'};
+            const statusLabel = {pending:'⏳ Pendente', processing:'🔄 Processando', failed:'❌ Falha'};
+            const isOverdue = m.status === 'pending' && m.scheduled_at && new Date(m.scheduled_at) < new Date();
+            return `<tr>
+              <td style="font-weight:600;font-size:.85rem">${escHtml(m.to_name||'—')}</td>
+              <td style="font-size:.8rem;color:var(--text3)">${escHtml(m.to_phone||'')}</td>
+              <td style="font-size:.78rem;color:var(--text2);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml((m.message||'').slice(0,120))}${(m.message||'').length>120?'…':''}</td>
+              <td><span style="font-size:.75rem;font-weight:600;color:${statusColor[m.status]||'#6b7280'}">${statusLabel[m.status]||m.status}</span>${m.error_msg?`<br><span style="font-size:.7rem;color:var(--red)">${escHtml(m.error_msg.slice(0,60))}</span>`:''}</td>
+              <td style="font-size:.78rem;color:${isOverdue?'var(--red)':'var(--text3)'}${isOverdue?';font-weight:600':''}">${m.scheduled_at ? new Date(m.scheduled_at).toLocaleString('pt-BR') : '—'}${isOverdue?' ⚠️':''}</td>
+              <td style="font-size:.8rem;text-align:center">${m.attempts||0}</td>
+              <td><button onclick="wppCancel('${m.id}')" style="font-size:.72rem;color:var(--red);background:none;border:none;cursor:pointer;padding:4px" title="Cancelar esta mensagem">✕</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>
+    </div>` : `<div class="card" style="color:var(--text3);text-align:center;padding:24px">Nenhuma mensagem pendente na fila 🎉</div>`}
+
+    <!-- Log de enviadas -->
+    <div class="card">
+      <div class="card-title">✅ Histórico de enviadas <span>${(r.sent||[]).length}</span></div>
+      ${(r.sent||[]).length ? `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Lead</th><th>Telefone</th><th>Mensagem</th><th>Enviado em</th></tr></thead>
+        <tbody>
+          ${(r.sent||[]).map(m => `<tr>
+            <td style="font-weight:600;font-size:.85rem">${escHtml(m.to_name||'—')}</td>
+            <td style="font-size:.8rem;color:var(--text3)">${escHtml(m.to_phone||'')}</td>
+            <td style="font-size:.78rem;color:var(--text2);max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml((m.message||'').slice(0,140))}${(m.message||'').length>140?'…':''}</td>
+            <td style="font-size:.78rem;color:var(--text3);white-space:nowrap">${m.sent_at ? new Date(m.sent_at).toLocaleString('pt-BR') : '—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>` : `<p style="color:var(--text3);font-size:.85rem">Nenhuma mensagem enviada ainda.</p>`}
+    </div>`;
+}
+
+async function wppResetStuck() {
+  const r = await proxyWrite({ action: 'wpp_reset_stuck' });
+  if (r.ok) {
+    toast(r.affected > 0 ? `${r.affected} mensagem(ns) desbloqueada(s)!` : 'Nenhuma mensagem travada.');
+    await wppLoad();
+  } else toast('Erro: ' + (r.error||''), 'error');
+}
+
+async function wppRetryFailed() {
+  const r = await proxyWrite({ action: 'wpp_retry_failed' });
+  if (r.ok) {
+    toast(r.affected > 0 ? `${r.affected} mensagem(ns) reenfileirada(s)!` : 'Nenhuma falha para reenviar.');
+    await wppLoad();
+  } else toast('Erro: ' + (r.error||''), 'error');
+}
+
+async function wppCancel(id) {
+  if (!confirm('Cancelar esta mensagem? Ela será removida da fila permanentemente.')) return;
+  const r = await proxyWrite({ action: 'wpp_cancel_msg', id });
+  if (r.ok) { toast('Mensagem cancelada.'); await wppLoad(); }
+  else toast('Erro ao cancelar: ' + (r.error||''), 'error');
 }
 
 /* ── INIT ─────────────────────── */

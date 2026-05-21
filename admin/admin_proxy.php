@@ -69,6 +69,12 @@ switch ($action) {
     case 'save_email_template':   require_auth(); save_email_template();   break;
     case 'delete_email_template': require_auth(); delete_email_template(); break;
 
+    // WhatsApp queue
+    case 'wpp_stats':         require_auth(); wpp_stats();         break;
+    case 'wpp_reset_stuck':   require_auth(); wpp_reset_stuck();   break;
+    case 'wpp_retry_failed':  require_auth(); wpp_retry_failed();  break;
+    case 'wpp_cancel_msg':    require_auth(); wpp_cancel_msg();    break;
+
     default:
         http_response_code(400);
         echo json_encode(['ok'=>false,'error'=>'Ação desconhecida']);
@@ -391,6 +397,63 @@ function delete_email_template() {
     echo json_encode(['ok' => $r['status'] < 300]);
 }
 
+// ── WHATSAPP QUEUE ────────────────────────────────────────────────────────────
+function wpp_stats() {
+    // Counts por status via Prefer: count=exact
+    $statuses = ['pending','processing','sent','failed'];
+    $counts = [];
+    foreach ($statuses as $s) {
+        $r = sb_request('GET', 'whatsapp_queue', null,
+            'status=eq.' . $s . '&select=id&limit=1',
+            ['Prefer: count=exact']
+        );
+        $counts[$s] = $r['count'] ?? 0;
+    }
+
+    // Últimas 100 msgs enviadas
+    $sent = sb_request('GET', 'whatsapp_queue', null,
+        'status=eq.sent&select=id,to_name,to_phone,message,sent_at,scheduled_at&order=sent_at.desc&limit=100'
+    );
+
+    // Fila pendente/falha (próximas a processar)
+    $queue = sb_request('GET', 'whatsapp_queue', null,
+        'status=in.(pending,failed,processing)&select=id,to_name,to_phone,message,status,scheduled_at,attempts,error_msg&order=scheduled_at.asc&limit=200'
+    );
+
+    echo json_encode([
+        'ok'     => true,
+        'counts' => $counts,
+        'sent'   => $sent['body']  ?? [],
+        'queue'  => $queue['body'] ?? [],
+    ]);
+}
+
+function wpp_reset_stuck() {
+    // Desbloqueia mensagens travadas em 'processing' → 'pending'
+    $r = sb_request('PATCH', 'whatsapp_queue?status=eq.processing',
+        ['status' => 'pending']
+    );
+    $affected = is_array($r['body']) ? count($r['body']) : 0;
+    echo json_encode(['ok' => $r['status'] < 300, 'affected' => $affected]);
+}
+
+function wpp_retry_failed() {
+    // Recoloca mensagens falhas na fila zerandoattempts
+    $r = sb_request('PATCH', 'whatsapp_queue?status=eq.failed',
+        ['status' => 'pending', 'attempts' => 0, 'error_msg' => null]
+    );
+    $affected = is_array($r['body']) ? count($r['body']) : 0;
+    echo json_encode(['ok' => $r['status'] < 300, 'affected' => $affected]);
+}
+
+function wpp_cancel_msg() {
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    // Cancela apenas mensagens ainda não enviadas
+    $r = sb_request('DELETE', 'whatsapp_queue?id=eq.' . rawurlencode($id) . '&status=neq.sent');
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function require_auth() {
     if (!isset($_SESSION['admin'])) {
@@ -404,20 +467,21 @@ function is_valid_uuid($str) {
     return (bool)preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $str);
 }
 
-function sb_request(string $method, string $path, ?array $body = null, string $query = ''): array {
+function sb_request(string $method, string $path, ?array $body = null, string $query = '', array $extra_headers = []): array {
     if (SUPABASE_SERVICE_KEY === 'COLE_AQUI_SUA_SERVICE_ROLE_KEY') {
         return ['status' => 503, 'body' => null, 'error' => 'Service key não configurada'];
     }
 
     $url = SUPABASE_URL . '/rest/v1/' . $path . ($query ? '?' . $query : '');
 
-    $headers = [
+    $headers = array_merge([
         'apikey: '        . SUPABASE_SERVICE_KEY,
         'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
         'Content-Type: application/json',
         'Prefer: return=representation',
-    ];
+    ], $extra_headers);
 
+    $respHeaders = [];
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -425,6 +489,13 @@ function sb_request(string $method, string $path, ?array $body = null, string $q
         CURLOPT_HTTPHEADER     => $headers,
         CURLOPT_TIMEOUT        => 15,
         CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_HEADERFUNCTION => function($ch, $line) use (&$respHeaders) {
+            $parts = explode(':', $line, 2);
+            if (count($parts) === 2) {
+                $respHeaders[strtolower(trim($parts[0]))] = trim($parts[1]);
+            }
+            return strlen($line);
+        },
     ]);
 
     if ($body !== null) {
@@ -440,5 +511,14 @@ function sb_request(string $method, string $path, ?array $body = null, string $q
         return ['status' => 0, 'body' => null, 'error' => $curlErr];
     }
 
-    return ['status' => $status, 'body' => json_decode($response, true)];
+    // Parse Content-Range header for count=exact: e.g. "0-9/42" → 42
+    $count = null;
+    if (isset($respHeaders['content-range'])) {
+        $parts = explode('/', $respHeaders['content-range']);
+        if (isset($parts[1]) && is_numeric($parts[1])) {
+            $count = (int)$parts[1];
+        }
+    }
+
+    return ['status' => $status, 'body' => json_decode($response, true), 'count' => $count];
 }
