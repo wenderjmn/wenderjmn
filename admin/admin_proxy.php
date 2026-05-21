@@ -15,7 +15,7 @@
 
 // ── CONFIGURAÇÃO ──────────────────────────────────────────────────────────────
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
-define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
+define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyZ3J3cG1obXJyaHh1d3hhYm93Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzQ3ODQ5NywiZXhwIjoyMDkzMDU0NDk3fQ.YeZFa-JaHU5muxktAmYr-B0wtov3Qw3h03P-HrJ_pMU');
 
 // Tempo de expiração da sessão em segundos (4 horas)
 define('SESSION_LIFETIME', 14400);
@@ -356,7 +356,6 @@ function upload_file() {
 
 // ── EMAIL TEMPLATES ──────────────────────────────────────────────────────────
 function list_email_templates() {
-    global $sb;
     $r = sb_request('GET', 'email_templates', null, 'select=slug,subject,created_at&order=created_at.asc');
     echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
 }
@@ -370,19 +369,17 @@ function get_email_template() {
 }
 
 function save_email_template() {
-    $slug     = trim($_POST['slug'] ?? '');
-    $subject  = trim($_POST['subject'] ?? '');
+    $slug      = trim($_POST['slug'] ?? '');
+    $subject   = trim($_POST['subject'] ?? '');
     $body_html = $_POST['body_html'] ?? '';
     if (!$slug || !$subject || !$body_html) {
         echo json_encode(['ok'=>false,'error'=>'slug, subject e body_html são obrigatórios']); return;
     }
-    // Upsert: tenta atualizar, se não existir cria
+    // Upsert: tenta atualizar; se não existir, cria
     $r = sb_request('PATCH', 'email_templates', ['subject'=>$subject,'body_html'=>$body_html], 'slug=eq.' . urlencode($slug));
     if ($r['status'] === 200 || $r['status'] === 204) {
-        echo json_encode(['ok'=>true,'action'=>'updated']);
-        return;
+        echo json_encode(['ok'=>true,'action'=>'updated']); return;
     }
-    // Não existe — criar
     $r2 = sb_request('POST', 'email_templates', [['slug'=>$slug,'subject'=>$subject,'body_html'=>$body_html]]);
     echo json_encode(['ok' => $r2['status'] < 300, 'action' => 'created', 'error' => $r2['error'] ?? null]);
 }
