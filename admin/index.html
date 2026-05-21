@@ -110,8 +110,25 @@ tbody td{padding:10px 12px;vertical-align:top}
 @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:480px){.stats-grid{grid-template-columns:1fr}}
 .stat-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px}
-.stat-num{font-size:1.75rem;font-weight:700;color:var(--text)}
+.stat-num{font-size:1.75rem;font-weight:700;color:var(--cta)}
 .stat-label{font-size:.78rem;color:var(--text3);margin-top:4px}
+
+/* DISTRIBUTION BAR */
+.dist-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dist-label{font-size:.82rem;color:var(--text2);width:200px;flex-shrink:0}
+.dist-bar-wrap{flex:1;background:var(--bg);border-radius:4px;height:12px;overflow:hidden}
+.dist-bar{height:12px;background:var(--cta);border-radius:4px;transition:width .5s ease}
+.dist-pct{font-size:.78rem;font-weight:600;color:var(--text3);width:42px;text-align:right;flex-shrink:0}
+
+/* CTRL ROW para Textos com label */
+.ctrl-row{display:grid;grid-template-columns:200px 1fr auto;gap:8px;align-items:start;margin-bottom:12px}
+.ctrl-label{font-size:.8rem;color:var(--text2);padding-top:9px;line-height:1.4}
+.ctrl-label small{display:block;font-size:.7rem;color:var(--text3);opacity:.65;margin-top:2px}
+.ctrl-input{flex:1}
+.ctrl-input input,.ctrl-input textarea,.ctrl-input select{width:100%;border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:.85rem;color:var(--text);background:#fff;transition:border-color .2s}
+.ctrl-input input:focus,.ctrl-input textarea:focus{outline:none;border-color:var(--cta)}
+.ctrl-input textarea{min-height:68px;resize:vertical;line-height:1.5}
+@media(max-width:640px){.ctrl-row{grid-template-columns:1fr}}
 
 /* QUIZ EDITOR */
 .q-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px}
@@ -293,42 +310,75 @@ function toast(msg, type = 'success') {
 }
 
 /* ── PAGES ─────────────────────── */
+const SABOTADOR_NAMES = {
+  A: '🍫 A Recompensadora', B: '🤖 Piloto Automático',
+  C: '⚡ Prisioneira do Esforço', D: '🌙 Compensadora Noturna'
+};
+
 async function dashboard() {
   const main = document.getElementById('main-content');
-  main.innerHTML = `<div style="text-align:center;padding:40px"><div style="width:30px;height:30px;border:3px solid #e5e7eb;border-top-color:var(--cta);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto"></div></div>
-  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+  main.innerHTML = `<div class="page-title">Dashboard</div><div class="page-sub">Visão geral do Programa EmagreSer</div>
+    <div style="text-align:center;padding:40px;color:var(--text3)">Carregando dados…</div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
   try {
-    const [leadsData, cfgData] = await Promise.all([
-      sb('leads', 'select=id,created_at,sabotador&order=created_at.desc&limit=5'),
-      sb('site_config', 'select=key,value')
+    const hdrs = { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}`, Prefer: 'count=exact' };
+    const [rAll, rToday, rCfg, rLeadsRecent] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/leads?select=id&limit=1`, {headers: hdrs}),
+      fetch(`${SUPABASE_URL}/rest/v1/leads?select=id&limit=1&created_at=gte.${new Date().toISOString().slice(0,10)}`, {headers: hdrs}),
+      sb('site_config', 'select=key,value&limit=500'),
+      sb('leads', 'select=id,name,email,sabotador,created_at&order=created_at.desc&limit=10'),
     ]);
-    cfgData.forEach(r => { allConfig[r.key] = r.value; });
-    const totalLeads = leadsData.length;
-    const today = new Date().toISOString().slice(0,10);
-    const todayLeads = leadsData.filter(l => l.created_at?.startsWith(today)).length;
-    const sabCounts = {};
-    leadsData.forEach(l => { if(l.sabotador) sabCounts[l.sabotador] = (sabCounts[l.sabotador]||0)+1; });
-    const topSab = Object.entries(sabCounts).sort((a,b)=>b[1]-a[1])[0];
-    const masterclass = allConfig['masterclass_data'] || '—';
+    const totalLeads = parseInt((rAll.headers.get('content-range')||'0/0').split('/')[1]) || 0;
+    const todayLeads = parseInt((rToday.headers.get('content-range')||'0/0').split('/')[1]) || 0;
+    rCfg.forEach(r => { allConfig[r.key] = r.value; });
+    const masterclass = allConfig['masterclass_data'] || allConfig['live_data'] || '—';
+
+    // Load all leads for distribution chart (500 limit to be safe)
+    const allLeadsForChart = await sb('leads', 'select=sabotador&limit=1000');
+    const dist = {A:0,B:0,C:0,D:0};
+    allLeadsForChart.forEach(l => {
+      const s = (l.sabotador||'').trim().toUpperCase();
+      if (dist[s] !== undefined) dist[s]++;
+      else if (/Recompensadora|Hedônica/i.test(l.sabotador)) dist.A++;
+      else if (/Piloto|Amn/i.test(l.sabotador)) dist.B++;
+      else if (/Prisioneira|Fadiga/i.test(l.sabotador)) dist.C++;
+      else if (/Compensadora|Restri/i.test(l.sabotador)) dist.D++;
+    });
+    const distTotal = Object.values(dist).reduce((a,b)=>a+b,0) || 1;
+    const topSab = Object.entries(dist).sort((a,b)=>b[1]-a[1])[0];
+    const topName = topSab ? (SABOTADOR_NAMES[topSab[0]] || topSab[0]) : '—';
+
     main.innerHTML = `
       <div class="page-title">Dashboard</div>
       <div class="page-sub">Visão geral do Programa EmagreSer</div>
       <div class="stats-grid">
-        <div class="stat-card"><div class="stat-num">${totalLeads}</div><div class="stat-label">Leads (últimos 5 do sistema)</div></div>
+        <div class="stat-card"><div class="stat-num">${totalLeads}</div><div class="stat-label">Total de leads</div></div>
         <div class="stat-card"><div class="stat-num">${todayLeads}</div><div class="stat-label">Leads hoje</div></div>
-        <div class="stat-card"><div class="stat-num">${topSab ? topSab[0].split(' ')[0] : '—'}</div><div class="stat-label">Perfil mais comum</div></div>
-        <div class="stat-card"><div class="stat-num">📅</div><div class="stat-label">Masterclass: ${masterclass}</div></div>
+        <div class="stat-card" style="overflow:hidden"><div class="stat-num" style="font-size:1rem;margin-top:4px">${topName}</div><div class="stat-label">Perfil mais comum</div></div>
+        <div class="stat-card"><div class="stat-num" style="font-size:1.1rem">📅</div><div class="stat-label">Masterclass: ${escHtml(masterclass)}</div></div>
       </div>
       <div class="card">
-        <div class="card-title">Últimos 5 leads</div>
+        <div class="card-title">Distribuição por perfil sabotador <span>${allLeadsForChart.length} leads</span></div>
+        ${Object.entries(dist).map(([k,v]) => {
+          const pct = Math.round(v/distTotal*100);
+          return `<div class="dist-row">
+            <div class="dist-label">${SABOTADOR_NAMES[k]}</div>
+            <div class="dist-bar-wrap"><div class="dist-bar" style="width:${pct}%"></div></div>
+            <div class="dist-pct">${v} <span style="color:var(--text3);font-weight:400">(${pct}%)</span></div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">Últimos 10 leads</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>ID</th><th>Perfil</th><th>Data</th></tr></thead>
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Data</th></tr></thead>
             <tbody>
-              ${leadsData.map(l => `
+              ${rLeadsRecent.map(l => `
                 <tr>
-                  <td style="font-family:monospace;font-size:.75rem">${l.id?.slice(0,8)}...</td>
-                  <td><span class="lead-sabotador">${l.sabotador || '—'}</span></td>
+                  <td style="font-weight:600;font-size:.85rem">${escHtml(l.name||'—')}</td>
+                  <td style="font-size:.8rem;color:var(--text2)">${escHtml(l.email||'—')}</td>
+                  <td><span class="lead-sabotador">${escHtml(l.sabotador||'—')}</span></td>
                   <td style="font-size:.78rem;color:var(--text3)">${l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '—'}</td>
                 </tr>`).join('')}
             </tbody>
@@ -336,88 +386,155 @@ async function dashboard() {
         </div>
       </div>`;
   } catch(e) {
-    main.innerHTML = `<div class="page-title">Dashboard</div><div class="card" style="color:var(--red)">Erro ao carregar dados: ${e.message}</div>`;
+    main.innerHTML = `<div class="page-title">Dashboard</div><div class="card" style="color:var(--red)">Erro ao carregar dados: ${escHtml(e.message)}</div>`;
   }
 }
 
 /* ── TEXTOS (site_config editor) ─── */
-const TEXT_KEYS = [
-  { group: 'Hero', keys: ['hero_headline','hero_subheadline','hero_cta_principal','hero_cta_sub'] },
-  { group: 'Isso é Você', keys: ['issovce_titulo','issovce_lead','issovce_cta'] },
-  { group: 'Problema', keys: ['problema_label','problema_titulo','problema_texto','problema_cta'] },
-  { group: 'Quiz CTA', keys: ['quiz_cta_label','quiz_cta_titulo','quiz_cta_desc','quiz_cta_btn','quiz_cta_tags'] },
-  { group: 'Depoimentos', keys: ['depo_secao_label','depo_secao_titulo','depo_secao_sub','depo_frase_pre_cta','depo_cta'] },
-  { group: 'Processo', keys: ['processo_p1_titulo','processo_p1_desc','processo_p2_titulo','processo_p2_desc','processo_p3_titulo','processo_p3_desc'] },
-  { group: 'Mentoras', keys: ['mentoras_label','mentoras_titulo'] },
-  { group: 'Sobre', keys: ['sobre_label','sobre_titulo','sobre_texto','sobre_item1','sobre_item2','sobre_item3','sobre_item4'] },
-  { group: 'Incluso', keys: ['incluso_label','incluso_titulo','incluso_item1','incluso_item2','incluso_item3','incluso_item4','incluso_item5'] },
-  { group: 'Confiar', keys: ['confiar_label','confiar_titulo','confiar_texto','confiar_tags'] },
-  { group: 'Masterclass', keys: ['masterclass_label','masterclass_nome','masterclass_data','masterclass_desc','masterclass_item1','masterclass_item2','masterclass_item3','masterclass_cta'] },
-  { group: 'CTA Final', keys: ['cta_final_label','cta_final_titulo','cta_final_desc','cta_final_btn','cta_final_tags','cta_final_nota'] },
-  { group: 'Anúncio / Rodapé', keys: ['anuncio_bar','footer_nome','footer_creditos'] },
+const TEXTOS_SECTIONS = [
+  {title:'Geral / Cabeçalho', fields:[
+    {key:'programa_nome', label:'Nome do programa', type:'text'},
+    {key:'anuncio_bar', label:'Barra de anúncio (topo da página)', type:'textarea'},
+  ]},
+  {title:'Hero (topo da página)', fields:[
+    {key:'hero_headline', label:'Headline principal', type:'textarea'},
+    {key:'hero_subheadline', label:'Sub-headline', type:'textarea'},
+    {key:'hero_cta_principal', label:'Texto do botão CTA principal', type:'text'},
+    {key:'hero_cta_sub', label:'Subtexto abaixo do CTA', type:'text'},
+  ]},
+  {title:'Promessa (seção Roma)', fields:[
+    {key:'roma_titulo', label:'Título da seção Roma', type:'text'},
+    {key:'roma_descricao', label:'Descrição da seção Roma', type:'textarea'},
+    {key:'promessa_sub_roma', label:'Subtítulo Roma', type:'text'},
+    {key:'promessa_item1', label:'Pílula 1 (destaque)', type:'text'},
+    {key:'promessa_item2', label:'Pílula 2 (destaque)', type:'text'},
+    {key:'promessa_item3', label:'Pílula 3 (destaque)', type:'text'},
+    {key:'promessa_cta', label:'Botão CTA da seção Roma', type:'text'},
+  ]},
+  {title:'Depoimentos (seção)', fields:[
+    {key:'depo_secao_label', label:'Rótulo da seção de depoimentos', type:'text'},
+    {key:'depo_secao_titulo', label:'Título da seção de depoimentos', type:'text'},
+    {key:'depo_secao_sub', label:'Subtítulo dos depoimentos', type:'text'},
+    {key:'depo_frase_pre_cta', label:'Frase antes do botão CTA', type:'textarea'},
+    {key:'depo_cta', label:'Botão CTA dos depoimentos', type:'text'},
+  ]},
+  {title:'Isso é Você? (seção de dores)', fields:[
+    {key:'issovce_titulo', label:'Título da seção', type:'text'},
+    {key:'issovce_lead', label:'Texto principal (use \\n para parágrafos)', type:'textarea'},
+    {key:'issovce_cta', label:'Botão CTA', type:'text'},
+  ]},
+  {title:'O Problema', fields:[
+    {key:'problema_label', label:'Rótulo da seção', type:'text'},
+    {key:'problema_titulo', label:'Título do problema', type:'text'},
+    {key:'problema_texto', label:'Texto explicativo (use \\n\\n para parágrafos)', type:'textarea'},
+    {key:'problema_cta', label:'Botão CTA', type:'text'},
+  ]},
+  {title:'Como Funciona (3 passos)', fields:[
+    {key:'processo_p1_titulo', label:'Passo 1 — Título', type:'text'},
+    {key:'processo_p1_desc', label:'Passo 1 — Descrição', type:'textarea'},
+    {key:'processo_p2_titulo', label:'Passo 2 — Título', type:'text'},
+    {key:'processo_p2_desc', label:'Passo 2 — Descrição', type:'textarea'},
+    {key:'processo_p3_titulo', label:'Passo 3 — Título', type:'text'},
+    {key:'processo_p3_desc', label:'Passo 3 — Descrição', type:'textarea'},
+  ]},
+  {title:'Botão do Quiz (CTA)', fields:[
+    {key:'quiz_cta_label', label:'Rótulo da seção do quiz', type:'text'},
+    {key:'quiz_cta_titulo', label:'Título do CTA do quiz', type:'text'},
+    {key:'quiz_cta_desc', label:'Descrição do quiz', type:'textarea'},
+    {key:'quiz_cta_tags', label:'Tags (separadas por ·)', type:'text'},
+    {key:'quiz_cta_btn', label:'Texto do botão do quiz', type:'text'},
+  ]},
+  {title:'Sobre o Programa', fields:[
+    {key:'sobre_label', label:'Rótulo da seção', type:'text'},
+    {key:'sobre_titulo', label:'Título "Sobre"', type:'text'},
+    {key:'sobre_texto', label:'Texto descritivo', type:'textarea'},
+    {key:'sobre_item1', label:'Item de benefício 1', type:'text'},
+    {key:'sobre_item2', label:'Item de benefício 2', type:'text'},
+    {key:'sobre_item3', label:'Item de benefício 3', type:'text'},
+    {key:'sobre_item4', label:'Item de benefício 4', type:'text'},
+  ]},
+  {title:'Autoridade / Por que confiar', fields:[
+    {key:'confiar_label', label:'Rótulo da seção', type:'text'},
+    {key:'confiar_titulo', label:'Título de autoridade', type:'text'},
+    {key:'confiar_texto', label:'Texto de credibilidade', type:'textarea'},
+    {key:'confiar_tags', label:'Tags de autoridade (separadas por vírgula)', type:'text'},
+  ]},
+  {title:'Mentoras (seção)', fields:[
+    {key:'mentoras_label', label:'Rótulo da seção das mentoras', type:'text'},
+    {key:'mentoras_titulo', label:'Título da seção das mentoras', type:'text'},
+  ]},
+  {title:'Masterclass', fields:[
+    {key:'masterclass_label', label:'Rótulo da masterclass', type:'text'},
+    {key:'masterclass_nome', label:'Nome da masterclass', type:'text'},
+    {key:'masterclass_data', label:'Data exibida na página', type:'text'},
+    {key:'masterclass_desc', label:'Descrição da masterclass', type:'textarea'},
+    {key:'masterclass_item1', label:'Ponto 1 da masterclass', type:'text'},
+    {key:'masterclass_item2', label:'Ponto 2 da masterclass', type:'text'},
+    {key:'masterclass_item3', label:'Ponto 3 da masterclass', type:'text'},
+    {key:'masterclass_cta', label:'Botão CTA da masterclass', type:'text'},
+  ]},
+  {title:'O que está incluso (entregáveis)', fields:[
+    {key:'incluso_label', label:'Rótulo da seção', type:'text'},
+    {key:'incluso_titulo', label:'Título do que está incluso', type:'text'},
+    {key:'incluso_item1', label:'Item incluso 1', type:'text'},
+    {key:'incluso_item2', label:'Item incluso 2', type:'text'},
+    {key:'incluso_item3', label:'Item incluso 3', type:'text'},
+    {key:'incluso_item4', label:'Item incluso 4', type:'text'},
+    {key:'incluso_item5', label:'Item incluso 5', type:'text'},
+  ]},
+  {title:'CTA Final (botão de compra)', fields:[
+    {key:'cta_final_label', label:'Rótulo final', type:'text'},
+    {key:'cta_final_titulo', label:'Título final (use \\n para quebra)', type:'textarea'},
+    {key:'cta_final_desc', label:'Descrição final', type:'textarea'},
+    {key:'cta_final_tags', label:'Tags (separadas por ·)', type:'text'},
+    {key:'cta_final_btn', label:'Texto do botão de compra', type:'text'},
+    {key:'cta_final_nota', label:'Nota abaixo do botão', type:'text'},
+  ]},
+  {title:'Rodapé', fields:[
+    {key:'footer_nome', label:'Nome no rodapé', type:'text'},
+    {key:'footer_creditos', label:'Créditos do rodapé', type:'text'},
+  ]},
 ];
 
 async function textos() {
   const main = document.getElementById('main-content');
-  main.innerHTML = `<div class="page-title">Textos da Landing Page</div><div class="page-sub">Clique em qualquer valor para editar. Salva direto no banco.</div><div id="textos-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
-  const rows = await sb('site_config', 'select=key,value&order=key');
+  main.innerHTML = `<div class="page-title">Textos da Landing Page</div><div class="page-sub">Edite os textos exibidos na home. Cada campo tem seu nome amigável. Salva direto no banco ao clicar em Salvar.</div><div id="textos-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  const rows = await sb('site_config', 'select=key,value&limit=500');
   const cfgMap = {};
   rows.forEach(r => { cfgMap[r.key] = r.value; allConfig[r.key] = r.value; });
 
   let html = '';
-  TEXT_KEYS.forEach(group => {
-    const existingKeys = group.keys.filter(k => cfgMap.hasOwnProperty(k) || true);
-    html += `<div class="card"><div class="card-title">${group.group}</div><div class="table-wrap"><table>
-      <thead><tr><th>Chave</th><th>Valor</th><th></th></tr></thead>
-      <tbody>
-        ${existingKeys.map(k => `
-          <tr>
-            <td class="key-cell">${k}</td>
-            <td class="val-cell">
-              <div class="inline-val" id="val-${k}" onclick="startEdit('${k}')">${escHtml(cfgMap[k] || '—')}</div>
-              <textarea class="inline-input hidden" id="inp-${k}" rows="3">${cfgMap[k] || ''}</textarea>
-              <div class="inline-actions hidden" id="act-${k}">
-                <button class="inline-save" onclick="saveConfig('${k}')">Salvar</button>
-                <button class="inline-cancel" onclick="cancelEdit('${k}')">Cancelar</button>
-              </div>
-            </td>
-          </tr>`).join('')}
-      </tbody>
-    </table></div></div>`;
+  TEXTOS_SECTIONS.forEach(sec => {
+    html += `<div class="card"><div class="card-title">${sec.title}</div>
+      ${sec.fields.map(f => {
+        const val = cfgMap[f.key] || '';
+        const id = `txt-${f.key}`;
+        const input = f.type === 'textarea'
+          ? `<textarea id="${id}" rows="3">${escHtml(val)}</textarea>`
+          : `<input type="text" id="${id}" value="${escHtml(val)}">`;
+        return `<div class="ctrl-row">
+          <div class="ctrl-label">${escHtml(f.label)}<small>${f.key}</small></div>
+          <div class="ctrl-input">${input}</div>
+          <button class="btn-save" style="padding:8px 14px;font-size:.78rem;white-space:nowrap" onclick="saveTxt('${f.key}')">Salvar</button>
+        </div>`;
+      }).join('')}
+    </div>`;
   });
   document.getElementById('textos-body').innerHTML = html;
 }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function startEdit(key) {
-  document.getElementById(`val-${key}`).classList.add('editing', 'hidden');
-  document.getElementById(`inp-${key}`).classList.remove('hidden');
-  document.getElementById(`act-${key}`).classList.remove('hidden');
-  document.getElementById(`inp-${key}`).focus();
-}
-
-function cancelEdit(key) {
-  document.getElementById(`val-${key}`).classList.remove('editing', 'hidden');
-  document.getElementById(`inp-${key}`).classList.add('hidden');
-  document.getElementById(`act-${key}`).classList.add('hidden');
-}
-
-async function saveConfig(key) {
-  const val = document.getElementById(`inp-${key}`).value;
+async function saveTxt(key) {
+  const el = document.getElementById(`txt-${key}`);
+  if (!el) return;
   try {
-    const res = await proxyWrite({ action: 'update_config', key, value: val });
-    if (res.ok) {
-      document.getElementById(`val-${key}`).textContent = val || '—';
-      allConfig[key] = val;
-      cancelEdit(key);
-      toast('Salvo com sucesso!');
-    } else {
-      toast(res.error || 'Erro ao salvar', 'error');
-    }
+    const res = await proxyWrite({ action: 'update_config', key, value: el.value });
+    if (res.ok) { allConfig[key] = el.value; toast('Salvo!'); }
+    else toast(res.error || 'Erro ao salvar', 'error');
   } catch(e) { toast('Erro de conexão', 'error'); }
+}
+
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 /* ── QUIZ EDITOR ─────────────────── */
@@ -476,46 +593,65 @@ async function saveQuizQ(id) {
 }
 
 /* ── RESULTADOS / PERFIS ─────────── */
-const RESULT_KEYS = [
-  { label: 'Perfil A — A Recompensadora', prefix: 'resultado_A' },
-  { label: 'Perfil B — A Piloto Automático', prefix: 'resultado_B' },
-  { label: 'Perfil C — A Prisioneira do Esforço', prefix: 'resultado_C' },
-  { label: 'Perfil D — A Compensadora Noturna', prefix: 'resultado_D' },
+const PERFIL_DEFS = [
+  {letter:'A', emoji:'🍫', label:'Perfil A — A Recompensadora'},
+  {letter:'B', emoji:'🤖', label:'Perfil B — A Piloto Automático'},
+  {letter:'C', emoji:'⚡', label:'Perfil C — A Prisioneira do Esforço'},
+  {letter:'D', emoji:'🌙', label:'Perfil D — A Compensadora Noturna'},
 ];
-const RESULT_FIELDS = ['emoji','sabotador','tipo','titulo','desc','insight'];
 
 async function resultados() {
   const main = document.getElementById('main-content');
-  main.innerHTML = `<div class="page-title">Resultados / Perfis Sabotadores</div><div class="page-sub">Edite os textos exibidos após o quiz.</div><div id="res-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
-  const rows = await sb('site_config', 'select=key,value&key=like.resultado_%');
-  const cfgMap = {};
-  rows.forEach(r => { cfgMap[r.key] = r.value; });
+  main.innerHTML = `<div class="page-title">Resultados / Perfis Sabotadores</div><div class="page-sub">Edite os textos e vídeos exibidos para cada perfil após o quiz.</div><div id="res-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
 
-  document.getElementById('res-body').innerHTML = RESULT_KEYS.map(p => `
-    <div class="card">
-      <div class="card-title">${p.label}</div>
-      ${RESULT_FIELDS.map(f => {
-        const k = `${p.prefix}_${f}`;
-        return `<div class="field-group">
-          <label>${f.charAt(0).toUpperCase()+f.slice(1)}</label>
-          <textarea id="rf-${k}" rows="${['desc','insight'].includes(f) ? 4 : 2}">${cfgMap[k]||''}</textarea>
+  // Load all config and filter client-side (avoids broken PostgREST LIKE filter)
+  const rows = await sb('site_config', 'select=key,value&limit=500');
+  const cfgMap = {};
+  rows.forEach(r => { cfgMap[r.key] = r.value; allConfig[r.key] = r.value; });
+
+  const perfilFields = [
+    {key:'tipo',     label:'Tipo / cabeçalho (ex: Perfil Emocional)', type:'text'},
+    {key:'sabotador',label:'Nome do sabotador', type:'text'},
+    {key:'titulo',   label:'Título principal', type:'text'},
+    {key:'emoji',    label:'Emoji do perfil', type:'text'},
+    {key:'desc',     label:'Descrição completa (aparece no resultado do quiz)', type:'textarea'},
+    {key:'insight',  label:'Insight (frase em itálico)', type:'textarea'},
+  ];
+  const videoField = {key:'url', label:'URL do vídeo YouTube do resultado', type:'text'};
+
+  document.getElementById('res-body').innerHTML = PERFIL_DEFS.map(p => {
+    const videoKey = `video_perfil_${p.letter.toLowerCase()}`;
+    return `<div class="card">
+      <div class="card-title">${p.emoji} ${escHtml(p.label)}</div>
+      ${perfilFields.map(f => {
+        const k = `resultado_${p.letter}_${f.key}`;
+        const val = cfgMap[k] || '';
+        const id = `pf-${k}`;
+        const input = f.type === 'textarea'
+          ? `<textarea id="${id}" rows="4">${escHtml(val)}</textarea>`
+          : `<input type="text" id="${id}" value="${escHtml(val)}">`;
+        return `<div class="ctrl-row">
+          <div class="ctrl-label">${escHtml(f.label)}<small>resultado_${p.letter}_${f.key}</small></div>
+          <div class="ctrl-input">${input}</div>
+          <button class="btn-save" style="padding:8px 14px;font-size:.78rem;white-space:nowrap" onclick="savePerfilField('${k}')">Salvar</button>
         </div>`;
       }).join('')}
-      <button class="btn-save" onclick="saveResultGroup('${p.prefix}')">Salvar ${p.label}</button>
-    </div>`).join('');
+      <div class="ctrl-row">
+        <div class="ctrl-label">Vídeo YouTube do resultado<small>${videoKey}</small></div>
+        <div class="ctrl-input"><input type="text" id="pf-${videoKey}" value="${escHtml(cfgMap[videoKey]||'')}" placeholder="https://youtube.com/..."></div>
+        <button class="btn-save" style="padding:8px 14px;font-size:.78rem;white-space:nowrap" onclick="savePerfilField('${videoKey}')">Salvar</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-async function saveResultGroup(prefix) {
-  const fields = RESULT_FIELDS;
-  const proms = fields.map(f => {
-    const k = `${prefix}_${f}`;
-    const val = document.getElementById(`rf-${k}`).value;
-    return proxyWrite({ action: 'update_config', key: k, value: val });
-  });
+async function savePerfilField(key) {
+  const el = document.getElementById(`pf-${key}`);
+  if (!el) return;
   try {
-    const results = await Promise.all(proms);
-    if (results.every(r => r.ok)) toast('Perfil salvo com sucesso!');
-    else toast('Alguns campos falharam ao salvar', 'error');
+    const res = await proxyWrite({ action: 'update_config', key, value: el.value });
+    if (res.ok) { allConfig[key] = el.value; toast('Campo salvo!'); }
+    else toast(res.error || 'Erro', 'error');
   } catch(e) { toast('Erro de conexão', 'error'); }
 }
 
@@ -856,70 +992,146 @@ async function saveAllConfig() {
 /* ── LEADS ─────────────────────── */
 async function leads() {
   const main = document.getElementById('main-content');
-  main.innerHTML = `<div class="page-title">Leads</div><div class="page-sub">Todos os leads capturados pela landing page.</div>
-    <input class="search-bar" id="lead-search" placeholder="Buscar por nome, e-mail ou perfil…" oninput="filterLeads(this.value)">
+  main.innerHTML = `
+    <div class="page-title">Leads</div>
+    <div class="page-sub">Todos os leads capturados pela landing page.</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+      <input class="search-bar" id="lead-search" style="flex:1;min-width:200px;margin-bottom:0" placeholder="Buscar por nome, e-mail, telefone ou perfil…" oninput="filterLeads(this.value)">
+      <select id="lead-filter-sab" style="border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.85rem;background:#fff" onchange="filterLeads(document.getElementById('lead-search').value)">
+        <option value="">Todos os perfis</option>
+        <option value="A">🍫 Perfil A</option>
+        <option value="B">🤖 Perfil B</option>
+        <option value="C">⚡ Perfil C</option>
+        <option value="D">🌙 Perfil D</option>
+      </select>
+      <button class="btn-save" style="padding:9px 18px;white-space:nowrap" onclick="exportLeads()">⬇ Exportar CSV</button>
+    </div>
+    <div id="leads-dist" style="margin-bottom:16px"></div>
     <div id="leads-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
-  const rows = await sb('leads', 'select=id,name,email,phone,sabotador,cidade,estado,created_at,source,utm_medium,source_campaign&order=created_at.desc');
+
+  const rows = await sb('leads', 'select=id,name,email,phone,sabotador,faixa_etaria,faixa_renda,cidade,estado,created_at,source,utm_medium,source_campaign&order=created_at.desc&limit=1000');
   window._allLeads = rows;
+  renderLeadsDist(rows);
   renderLeads(rows);
+}
+
+function renderLeadsDist(rows) {
+  const el = document.getElementById('leads-dist');
+  if (!el) return;
+  const dist = {A:0,B:0,C:0,D:0};
+  rows.forEach(l => {
+    const s = (l.sabotador||'').trim().toUpperCase();
+    if (dist[s] !== undefined) dist[s]++;
+    else if (/Recompensadora/i.test(l.sabotador)) dist.A++;
+    else if (/Piloto/i.test(l.sabotador)) dist.B++;
+    else if (/Prisioneira/i.test(l.sabotador)) dist.C++;
+    else if (/Compensadora/i.test(l.sabotador)) dist.D++;
+  });
+  const total = rows.length || 1;
+  el.innerHTML = `<div class="card" style="margin-bottom:0">
+    <div class="card-title" style="margin-bottom:12px">Distribuição por perfil <span>${rows.length} leads</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+      ${Object.entries(dist).map(([k,v]) => {
+        const pct = Math.round(v/total*100);
+        return `<div style="background:var(--bg);border-radius:8px;padding:12px">
+          <div style="font-size:.75rem;color:var(--text3);margin-bottom:4px">${SABOTADOR_NAMES[k]||k}</div>
+          <div style="font-size:1.5rem;font-weight:700;color:var(--cta)">${v}</div>
+          <div style="font-size:.75rem;color:var(--text3)">${pct}% do total</div>
+          <div style="margin-top:6px;background:#e5e7eb;border-radius:4px;height:6px;overflow:hidden">
+            <div style="height:6px;width:${pct}%;background:var(--cta);border-radius:4px"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
 }
 
 function renderLeads(rows) {
   document.getElementById('leads-body').innerHTML = `
-    <div class="table-wrap"><table>
-      <thead><tr><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>Perfil</th><th>Origem</th><th>Cidade</th><th>Data</th></tr></thead>
-      <tbody>
-        ${rows.map(l => {
-          const src = l.source && l.source !== 'site' ? l.source : null;
-          const med = l.utm_medium || null;
-          const camp = l.source_campaign || null;
-          const srcIcons = {'instagram':'📸','facebook':'📘','google':'🔍','whatsapp':'💬','youtube':'▶️'};
-          const icon = src ? (srcIcons[src.toLowerCase()] || '🌐') : '🌐';
-          const origem = [src||'direto', med, camp].filter(Boolean).join(' / ');
-          return `
-          <tr>
-            <td><strong style="font-size:.88rem">${escHtml(l.name||'')}</strong></td>
-            <td style="font-size:.82rem">${escHtml(l.email||'')}</td>
-            <td style="font-size:.82rem">${escHtml(l.phone||'')}</td>
-            <td><span class="lead-sabotador">${escHtml(l.sabotador||'—')}</span></td>
-            <td style="font-size:.78rem" title="${escHtml(origem)}">${icon} ${escHtml(src||'direto')}${med?`<br><span style="color:var(--text3);font-size:.72rem">${escHtml(med)}</span>`:''}</td>
-            <td style="font-size:.78rem;color:var(--text3)">${escHtml(l.cidade||'')} ${escHtml(l.estado||'')}</td>
-            <td style="font-size:.75rem;color:var(--text3);white-space:nowrap">${l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '—'}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table></div>
-    <p style="font-size:.78rem;color:var(--text3);margin-top:12px">${rows.length} lead(s) encontrado(s)</p>`;
+    <div class="card" style="margin-bottom:0">
+      <div class="table-wrap"><table>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>Perfil</th><th>Faixa Etária</th><th>Renda</th><th>Cidade/UF</th><th>Origem</th><th>Data</th></tr></thead>
+        <tbody>
+          ${rows.length ? rows.map(l => {
+            const src = l.source && l.source !== 'site' ? l.source : null;
+            const med = l.utm_medium || null;
+            const srcIcons = {'instagram':'📸','facebook':'📘','google':'🔍','whatsapp':'💬','youtube':'▶️'};
+            const icon = src ? (srcIcons[src.toLowerCase()] || '🌐') : '🌐';
+            return `
+            <tr>
+              <td style="font-weight:600;font-size:.85rem">${escHtml(l.name||'')}</td>
+              <td style="font-size:.8rem;word-break:break-all">${escHtml(l.email||'')}</td>
+              <td style="font-size:.8rem">${escHtml(l.phone||'')}</td>
+              <td><span class="lead-sabotador">${escHtml(l.sabotador||'—')}</span></td>
+              <td style="font-size:.78rem;color:var(--text2)">${escHtml(l.faixa_etaria||'—')}</td>
+              <td style="font-size:.78rem;color:var(--text2)">${escHtml(l.faixa_renda||'—')}</td>
+              <td style="font-size:.78rem;color:var(--text3)">${escHtml((l.cidade||'')+(l.estado?' / '+l.estado:''))}</td>
+              <td style="font-size:.75rem">${icon} ${escHtml(src||'direto')}${med?`<br><span style="color:var(--text3);font-size:.7rem">${escHtml(med)}</span>`:''}</td>
+              <td style="font-size:.75rem;color:var(--text3);white-space:nowrap">${l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '—'}</td>
+            </tr>`;
+          }).join('') : '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">Nenhum lead encontrado</td></tr>'}
+        </tbody>
+      </table></div>
+      <p style="font-size:.78rem;color:var(--text3);margin-top:10px">${rows.length} lead(s) encontrado(s)</p>
+    </div>`;
 }
 
 function filterLeads(q) {
   if (!window._allLeads) return;
   const lq = q.toLowerCase();
-  const filtered = window._allLeads.filter(l =>
-    (l.name||'').toLowerCase().includes(lq) ||
-    (l.email||'').toLowerCase().includes(lq) ||
-    (l.sabotador||'').toLowerCase().includes(lq) ||
-    (l.phone||'').includes(lq)
-  );
+  const sabFilter = document.getElementById('lead-filter-sab')?.value || '';
+  const filtered = window._allLeads.filter(l => {
+    const matchQ = !lq || (l.name||'').toLowerCase().includes(lq) ||
+      (l.email||'').toLowerCase().includes(lq) ||
+      (l.sabotador||'').toLowerCase().includes(lq) ||
+      (l.phone||'').includes(lq);
+    const matchSab = !sabFilter || (l.sabotador||'').trim().toUpperCase() === sabFilter;
+    return matchQ && matchSab;
+  });
   renderLeads(filtered);
+}
+
+function exportLeads() {
+  const rows = window._allLeads;
+  if (!rows || !rows.length) { toast('Nenhum lead para exportar', 'error'); return; }
+  const headers = ['nome','email','telefone','faixa_etaria','faixa_renda','cidade','estado','sabotador','origem','data'];
+  const csvRows = rows.map(l => [
+    l.name||'', l.email||'', l.phone||'',
+    l.faixa_etaria||'', l.faixa_renda||'',
+    l.cidade||'', l.estado||'', l.sabotador||'',
+    l.source||'', l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : ''
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = '﻿' + headers.join(',') + '\n' + csvRows.join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `leads-emagreser-${new Date().toISOString().slice(0,10)}.csv`; a.click();
 }
 
 /* ── EMAIL TEMPLATES ─────────────────────────────────────────────── */
 async function emailTemplates() {
   document.getElementById('main-content').innerHTML = `
-    <div style="display:flex;gap:20px;height:calc(100vh - 60px)">
-      <!-- Lista -->
-      <div style="width:280px;min-width:280px;background:#fff;border-radius:12px;border:1px solid var(--border);display:flex;flex-direction:column">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <h3 style="margin:0;font-size:1rem">Templates</h3>
-          <button onclick="tplNew()" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:600">+ Novo</button>
+    <div class="page-title">Templates de E-mail</div>
+    <div class="page-sub">Edite o assunto e o conteúdo dos e-mails automáticos. Use o Preview para ver como ficará.</div>
+    <div style="display:flex;gap:16px;min-height:calc(100vh - 160px)">
+      <!-- Lista lateral -->
+      <div style="width:260px;min-width:260px;background:#fff;border-radius:12px;border:1px solid var(--border);display:flex;flex-direction:column;height:fit-content;position:sticky;top:20px">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;font-size:.9rem">📧 Templates</span>
+          <button onclick="tplNew()" style="background:var(--cta);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600">+ Novo</button>
         </div>
-        <div id="tpl-list" style="flex:1;overflow-y:auto;padding:8px"></div>
+        <div id="tpl-list" style="overflow-y:auto;padding:8px;max-height:70vh"></div>
       </div>
-      <!-- Editor -->
-      <div style="flex:1;background:#fff;border-radius:12px;border:1px solid var(--border);display:flex;flex-direction:column">
-        <div id="tpl-editor" style="flex:1;display:flex;flex-direction:column;padding:24px;gap:16px">
-          <p style="color:#9ca3af;text-align:center;margin:auto">Selecione um template para editar</p>
+      <!-- Editor + Preview -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:14px">
+        <div id="tpl-editor" style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:24px;display:flex;flex-direction:column;gap:16px">
+          <p style="color:#9ca3af;text-align:center;margin:40px 0">← Selecione um template para editar</p>
+        </div>
+        <div id="tpl-preview-panel" style="display:none;background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <span style="font-weight:600;font-size:.85rem">👁 Preview do e-mail</span>
+            <button onclick="document.getElementById('tpl-preview-panel').style.display='none'" style="font-size:12px;color:#6b7280;background:none;border:none;cursor:pointer">Fechar ✕</button>
+          </div>
+          <iframe id="tpl-preview-frame" style="width:100%;height:560px;border:none;background:#f9f9f9"></iframe>
         </div>
       </div>
     </div>`;
@@ -944,32 +1156,33 @@ async function tplLoad(slug) {
   window._tplActive = slug;
   document.querySelectorAll('#tpl-list > div').forEach(el => el.style.background = '');
   const item = document.getElementById('tpl-item-' + slug.replace(/[^a-z0-9]/g,'_'));
-  if (item) item.style.background = '#f0fdfa';
+  if (item) item.style.background = '#fff7ed';
   const r = await proxyWrite({ action: 'get_email_template', slug });
   if (!r.ok || !r.data) { toast('Erro ao carregar template', 'error'); return; }
   const t = r.data;
   document.getElementById('tpl-editor').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div>
-        <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px">Slug (identificador)</div>
-        <div style="font-size:1rem;font-weight:700;color:#1c1917;margin-top:2px">${t.slug}</div>
+        <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Identificador (slug)</div>
+        <div style="font-size:1rem;font-weight:700;color:#1c1917;font-family:monospace">${escHtml(t.slug)}</div>
       </div>
-      <div style="display:flex;gap:8px">
-        <button onclick="tplPreview()" style="background:#f4f3ef;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer">👁 Preview</button>
-        <button onclick="tplDelete('${t.slug}')" style="background:#fff1f2;border:1px solid #fecdd3;color:#e11d48;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer">🗑 Excluir</button>
-        <button onclick="tplSave('${t.slug}')" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;cursor:pointer;font-weight:600">💾 Salvar</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="tplPreview()" style="background:#f4f3ef;border:1px solid #d1d5db;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:500">👁 Ver Preview</button>
+        <button onclick="tplDelete('${escHtml(t.slug)}')" style="background:#fff1f2;border:1px solid #fecdd3;color:#e11d48;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:500">🗑 Excluir</button>
+        <button onclick="tplSave('${escHtml(t.slug)}')" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:700">💾 Salvar</button>
       </div>
     </div>
-    <div>
-      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Assunto do e-mail</label>
-      <input id="tpl-subject" value="${t.subject.replace(/"/g,'&quot;')}" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box">
+    <div class="field-group">
+      <label>Assunto do e-mail <span style="font-weight:400;color:var(--text3);font-size:.78rem">(aparece no inbox do destinatário)</span></label>
+      <input id="tpl-subject" value="${t.subject.replace(/"/g,'&quot;')}" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;font-size:14px">
     </div>
-    <div style="flex:1;display:flex;flex-direction:column">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <label style="font-size:13px;font-weight:600;color:#374151">HTML do e-mail</label>
-        <div style="font-size:12px;color:#9ca3af">Variáveis: {{nome}} {{link_wpp}} {{link_descadastro}} {{emoji}} {{tipo}} {{titulo}}</div>
+    <div class="field-group" style="margin-bottom:0">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px;flex-wrap:wrap">
+        <label style="margin:0">Conteúdo HTML do e-mail</label>
+        <div style="font-size:11px;color:#9ca3af;text-align:right">Variáveis: <code>{{nome}}</code> <code>{{link_wpp}}</code> <code>{{link_descadastro}}</code> <code>{{emoji}}</code> <code>{{tipo}}</code> <code>{{titulo}}</code></div>
       </div>
-      <textarea id="tpl-body" style="flex:1;min-height:320px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box">${t.body_html.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <textarea id="tpl-body" style="width:100%;min-height:380px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:monospace;resize:vertical;line-height:1.5;box-sizing:border-box" oninput="tplAutoPreview()">${t.body_html.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <p style="font-size:.75rem;color:var(--text3);margin-top:4px">💡 Dica: clique em "Ver Preview" para visualizar o e-mail renderizado antes de salvar.</p>
     </div>`;
 }
 
@@ -1022,7 +1235,6 @@ async function tplDelete(slug) {
 function tplPreview() {
   const html = document.getElementById('tpl-body')?.value;
   if (!html) { toast('Sem HTML para visualizar', 'error'); return; }
-  const preview = window.open('', '_blank');
   const rendered = html
     .replace(/\{\{nome\}\}/g, 'Maria')
     .replace(/\{\{link_wpp\}\}/g, '#')
@@ -1031,8 +1243,24 @@ function tplPreview() {
     .replace(/\{\{emoji\}\}/g, '🍫')
     .replace(/\{\{tipo\}\}/g, 'Perfil A — A Recompensadora')
     .replace(/\{\{titulo\}\}/g, 'Você usa a comida como prêmio e alívio emocional');
-  preview.document.write(rendered);
-  preview.document.close();
+  const panel = document.getElementById('tpl-preview-panel');
+  const frame = document.getElementById('tpl-preview-frame');
+  if (panel && frame) {
+    panel.style.display = 'block';
+    frame.srcdoc = rendered;
+    panel.scrollIntoView({behavior:'smooth', block:'start'});
+  } else {
+    // Fallback: open in new tab
+    const w = window.open('', '_blank');
+    w.document.write(rendered); w.document.close();
+  }
+}
+
+function tplAutoPreview() {
+  // Auto-refresh preview if it's open
+  const panel = document.getElementById('tpl-preview-panel');
+  if (!panel || panel.style.display === 'none') return;
+  tplPreview();
 }
 
 /* ── INIT ─────────────────────── */
