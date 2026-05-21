@@ -1111,38 +1111,66 @@ function exportLeads() {
 async function emailTemplates() {
   document.getElementById('main-content').innerHTML = `
     <div class="page-title">Templates de E-mail</div>
-    <div class="page-sub">Edite o assunto e o conteúdo dos e-mails automáticos. Use o Preview para ver como ficará.</div>
-    <div style="display:flex;gap:16px;min-height:calc(100vh - 160px)">
+    <div class="page-sub">Selecione um template para editar direto no preview. Toque nos textos para alterar.</div>
+    <div style="display:flex;gap:16px;align-items:flex-start">
       <!-- Lista lateral -->
-      <div style="width:260px;min-width:260px;background:#fff;border-radius:12px;border:1px solid var(--border);display:flex;flex-direction:column;height:fit-content;position:sticky;top:20px">
-        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div style="width:240px;min-width:240px;background:#fff;border-radius:12px;border:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:20px;max-height:calc(100vh - 120px);overflow:hidden">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
           <span style="font-weight:700;font-size:.9rem">📧 Templates</span>
           <button onclick="tplNew()" style="background:var(--cta);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600">+ Novo</button>
         </div>
-        <div id="tpl-list" style="overflow-y:auto;padding:8px;max-height:70vh"></div>
+        <div id="tpl-list" style="overflow-y:auto;padding:8px;flex:1"></div>
       </div>
-      <!-- Editor + Preview -->
-      <div style="flex:1;display:flex;flex-direction:column;gap:14px">
-        <div id="tpl-editor" style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:24px;display:flex;flex-direction:column;gap:16px">
-          <p style="color:#9ca3af;text-align:center;margin:40px 0">← Selecione um template para editar</p>
-        </div>
-        <div id="tpl-preview-panel" style="display:none;background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden">
-          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-            <div>
-              <span style="font-weight:600;font-size:.85rem">✏️ Editar no Preview</span>
-              <span style="font-size:.75rem;color:#9ca3af;margin-left:8px">Clique em qualquer texto para editar direto no e-mail</span>
+      <!-- Área principal -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+        <!-- Barra de ações (aparece após selecionar template) -->
+        <div id="tpl-topbar" style="display:none;background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px 20px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Template</div>
+              <div id="tpl-slug-display" style="font-size:.95rem;font-weight:700;color:#1c1917;font-family:monospace"></div>
             </div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <span id="tpl-edit-status" style="font-size:.75rem;color:#9ca3af"></span>
-              <button onclick="tplSyncFromPreview()" style="background:#f0fdf4;border:1px solid #86efac;color:#166534;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600">↩ Aplicar edições ao HTML</button>
-              <button onclick="document.getElementById('tpl-preview-panel').style.display='none'" style="font-size:12px;color:#6b7280;background:none;border:none;cursor:pointer">Fechar ✕</button>
+            <div style="flex:2;min-width:200px">
+              <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Assunto do e-mail</div>
+              <input id="tpl-subject" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--text)">
+            </div>
+            <div style="display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;align-items:center">
+              <span id="tpl-edit-status" style="font-size:.72rem;color:#9ca3af"></span>
+              <button onclick="tplSyncFromPreview()" id="tpl-apply-btn" style="display:none;background:#f0fdf4;border:1px solid #86efac;color:#166534;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:600">↩ Salvar edições</button>
+              <button onclick="tplToggleHtml()" style="background:#f3f4f6;border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;color:var(--text3)">⚙ HTML</button>
+              <button onclick="tplDelete(window._tplActive)" style="background:#fff1f2;border:1px solid #fecdd3;color:#e11d48;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:500">🗑</button>
+              <button onclick="tplSave(window._tplActive)" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:700">💾 Salvar</button>
             </div>
           </div>
-          <iframe id="tpl-preview-frame" style="width:100%;height:560px;border:none;background:#f9f9f9"></iframe>
+          <!-- HTML avançado (oculto por padrão) -->
+          <div id="tpl-html-panel" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <span style="font-size:12px;font-weight:600;color:var(--text2)">HTML do e-mail</span>
+              <span style="font-size:11px;color:#9ca3af">Variáveis: <code>{{nome}}</code> <code>{{link_wpp}}</code> <code>{{link_descadastro}}</code> <code>{{emoji}}</code> <code>{{tipo}}</code> <code>{{titulo}}</code></span>
+            </div>
+            <textarea id="tpl-body" style="width:100%;height:220px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:11px;font-family:monospace;resize:vertical;line-height:1.5;box-sizing:border-box" oninput="tplAutoPreview()"></textarea>
+          </div>
+        </div>
+        <!-- Preview editável (área principal) -->
+        <div id="tpl-preview-panel" style="display:none;background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden">
+          <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:#fffbf7;display:flex;align-items:center;gap:8px">
+            <span style="font-size:.8rem;color:var(--cta);font-weight:600">✏️ Clique em qualquer texto para editar</span>
+            <span style="font-size:.75rem;color:#9ca3af">— as alterações aparecem no campo "Salvar edições" acima</span>
+          </div>
+          <iframe id="tpl-preview-frame" style="width:100%;height:620px;border:none;background:#f9f9f9"></iframe>
+        </div>
+        <!-- Estado vazio -->
+        <div id="tpl-empty" style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:60px;text-align:center;color:#9ca3af">
+          ← Selecione um template da lista para começar a editar
         </div>
       </div>
     </div>`;
   await tplLoadList();
+}
+
+function tplToggleHtml() {
+  const panel = document.getElementById('tpl-html-panel');
+  if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
 }
 
 async function tplLoadList() {
@@ -1164,53 +1192,61 @@ async function tplLoad(slug) {
   document.querySelectorAll('#tpl-list > div').forEach(el => el.style.background = '');
   const item = document.getElementById('tpl-item-' + slug.replace(/[^a-z0-9]/g,'_'));
   if (item) item.style.background = '#fff7ed';
+
   const r = await proxyWrite({ action: 'get_email_template', slug });
   if (!r.ok || !r.data) { toast('Erro ao carregar template', 'error'); return; }
   const t = r.data;
-  document.getElementById('tpl-editor').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div>
-        <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Identificador (slug)</div>
-        <div style="font-size:1rem;font-weight:700;color:#1c1917;font-family:monospace">${escHtml(t.slug)}</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button onclick="tplPreview()" style="background:#f4f3ef;border:1px solid #d1d5db;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:500">👁 Ver Preview</button>
-        <button onclick="tplDelete('${escHtml(t.slug)}')" style="background:#fff1f2;border:1px solid #fecdd3;color:#e11d48;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:500">🗑 Excluir</button>
-        <button onclick="tplSave('${escHtml(t.slug)}')" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;cursor:pointer;font-weight:700">💾 Salvar</button>
-      </div>
-    </div>
-    <div class="field-group">
-      <label>Assunto do e-mail <span style="font-weight:400;color:var(--text3);font-size:.78rem">(aparece no inbox do destinatário)</span></label>
-      <input id="tpl-subject" value="${t.subject.replace(/"/g,'&quot;')}" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;font-size:14px">
-    </div>
-    <div class="field-group" style="margin-bottom:0">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px;flex-wrap:wrap">
-        <label style="margin:0">Conteúdo HTML do e-mail</label>
-        <div style="font-size:11px;color:#9ca3af;text-align:right">Variáveis: <code>{{nome}}</code> <code>{{link_wpp}}</code> <code>{{link_descadastro}}</code> <code>{{emoji}}</code> <code>{{tipo}}</code> <code>{{titulo}}</code></div>
-      </div>
-      <textarea id="tpl-body" style="width:100%;min-height:380px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:monospace;resize:vertical;line-height:1.5;box-sizing:border-box" oninput="tplAutoPreview()">${t.body_html.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
-      <p style="font-size:.75rem;color:var(--text3);margin-top:4px">💡 Dica: clique em "Ver Preview" para visualizar o e-mail renderizado antes de salvar.</p>
-    </div>`;
+
+  /* Show topbar, hide empty state */
+  const topbar = document.getElementById('tpl-topbar');
+  const empty  = document.getElementById('tpl-empty');
+  if (topbar) topbar.style.display = 'block';
+  if (empty)  empty.style.display  = 'none';
+
+  /* Populate topbar fields */
+  const slugDisplay = document.getElementById('tpl-slug-display');
+  const subjectEl   = document.getElementById('tpl-subject');
+  const bodyEl      = document.getElementById('tpl-body');
+  const applyBtn    = document.getElementById('tpl-apply-btn');
+  const statusEl    = document.getElementById('tpl-edit-status');
+  if (slugDisplay) slugDisplay.textContent = t.slug;
+  if (subjectEl)  subjectEl.value = t.subject;
+  if (bodyEl)     bodyEl.value    = t.body_html;
+  if (applyBtn)   applyBtn.style.display = 'none';
+  if (statusEl)   statusEl.textContent   = '';
+
+  /* Auto-open preview */
+  tplPreview();
 }
 
 async function tplNew() {
-  document.getElementById('tpl-editor').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <h3 style="margin:0">Novo Template</h3>
-      <button onclick="tplSaveNew()" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;cursor:pointer;font-weight:600">💾 Criar</button>
-    </div>
-    <div>
-      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Slug (identificador único, ex: lembrete_vendas)</label>
-      <input id="tpl-slug" placeholder="meu_template_slug" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box">
-    </div>
-    <div>
-      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Assunto do e-mail</label>
-      <input id="tpl-subject" placeholder="{{nome}}, assunto do e-mail aqui" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box">
-    </div>
-    <div style="flex:1;display:flex;flex-direction:column">
-      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">HTML do e-mail</label>
-      <textarea id="tpl-body" placeholder="<!DOCTYPE html>..." style="flex:1;min-height:320px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box"></textarea>
-    </div>`;
+  window._tplActive = null;
+  document.querySelectorAll('#tpl-list > div').forEach(el => el.style.background = '');
+  /* Hide preview, show topbar in "new" mode */
+  const topbar  = document.getElementById('tpl-topbar');
+  const empty   = document.getElementById('tpl-empty');
+  const preview = document.getElementById('tpl-preview-panel');
+  const htmlPan = document.getElementById('tpl-html-panel');
+  if (topbar)  topbar.style.display  = 'block';
+  if (empty)   empty.style.display   = 'none';
+  if (preview) preview.style.display = 'none';
+  if (htmlPan) htmlPan.style.display = 'block';
+
+  const slugDisplay = document.getElementById('tpl-slug-display');
+  const applyBtn    = document.getElementById('tpl-apply-btn');
+  const statusEl    = document.getElementById('tpl-edit-status');
+  if (slugDisplay) slugDisplay.innerHTML = `<input id="tpl-slug" placeholder="identificador_unico" style="font-family:monospace;border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:.9rem;width:220px">`;
+  if (applyBtn)    applyBtn.style.display = 'none';
+  if (statusEl)    statusEl.textContent   = '';
+
+  const subjectEl = document.getElementById('tpl-subject');
+  const bodyEl    = document.getElementById('tpl-body');
+  if (subjectEl) { subjectEl.value = ''; subjectEl.placeholder = '{{nome}}, assunto do e-mail aqui'; }
+  if (bodyEl)    { bodyEl.value    = ''; }
+
+  /* Replace Salvar button to trigger tplSaveNew */
+  const saveBtn = topbar?.querySelector('button[onclick*="tplSave("]');
+  if (saveBtn) { saveBtn.setAttribute('onclick','tplSaveNew()'); saveBtn.textContent = '💾 Criar'; }
 }
 
 async function tplSave(slug) {
@@ -1223,10 +1259,11 @@ async function tplSave(slug) {
 }
 
 async function tplSaveNew() {
-  const slug = document.getElementById('tpl-slug')?.value?.trim().replace(/\s+/g,'_');
-  const subject = document.getElementById('tpl-subject')?.value?.trim();
+  const slugInput = document.getElementById('tpl-slug');
+  const slug = slugInput?.value?.trim().replace(/\s+/g,'_');
+  const subject   = document.getElementById('tpl-subject')?.value?.trim();
   const body_html = document.getElementById('tpl-body')?.value;
-  if (!slug || !subject || !body_html) { toast('Preencha todos os campos', 'error'); return; }
+  if (!slug || !subject || !body_html) { toast('Preencha identificador, assunto e HTML', 'error'); return; }
   const r = await proxyWrite({ action: 'save_email_template', slug, subject, body_html });
   if (r.ok) { toast('Template criado!'); await tplLoadList(); tplLoad(slug); }
   else toast('Erro: ' + (r.error || ''), 'error');
@@ -1301,7 +1338,10 @@ function tplPreview() {
 
     const status = document.getElementById('tpl-edit-status');
     _tplObserver = new MutationObserver(() => {
-      if (status) { status.textContent = '● Edições pendentes — clique em "Aplicar"'; status.style.color = '#e8773a'; }
+      const st = document.getElementById('tpl-edit-status');
+      const btn = document.getElementById('tpl-apply-btn');
+      if (st)  { st.textContent = '● Edições pendentes'; st.style.color = '#e8773a'; }
+      if (btn) btn.style.display = 'inline-block';
     });
     _tplObserver.observe(doc.body, { childList: true, subtree: true, characterData: true });
   };
@@ -1332,8 +1372,10 @@ function tplSyncFromPreview() {
 
   textarea.value = html;
   const status = document.getElementById('tpl-edit-status');
-  if (status) { status.textContent = '✅ HTML atualizado'; status.style.color = '#16a34a'; setTimeout(()=>{ status.textContent=''; }, 3000); }
-  toast('HTML atualizado! Clique em Salvar para persistir.');
+  const applyBtn = document.getElementById('tpl-apply-btn');
+  if (status) { status.textContent = '✅ Pronto — clique em Salvar'; status.style.color = '#16a34a'; setTimeout(()=>{ status.textContent=''; }, 4000); }
+  if (applyBtn) applyBtn.style.display = 'none';
+  toast('Edições aplicadas! Clique em 💾 Salvar para gravar.');
 }
 
 function tplAutoPreview() {
