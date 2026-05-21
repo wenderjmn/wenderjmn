@@ -1127,9 +1127,16 @@ async function emailTemplates() {
           <p style="color:#9ca3af;text-align:center;margin:40px 0">← Selecione um template para editar</p>
         </div>
         <div id="tpl-preview-panel" style="display:none;background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden">
-          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-            <span style="font-weight:600;font-size:.85rem">👁 Preview do e-mail</span>
-            <button onclick="document.getElementById('tpl-preview-panel').style.display='none'" style="font-size:12px;color:#6b7280;background:none;border:none;cursor:pointer">Fechar ✕</button>
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div>
+              <span style="font-weight:600;font-size:.85rem">✏️ Editar no Preview</span>
+              <span style="font-size:.75rem;color:#9ca3af;margin-left:8px">Clique em qualquer texto para editar direto no e-mail</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span id="tpl-edit-status" style="font-size:.75rem;color:#9ca3af"></span>
+              <button onclick="tplSyncFromPreview()" style="background:#f0fdf4;border:1px solid #86efac;color:#166534;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600">↩ Aplicar edições ao HTML</button>
+              <button onclick="document.getElementById('tpl-preview-panel').style.display='none'" style="font-size:12px;color:#6b7280;background:none;border:none;cursor:pointer">Fechar ✕</button>
+            </div>
           </div>
           <iframe id="tpl-preview-frame" style="width:100%;height:560px;border:none;background:#f9f9f9"></iframe>
         </div>
@@ -1232,32 +1239,104 @@ async function tplDelete(slug) {
   else toast('Erro ao excluir', 'error');
 }
 
+/* Placeholder values used when rendering preview */
+const TPL_PREVIEW_VARS = {
+  '{{nome}}': 'Maria',
+  '{{link_wpp}}': '#',
+  '{{link_descadastro}}': '#',
+  '{{link_site}}': '#',
+  '{{emoji}}': '🍫',
+  '{{tipo}}': 'Perfil A — A Recompensadora',
+  '{{titulo}}': 'Você usa a comida como prêmio e alívio emocional',
+};
+
+/* Reverse map: preview placeholder text → original variable */
+const TPL_REVERSE_VARS = Object.fromEntries(
+  Object.entries(TPL_PREVIEW_VARS).map(([k,v]) => [v, k])
+);
+
+let _tplObserver = null;
+
 function tplPreview() {
-  const html = document.getElementById('tpl-body')?.value;
+  const textarea = document.getElementById('tpl-body');
+  if (!textarea) return;
+  const html = textarea.value;
   if (!html) { toast('Sem HTML para visualizar', 'error'); return; }
-  const rendered = html
-    .replace(/\{\{nome\}\}/g, 'Maria')
-    .replace(/\{\{link_wpp\}\}/g, '#')
-    .replace(/\{\{link_descadastro\}\}/g, '#')
-    .replace(/\{\{link_site\}\}/g, '#')
-    .replace(/\{\{emoji\}\}/g, '🍫')
-    .replace(/\{\{tipo\}\}/g, 'Perfil A — A Recompensadora')
-    .replace(/\{\{titulo\}\}/g, 'Você usa a comida como prêmio e alívio emocional');
+
+  let rendered = html;
+  Object.entries(TPL_PREVIEW_VARS).forEach(([k,v]) => {
+    rendered = rendered.split(k).join(v);
+  });
+
+  /* Inject contenteditable + edit styles */
+  const editStyle = `<style>
+    [contenteditable]:hover{outline:2px dashed #e8773a;outline-offset:2px;cursor:text}
+    [contenteditable]:focus{outline:2px solid #e8773a;outline-offset:2px}
+    body{cursor:default}
+  </style>`;
+  rendered = rendered.replace('</head>', editStyle + '</head>');
+
   const panel = document.getElementById('tpl-preview-panel');
   const frame = document.getElementById('tpl-preview-frame');
-  if (panel && frame) {
-    panel.style.display = 'block';
-    frame.srcdoc = rendered;
-    panel.scrollIntoView({behavior:'smooth', block:'start'});
-  } else {
-    // Fallback: open in new tab
+  if (!panel || !frame) {
     const w = window.open('', '_blank');
     w.document.write(rendered); w.document.close();
+    return;
   }
+
+  panel.style.display = 'block';
+
+  /* Disconnect previous observer before reloading */
+  if (_tplObserver) { _tplObserver.disconnect(); _tplObserver = null; }
+
+  frame.srcdoc = rendered;
+
+  /* Wait for iframe to load, then make body editable and watch changes */
+  frame.onload = () => {
+    const doc = frame.contentDocument;
+    if (!doc) return;
+    doc.body.contentEditable = 'true';
+    doc.body.spellcheck = false;
+    doc.designMode = 'off'; /* contenteditable on body is enough */
+
+    const status = document.getElementById('tpl-edit-status');
+    _tplObserver = new MutationObserver(() => {
+      if (status) { status.textContent = '● Edições pendentes — clique em "Aplicar"'; status.style.color = '#e8773a'; }
+    });
+    _tplObserver.observe(doc.body, { childList: true, subtree: true, characterData: true });
+  };
+
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* Read edited HTML from iframe, reverse-substitute preview values back to {{variables}}, update textarea */
+function tplSyncFromPreview() {
+  const frame = document.getElementById('tpl-preview-frame');
+  const textarea = document.getElementById('tpl-body');
+  if (!frame || !textarea) return;
+  const doc = frame.contentDocument;
+  if (!doc) { toast('Abra o preview primeiro', 'error'); return; }
+
+  /* Temporarily disable editing to get clean HTML */
+  doc.body.contentEditable = 'false';
+  let html = doc.documentElement.outerHTML;
+  doc.body.contentEditable = 'true';
+
+  /* Remove the injected edit styles */
+  html = html.replace(/<style>\s*\[contenteditable\][^<]*<\/style>/g, '');
+
+  /* Reverse-substitute preview placeholder text back to variables */
+  Object.entries(TPL_REVERSE_VARS).forEach(([v, k]) => {
+    html = html.split(v).join(k);
+  });
+
+  textarea.value = html;
+  const status = document.getElementById('tpl-edit-status');
+  if (status) { status.textContent = '✅ HTML atualizado'; status.style.color = '#16a34a'; setTimeout(()=>{ status.textContent=''; }, 3000); }
+  toast('HTML atualizado! Clique em Salvar para persistir.');
 }
 
 function tplAutoPreview() {
-  // Auto-refresh preview if it's open
   const panel = document.getElementById('tpl-preview-panel');
   if (!panel || panel.style.display === 'none') return;
   tplPreview();
