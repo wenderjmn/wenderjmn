@@ -20,6 +20,28 @@ if (($_GET['token'] ?? '') !== PANEL_TOKEN) {
     http_response_code(403); exit('Acesso negado. Use ?token=es2026admin');
 }
 
+// ── ENDPOINT DE STATS PARA POLLING AJAX ──────────────────────────
+if (($_GET['action'] ?? '') === 'stats') {
+    header('Content-Type: application/json');
+    $now_iso = gmdate('Y-m-d\TH:i:s\Z');
+    echo json_encode([
+        'ts'          => date('H:i:s'),
+        'leads_total' => count(sb_get("leads?select=id")),
+        'leads_queued'=> count(sb_get("leads?sequence_queued_at=not.is.null&select=id")),
+        'email_sent'  => count(sb_get("email_queue?status=eq.sent&select=id")),
+        'email_pend'  => count(sb_get("email_queue?status=eq.pending&select=id")),
+        'email_fail'  => count(sb_get("email_queue?status=eq.failed&select=id")),
+        'email_stuck' => count(sb_get("email_queue?status=eq.processing&select=id")),
+        'wpp_sent'    => count(sb_get("whatsapp_queue?status=eq.sent&select=id")),
+        'wpp_pend'    => count(sb_get("whatsapp_queue?status=eq.pending&select=id")),
+        'wpp_fail'    => count(sb_get("whatsapp_queue?status=eq.failed&select=id")),
+        'wpp_stuck'   => count(sb_get("whatsapp_queue?status=eq.processing&select=id")),
+        'wpp_overdue' => count(sb_get("whatsapp_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&select=id")),
+        'email_overdue'=> count(sb_get("email_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&select=id")),
+    ]);
+    exit;
+}
+
 $msg = ''; $msg_type = 'ok';
 
 // ── AÇÕES ────────────────────────────────────────────────────────────
@@ -371,8 +393,12 @@ tr:last-child td{border-bottom:none}
 <div class="wrap">
   <div class="header">
     <h1>📊 Painel de Automação — EmagreSer</h1>
-    <span><?= date('d/m/Y H:i') ?></span>
+    <span style="display:flex;align-items:center;gap:8px">
+      <span id="live-dot" style="width:8px;height:8px;border-radius:50%;background:#64748b;display:inline-block;transition:background .3s"></span>
+      <span id="last-update" style="font-size:11px;color:#94a3b8"><?= date('d/m/Y H:i:s') ?></span>
+    </span>
   </div>
+  <div id="overdue-badge" style="display:none;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:9px 14px;margin-bottom:10px;font-size:13px;font-weight:600;color:#92400e;text-align:center"></div>
 
   <?php if ($msg): ?>
   <div class="alert <?= $msg_type ?>"><?= htmlspecialchars($msg) ?></div>
@@ -399,8 +425,10 @@ tr:last-child td{border-bottom:none}
         <input type="hidden" name="action" value="process_now">
         <button type="submit" class="btn btn-blue" style="width:auto;padding:7px 18px;font-size:13px">⚡ Processar fila agora</button>
       </form>
+      <button type="button" onclick="triggerWorker()" class="btn btn-green" style="width:auto;padding:7px 18px;font-size:13px" id="btn-trigger-worker">🚀 Disparar Worker (AJAX)</button>
       <span style="font-size:11px;color:#6b7c67">Dispara envios pendentes imediatamente, sem esperar o cron.</span>
     </div>
+    <div id="worker-result" style="margin-top:8px;font-size:12px;display:none;padding:8px 12px;border-radius:6px;background:#f0fdf4;border:1px solid #bbf7d0;color:#065f46"></div>
     <?php if ($log_lines): ?>
     <div class="log-pre"><?= htmlspecialchars(implode("\n", $log_lines)) ?></div>
     <?php endif; ?>
@@ -451,10 +479,10 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
-  <!-- CARDS STATS -->
+  <!-- CARDS STATS — ids usados pelo polling JS -->
   <div class="cards">
-    <div class="card"><div class="n"><?= $leads_total ?></div><div class="l">Leads cadastradas</div></div>
-    <div class="card"><div class="n"><?= $leads_queued ?></div><div class="l">Na automação</div></div>
+    <div class="card"><div class="n" id="stat-leads"><?= $leads_total ?></div><div class="l">Leads cadastradas</div></div>
+    <div class="card"><div class="n" id="stat-queued"><?= $leads_queued ?></div><div class="l">Na automação</div></div>
     <?php if($leads_pending > 0): ?>
     <div class="card" style="grid-column:span 2;background:#fef9c3;border-color:#fde047">
       <div class="n amber"><?= $leads_pending ?></div>
@@ -465,12 +493,12 @@ tr:last-child td{border-bottom:none}
       </form>
     </div>
     <?php endif; ?>
-    <div class="card"><div class="n"><?= $email_sent ?></div><div class="l">E-mails enviados</div></div>
-    <div class="card"><div class="n amber"><?= $email_pend ?></div><div class="l">E-mails pendentes</div></div>
-    <div class="card"><div class="n <?= $email_fail>0?'red':'' ?>"><?= $email_fail ?></div><div class="l">E-mails com falha</div></div>
-    <div class="card"><div class="n"><?= $wpp_sent ?></div><div class="l">WPP enviados</div></div>
-    <div class="card"><div class="n amber"><?= $wpp_pend ?></div><div class="l">WPP pendentes</div></div>
-    <div class="card"><div class="n <?= $wpp_fail>0?'red':'' ?>"><?= $wpp_fail ?></div><div class="l">WPP com falha</div></div>
+    <div class="card"><div class="n" id="stat-esent"><?= $email_sent ?></div><div class="l">E-mails enviados</div></div>
+    <div class="card"><div class="n amber" id="stat-epend"><?= $email_pend ?></div><div class="l">E-mails pendentes</div></div>
+    <div class="card"><div class="n <?= $email_fail>0?'red':'' ?>" id="stat-efail"><?= $email_fail ?></div><div class="l">E-mails com falha</div></div>
+    <div class="card"><div class="n" id="stat-wsent"><?= $wpp_sent ?></div><div class="l">WPP enviados</div></div>
+    <div class="card"><div class="n amber" id="stat-wpend"><?= $wpp_pend ?></div><div class="l">WPP pendentes</div></div>
+    <div class="card"><div class="n <?= $wpp_fail>0?'red':'' ?>" id="stat-wfail"><?= $wpp_fail ?></div><div class="l">WPP com falha</div></div>
   </div>
 
   <!-- FORMULÁRIOS DE TESTE -->
@@ -736,7 +764,7 @@ tr:last-child td{border-bottom:none}
   </div>
 
 </div>
-<div class="refresh-bar">Atualização automática em <span id="countdown-bar">30</span>s &nbsp;·&nbsp; <?= date('H:i:s') ?></div>
+<div class="refresh-bar">Stats ao vivo (5s) · Recarga completa em <span id="countdown-bar">60</span>s &nbsp;·&nbsp; <span id="last-update-bar"><?= date('H:i:s') ?></span></div>
 
 <script>
 // Acordeão
@@ -759,16 +787,85 @@ function toggleAll(type) {
   });
 }
 
-// Contagem regressiva
-let cnt = 30;
-function tick() {
-  cnt--;
-  const el = document.getElementById('countdown-bar');
-  if (el) el.textContent = cnt + 's';
-  if (cnt <= 0) location.reload();
-  else setTimeout(tick, 1000);
+// ── DISPARAR WORKER VIA AJAX ──────────────────────────────────────
+async function triggerWorker() {
+  const btn = document.getElementById('btn-trigger-worker');
+  const res = document.getElementById('worker-result');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Processando...'; }
+  res.style.display = 'none';
+  try {
+    const r = await fetch('email_worker.php?secret=***REMOVED_WORKER_SECRET***', { signal: AbortSignal.timeout(30000) });
+    const d = await r.json();
+    res.style.display = 'block';
+    if (d.ok) {
+      res.style.background = '#f0fdf4'; res.style.borderColor = '#bbf7d0'; res.style.color = '#065f46';
+      res.textContent = '✅ Worker executado — ' + (d.emails || 0) + ' e-mail(s) processado(s). ' + (d.log ? d.log.join(' | ') : '');
+    } else {
+      res.style.background = '#fef9c3'; res.style.borderColor = '#fde047'; res.style.color = '#854d0e';
+      res.textContent = '⚠️ ' + (d.msg || JSON.stringify(d));
+    }
+    // Atualiza stats imediatamente
+    pollStats();
+  } catch(e) {
+    res.style.display = 'block';
+    res.style.background = '#fee2e2'; res.style.borderColor = '#fca5a5'; res.style.color = '#991b1b';
+    res.textContent = '❌ Erro ao chamar worker: ' + e.message;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🚀 Disparar Worker (AJAX)'; }
+  }
 }
-setTimeout(tick, 1000);
+
+// ── POLLING REAL-TIME (stats a cada 5s, reload completo a cada 60s) ──
+const PANEL_TOKEN = '<?= PANEL_TOKEN ?>';
+let reloadIn = 60;
+
+function setCard(id, val, redIf) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = val;
+  el.className = 'n' + (redIf ? ' red' : (val > 0 && id.includes('pend') ? ' amber' : ''));
+}
+
+function pulse(ok) {
+  const dot = document.getElementById('live-dot');
+  if (!dot) return;
+  dot.style.background = ok ? '#10b981' : '#ef4444';
+  setTimeout(() => { dot.style.background = '#64748b'; }, 600);
+}
+
+async function pollStats() {
+  try {
+    const r = await fetch('painel.php?token=' + PANEL_TOKEN + '&action=stats');
+    if (!r.ok) { pulse(false); return; }
+    const d = await r.json();
+    pulse(true);
+
+    setCard('stat-leads',     d.leads_total,  false);
+    setCard('stat-queued',    d.leads_queued, false);
+    setCard('stat-esent',     d.email_sent,   false);
+    setCard('stat-epend',     d.email_pend,   false);
+    setCard('stat-efail',     d.email_fail,   d.email_fail > 0);
+    setCard('stat-wsent',     d.wpp_sent,     false);
+    setCard('stat-wpend',     d.wpp_pend,     false);
+    setCard('stat-wfail',     d.wpp_fail,     d.wpp_fail > 0);
+
+    // Alerta de itens vencidos
+    const overdue = (d.email_overdue || 0) + (d.wpp_overdue || 0);
+    const ob = document.getElementById('overdue-badge');
+    if (ob) { ob.textContent = overdue > 0 ? '⚠️ ' + overdue + ' item(ns) vencido(s) aguardando worker' : ''; ob.style.display = overdue > 0 ? 'block' : 'none'; }
+
+    const ts = document.getElementById('last-update');
+    if (ts) ts.textContent = 'Atualizado: ' + d.ts;
+
+    reloadIn--;
+    const cb = document.getElementById('countdown-bar');
+    if (cb) cb.textContent = reloadIn + 's';
+    if (reloadIn <= 0) location.reload();
+  } catch(e) { pulse(false); }
+}
+
+pollStats();
+setInterval(pollStats, 5000);
 </script>
 </body>
 </html>

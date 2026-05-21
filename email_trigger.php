@@ -43,23 +43,11 @@ $lead = sb_get("leads?id=eq.{$lead_id}&select=*&limit=1");
 if (empty($lead)) { echo json_encode(['error' => 'lead not found']); exit; }
 $lead = $lead[0];
 
-// Evita enfileirar duas vezes pelo lead
-if (!empty($lead['sequence_queued_at'])) {
-    echo json_encode(['ok' => true, 'msg' => 'already queued']); exit;
-}
-
-// Evita duplicata: checa se já existe sequência pendente para este e-mail
-$existing = sb_get("email_queue?to_email=eq." . urlencode($email) . "&status=eq.pending&select=id&limit=1");
-if (!empty($existing)) {
-    // Marca o lead como enfileirado para consistência
-    sb_patch("leads?id=eq.{$lead_id}", ['sequence_queued_at' => $now->format(DateTime::ATOM)]);
-    echo json_encode(['ok' => true, 'msg' => 'email already in queue for this address']); exit;
-}
-
-$now   = new DateTime('now', new DateTimeZone('America/Sao_Paulo'));
-$email = $lead['email'] ?? '';
-$name  = $lead['name']  ?? 'você';
-$phone = preg_replace('/\D/', '', $lead['phone'] ?? '');
+// ── Variáveis do lead definidas PRIMEIRO (necessário para todos os checks abaixo) ──
+$now    = new DateTime('now', new DateTimeZone('America/Sao_Paulo'));
+$email  = $lead['email'] ?? '';
+$name   = $lead['name']  ?? 'você';
+$phone  = preg_replace('/\D/', '', $lead['phone'] ?? '');
 $perfil = strtoupper($lead['sabotador'] ?? '');
 
 $perfis = [
@@ -71,16 +59,32 @@ $perfis = [
 $p = $perfis[$perfil] ?? ['emoji'=>'🎯','tipo'=>'Perfil identificado','titulo'=>'Seu mapeamento está completo'];
 
 $vars = [
-    '{{nome}}'          => htmlspecialchars($name),
-    '{{email}}'         => $email,
-    '{{emoji}}'         => $p['emoji'],
-    '{{tipo}}'          => $p['tipo'],
-    '{{titulo}}'        => $p['titulo'],
-    '{{descricao}}'     => '',
-    '{{link_wpp}}'      => WPP_LINK,
-    '{{link_site}}'     => SITE_URL,
+    '{{nome}}'             => htmlspecialchars($name),
+    '{{email}}'            => $email,
+    '{{emoji}}'            => $p['emoji'],
+    '{{tipo}}'             => $p['tipo'],
+    '{{titulo}}'           => $p['titulo'],
+    '{{descricao}}'        => '',
+    '{{link_wpp}}'         => WPP_LINK,
+    '{{link_site}}'        => SITE_URL,
     '{{link_descadastro}}' => SITE_URL . '/descadastro.php?email=' . urlencode($email),
 ];
+
+// ── Evita enfileirar duas vezes pelo mesmo lead_id ────────────────
+if (!empty($lead['sequence_queued_at'])) {
+    echo json_encode(['ok' => true, 'msg' => 'already queued']); exit;
+}
+
+// ── Busca slugs já pendentes/processando para este e-mail ─────────
+// Necessário para evitar violação do UNIQUE INDEX email_queue_unique_pending
+// (que bloqueia todo o batch se QUALQUER linha conflitar)
+$already_pending_slugs = [];
+if ($email) {
+    $existing_pending = sb_get("email_queue?to_email=eq." . rawurlencode($email) . "&status=in.(pending,processing)&select=template_slug&limit=20");
+    if (is_array($existing_pending) && !isset($existing_pending['code'])) {
+        $already_pending_slugs = array_column($existing_pending, 'template_slug');
+    }
+}
 
 // ── DATAS FIXAS ───────────────────────────────────────────────────
 $masterclass      = new DateTime('2026-06-11 08:00:00', new DateTimeZone('America/Sao_Paulo'));
@@ -105,6 +109,9 @@ $email_sequence = [
 
 $email_rows = [];
 foreach ($email_sequence as $step) {
+    // Pula se já existe entrada pending/processing para este slug+email (evita unique constraint)
+    if (in_array($step['slug'], $already_pending_slugs)) continue;
+
     if (isset($step['scheduled_at'])) {
         $send_at = $step['scheduled_at'];
     } else {
@@ -112,20 +119,26 @@ foreach ($email_sequence as $step) {
         $dt->modify("+{$step['delay_hours']} hours");
         $send_at = $dt->format(DateTime::ATOM);
     }
-    // Não enfileira e-mails passados da masterclass
+    // Não enfileira e-mails já passados (janela de 60s de tolerância)
     if (strtotime($send_at) < time() - 60) continue;
 
     $email_rows[] = [
-        'lead_id'      => $lead_id,
-        'template_slug'=> $step['slug'],
-        'to_email'     => $email,
-        'to_name'      => $name,
-        'extra_vars'   => $vars,
-        'scheduled_at' => $send_at,
-        'status'       => 'pending',
+        'lead_id'       => $lead_id,
+        'template_slug' => $step['slug'],
+        'to_email'      => $email,
+        'to_name'       => $name,
+        'extra_vars'    => $vars,
+        'scheduled_at'  => $send_at,
+        'status'        => 'pending',
     ];
 }
-if (!empty($email_rows)) sb_post('email_queue', $email_rows);
+
+// Insere e-mails um por um para evitar que uma falha cancele todo o batch
+$emails_queued = 0;
+foreach ($email_rows as $row) {
+    $ok = sb_post_check('email_queue', [$row]);
+    if ($ok) $emails_queued++;
+}
 
 // ── SEQUÊNCIA DE WHATSAPP (7 mensagens) ──────────────────────────
 if ($phone && strlen($phone) >= 10) {
@@ -215,17 +228,43 @@ if ($phone && strlen($phone) >= 10) {
         'status'       => 'pending',
     ];
 
-    // Remove mensagens com data já passada
+    // Remove mensagens com data já passada (janela de 60s)
     $wpp_rows = array_filter($wpp_rows, fn($r) => strtotime($r['scheduled_at']) >= time() - 60);
-    if (!empty($wpp_rows)) sb_post('whatsapp_queue', array_values($wpp_rows));
+    // Insere WPP um por um para não perder todo o batch por um erro
+    $wpp_queued = 0;
+    foreach (array_values($wpp_rows) as $wrow) {
+        if (sb_post_check('whatsapp_queue', [$wrow])) $wpp_queued++;
+    }
 }
 
-// Marca lead como enfileirado
+// Marca lead como enfileirado (só aqui, depois de tudo inserido)
 sb_patch("leads?id=eq.{$lead_id}", ['sequence_queued_at' => $now->format(DateTime::ATOM)]);
 
-echo json_encode(['ok' => true, 'emails' => count($email_rows)]);
+echo json_encode(['ok' => true, 'emails' => $emails_queued, 'wpp' => $wpp_queued ?? 0]);
 
 // ── FUNÇÕES SUPABASE ─────────────────────────────────────────────
+
+// Retorna true se inseriu com sucesso (2xx), false se falhou
+function sb_post_check(string $table, array $data): bool {
+    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $table);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($data),
+        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_HTTPHEADER     => [
+            'apikey: ' . SUPABASE_SERVICE_KEY,
+            'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
+            'Content-Type: application/json',
+            'Prefer: return=minimal',
+        ],
+    ]);
+    curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return $code >= 200 && $code < 300;
+}
+
 function sb_get(string $path): array {
     $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $path);
     curl_setopt_array($ch, [
