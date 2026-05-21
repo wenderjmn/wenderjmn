@@ -15,7 +15,7 @@
 
 // ── CONFIGURAÇÃO ──────────────────────────────────────────────────────────────
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
-define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: 'COLE_AQUI_SUA_SERVICE_ROLE_KEY');
+define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
 
 // Tempo de expiração da sessão em segundos (4 horas)
 define('SESSION_LIFETIME', 14400);
