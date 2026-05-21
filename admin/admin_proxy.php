@@ -64,6 +64,10 @@ switch ($action) {
     case 'update_testimonial':    require_auth(); update_testimonial();    break;
     case 'update_mentor':         require_auth(); update_mentor();         break;
     case 'upload_file':           require_auth(); upload_file();           break;
+    case 'list_email_templates':  require_auth(); list_email_templates();  break;
+    case 'get_email_template':    require_auth(); get_email_template();    break;
+    case 'save_email_template':   require_auth(); save_email_template();   break;
+    case 'delete_email_template': require_auth(); delete_email_template(); break;
 
     default:
         http_response_code(400);
@@ -348,6 +352,46 @@ function upload_file() {
         $msg  = $body['message'] ?? ($body['error'] ?? ('HTTP '.$status));
         echo json_encode(['ok'=>false,'error'=>$msg]);
     }
+}
+
+// ── EMAIL TEMPLATES ──────────────────────────────────────────────────────────
+function list_email_templates() {
+    global $sb;
+    $r = sb_request('GET', 'email_templates', null, 'select=slug,subject,created_at&order=created_at.asc');
+    echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
+}
+
+function get_email_template() {
+    $slug = trim($_POST['slug'] ?? '');
+    if (!$slug) { echo json_encode(['ok'=>false,'error'=>'slug required']); return; }
+    $r = sb_request('GET', 'email_templates', null, 'slug=eq.' . urlencode($slug) . '&limit=1');
+    $data = $r['body'][0] ?? null;
+    echo json_encode(['ok' => !!$data, 'data' => $data]);
+}
+
+function save_email_template() {
+    $slug     = trim($_POST['slug'] ?? '');
+    $subject  = trim($_POST['subject'] ?? '');
+    $body_html = $_POST['body_html'] ?? '';
+    if (!$slug || !$subject || !$body_html) {
+        echo json_encode(['ok'=>false,'error'=>'slug, subject e body_html são obrigatórios']); return;
+    }
+    // Upsert: tenta atualizar, se não existir cria
+    $r = sb_request('PATCH', 'email_templates', ['subject'=>$subject,'body_html'=>$body_html], 'slug=eq.' . urlencode($slug));
+    if ($r['status'] === 200 || $r['status'] === 204) {
+        echo json_encode(['ok'=>true,'action'=>'updated']);
+        return;
+    }
+    // Não existe — criar
+    $r2 = sb_request('POST', 'email_templates', [['slug'=>$slug,'subject'=>$subject,'body_html'=>$body_html]]);
+    echo json_encode(['ok' => $r2['status'] < 300, 'action' => 'created', 'error' => $r2['error'] ?? null]);
+}
+
+function delete_email_template() {
+    $slug = trim($_POST['slug'] ?? '');
+    if (!$slug) { echo json_encode(['ok'=>false,'error'=>'slug required']); return; }
+    $r = sb_request('DELETE', 'email_templates', null, 'slug=eq.' . urlencode($slug));
+    echo json_encode(['ok' => $r['status'] < 300]);
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────

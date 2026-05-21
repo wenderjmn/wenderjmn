@@ -167,6 +167,7 @@ tbody td{padding:10px 12px;vertical-align:top}
       <div class="nav-item" data-page="mentoras" onclick="goPage('mentoras')"><span class="nav-item-icon">👩</span> Mentoras</div>
       <div class="nav-item" data-page="config" onclick="goPage('config')"><span class="nav-item-icon">⚙️</span> Configurações</div>
       <div class="nav-item" data-page="leads" onclick="goPage('leads')"><span class="nav-item-icon">👥</span> Leads</div>
+      <div class="nav-item" data-page="templates" onclick="goPage('templates')"><span class="nav-item-icon">📧</span> Templates E-mail</div>
     </nav>
     <div class="sidebar-footer">
       <button class="btn-logout" onclick="doLogout()">🚪 Sair</button>
@@ -252,7 +253,7 @@ function goPage(name) {
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === name);
   });
-  const pages = { dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras, config: configPage, leads };
+  const pages = { dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras, config: configPage, leads, templates: emailTemplates };
   if (pages[name]) pages[name]();
 }
 
@@ -901,6 +902,137 @@ function filterLeads(q) {
     (l.phone||'').includes(lq)
   );
   renderLeads(filtered);
+}
+
+/* ── EMAIL TEMPLATES ─────────────────────────────────────────────── */
+async function emailTemplates() {
+  document.getElementById('main-content').innerHTML = `
+    <div style="display:flex;gap:20px;height:calc(100vh - 60px)">
+      <!-- Lista -->
+      <div style="width:280px;min-width:280px;background:#fff;border-radius:12px;border:1px solid var(--border);display:flex;flex-direction:column">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <h3 style="margin:0;font-size:1rem">Templates</h3>
+          <button onclick="tplNew()" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:600">+ Novo</button>
+        </div>
+        <div id="tpl-list" style="flex:1;overflow-y:auto;padding:8px"></div>
+      </div>
+      <!-- Editor -->
+      <div style="flex:1;background:#fff;border-radius:12px;border:1px solid var(--border);display:flex;flex-direction:column">
+        <div id="tpl-editor" style="flex:1;display:flex;flex-direction:column;padding:24px;gap:16px">
+          <p style="color:#9ca3af;text-align:center;margin:auto">Selecione um template para editar</p>
+        </div>
+      </div>
+    </div>`;
+  await tplLoadList();
+}
+
+async function tplLoadList() {
+  const r = await proxyWrite({ action: 'list_email_templates' });
+  const list = document.getElementById('tpl-list');
+  if (!list) return;
+  if (!r.ok || !r.data?.length) { list.innerHTML = '<p style="padding:12px;color:#9ca3af;font-size:13px">Nenhum template</p>'; return; }
+  list.innerHTML = r.data.map(t => `
+    <div onclick="tplLoad('${t.slug}')" id="tpl-item-${t.slug.replace(/[^a-z0-9]/g,'_')}"
+      style="padding:10px 14px;border-radius:8px;cursor:pointer;margin-bottom:4px;transition:background .15s"
+      onmouseover="this.style.background='#f4f3ef'" onmouseout="this.style.background=window._tplActive===this?'#f0fdfa':''">
+      <div style="font-size:13px;font-weight:600;color:#1c1917">${t.slug}</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.subject}</div>
+    </div>`).join('');
+}
+
+async function tplLoad(slug) {
+  window._tplActive = slug;
+  document.querySelectorAll('#tpl-list > div').forEach(el => el.style.background = '');
+  const item = document.getElementById('tpl-item-' + slug.replace(/[^a-z0-9]/g,'_'));
+  if (item) item.style.background = '#f0fdfa';
+  const r = await proxyWrite({ action: 'get_email_template', slug });
+  if (!r.ok || !r.data) { toast('Erro ao carregar template', 'error'); return; }
+  const t = r.data;
+  document.getElementById('tpl-editor').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px">Slug (identificador)</div>
+        <div style="font-size:1rem;font-weight:700;color:#1c1917;margin-top:2px">${t.slug}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="tplPreview()" style="background:#f4f3ef;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer">👁 Preview</button>
+        <button onclick="tplDelete('${t.slug}')" style="background:#fff1f2;border:1px solid #fecdd3;color:#e11d48;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer">🗑 Excluir</button>
+        <button onclick="tplSave('${t.slug}')" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;cursor:pointer;font-weight:600">💾 Salvar</button>
+      </div>
+    </div>
+    <div>
+      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Assunto do e-mail</label>
+      <input id="tpl-subject" value="${t.subject.replace(/"/g,'&quot;')}" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="font-size:13px;font-weight:600;color:#374151">HTML do e-mail</label>
+        <div style="font-size:12px;color:#9ca3af">Variáveis: {{nome}} {{link_wpp}} {{link_descadastro}} {{emoji}} {{tipo}} {{titulo}}</div>
+      </div>
+      <textarea id="tpl-body" style="flex:1;min-height:320px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box">${t.body_html.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+    </div>`;
+}
+
+async function tplNew() {
+  document.getElementById('tpl-editor').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <h3 style="margin:0">Novo Template</h3>
+      <button onclick="tplSaveNew()" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;cursor:pointer;font-weight:600">💾 Criar</button>
+    </div>
+    <div>
+      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Slug (identificador único, ex: lembrete_vendas)</label>
+      <input id="tpl-slug" placeholder="meu_template_slug" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box">
+    </div>
+    <div>
+      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Assunto do e-mail</label>
+      <input id="tpl-subject" placeholder="{{nome}}, assunto do e-mail aqui" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column">
+      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">HTML do e-mail</label>
+      <textarea id="tpl-body" placeholder="<!DOCTYPE html>..." style="flex:1;min-height:320px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:monospace;resize:vertical;box-sizing:border-box"></textarea>
+    </div>`;
+}
+
+async function tplSave(slug) {
+  const subject = document.getElementById('tpl-subject')?.value?.trim();
+  const body_html = document.getElementById('tpl-body')?.value;
+  if (!subject || !body_html) { toast('Preencha assunto e HTML', 'error'); return; }
+  const r = await proxyWrite({ action: 'save_email_template', slug, subject, body_html });
+  if (r.ok) { toast('Template salvo!'); await tplLoadList(); }
+  else toast('Erro ao salvar: ' + (r.error || ''), 'error');
+}
+
+async function tplSaveNew() {
+  const slug = document.getElementById('tpl-slug')?.value?.trim().replace(/\s+/g,'_');
+  const subject = document.getElementById('tpl-subject')?.value?.trim();
+  const body_html = document.getElementById('tpl-body')?.value;
+  if (!slug || !subject || !body_html) { toast('Preencha todos os campos', 'error'); return; }
+  const r = await proxyWrite({ action: 'save_email_template', slug, subject, body_html });
+  if (r.ok) { toast('Template criado!'); await tplLoadList(); tplLoad(slug); }
+  else toast('Erro: ' + (r.error || ''), 'error');
+}
+
+async function tplDelete(slug) {
+  if (!confirm(`Excluir o template "${slug}"? Essa ação não pode ser desfeita.`)) return;
+  const r = await proxyWrite({ action: 'delete_email_template', slug });
+  if (r.ok) { toast('Template excluído'); await tplLoadList(); document.getElementById('tpl-editor').innerHTML = '<p style="color:#9ca3af;text-align:center;margin:auto">Selecione um template para editar</p>'; }
+  else toast('Erro ao excluir', 'error');
+}
+
+function tplPreview() {
+  const html = document.getElementById('tpl-body')?.value;
+  if (!html) { toast('Sem HTML para visualizar', 'error'); return; }
+  const preview = window.open('', '_blank');
+  const rendered = html
+    .replace(/\{\{nome\}\}/g, 'Maria')
+    .replace(/\{\{link_wpp\}\}/g, '#')
+    .replace(/\{\{link_descadastro\}\}/g, '#')
+    .replace(/\{\{link_site\}\}/g, '#')
+    .replace(/\{\{emoji\}\}/g, '🍫')
+    .replace(/\{\{tipo\}\}/g, 'Perfil A — A Recompensadora')
+    .replace(/\{\{titulo\}\}/g, 'Você usa a comida como prêmio e alívio emocional');
+  preview.document.write(rendered);
+  preview.document.close();
 }
 
 /* ── INIT ─────────────────────── */

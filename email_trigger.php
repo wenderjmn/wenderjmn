@@ -91,20 +91,30 @@ $masterclass      = new DateTime('2026-06-11 08:00:00', new DateTimeZone('Americ
 $masterclass_1h   = new DateTime('2026-06-11 19:00:00', new DateTimeZone('America/Sao_Paulo'));
 $masterclass_3d   = new DateTime('2026-06-08 09:00:00', new DateTimeZone('America/Sao_Paulo'));
 $masterclass_eve  = new DateTime('2026-06-10 09:00:00', new DateTimeZone('America/Sao_Paulo'));
+// Intensificação pré-masterclass (05/06 a 09/06)
+$intensifica_d5   = new DateTime('2026-06-05 10:00:00', new DateTimeZone('America/Sao_Paulo'));
+$intensifica_d6   = new DateTime('2026-06-06 10:00:00', new DateTimeZone('America/Sao_Paulo'));
+$intensifica_d7   = new DateTime('2026-06-07 10:00:00', new DateTimeZone('America/Sao_Paulo'));
+$intensifica_d9   = new DateTime('2026-06-09 10:00:00', new DateTimeZone('America/Sao_Paulo'));
 
-// ── SEQUÊNCIA DE E-MAILS (11 e-mails) ───────────────────────────
+// ── SEQUÊNCIA DE E-MAILS (15 e-mails) ───────────────────────────
 $email_sequence = [
-    ['slug' => 'boas_vindas',       'delay_hours' => 0],
-    ['slug' => 'nutricao_d1',       'delay_hours' => 24],
-    ['slug' => 'prova_social_d2',   'delay_hours' => 48],
-    ['slug' => 'urgencia_d3',       'delay_hours' => 72],
-    ['slug' => 'conteudo_d5',       'delay_hours' => 120],
-    ['slug' => 'depoimento_d7',     'delay_hours' => 168],
-    ['slug' => 'antecipacao_d10',   'delay_hours' => 240],
-    ['slug' => 'lembrete_3dias',    'scheduled_at' => $masterclass_3d->format(DateTime::ATOM)],
-    ['slug' => 'amanha_masterclass','scheduled_at' => $masterclass_eve->format(DateTime::ATOM)],
-    ['slug' => 'masterclass_hoje',  'scheduled_at' => $masterclass->format(DateTime::ATOM)],
-    ['slug' => 'masterclass_1h',    'scheduled_at' => $masterclass_1h->format(DateTime::ATOM)],
+    ['slug' => 'boas_vindas',           'delay_hours' => 0],
+    ['slug' => 'nutricao_d1',           'delay_hours' => 24],
+    ['slug' => 'prova_social_d2',       'delay_hours' => 48],
+    ['slug' => 'urgencia_d3',           'delay_hours' => 72],
+    ['slug' => 'conteudo_d5',           'delay_hours' => 120],
+    ['slug' => 'depoimento_d7',         'delay_hours' => 168],
+    ['slug' => 'antecipacao_d10',       'delay_hours' => 240],
+    // Intensificação pré-masterclass (datas fixas)
+    ['slug' => 'intensificacao_d5',     'scheduled_at' => $intensifica_d5->format(DateTime::ATOM)],
+    ['slug' => 'intensificacao_d6',     'scheduled_at' => $intensifica_d6->format(DateTime::ATOM)],
+    ['slug' => 'intensificacao_d7',     'scheduled_at' => $intensifica_d7->format(DateTime::ATOM)],
+    ['slug' => 'lembrete_3dias',        'scheduled_at' => $masterclass_3d->format(DateTime::ATOM)],
+    ['slug' => 'intensificacao_d9',     'scheduled_at' => $intensifica_d9->format(DateTime::ATOM)],
+    ['slug' => 'amanha_masterclass',    'scheduled_at' => $masterclass_eve->format(DateTime::ATOM)],
+    ['slug' => 'masterclass_hoje',      'scheduled_at' => $masterclass->format(DateTime::ATOM)],
+    ['slug' => 'masterclass_1h',        'scheduled_at' => $masterclass_1h->format(DateTime::ATOM)],
 ];
 
 $email_rows = [];
@@ -188,13 +198,53 @@ if ($phone && strlen($phone) >= 10) {
         'status'       => 'pending',
     ];
 
-    // WA 5 — 3 dias antes da masterclass
+    // WA 5 — 05/06: quebra de objeção + instagram
     $wpp_rows[] = [
         'lead_id'      => $lead_id,
         'to_phone'     => $tel,
         'to_name'      => $name,
-        'message'      => "⚠️ {$name}, faltam *3 dias* para a Masterclass!\n\n📅 *11 de junho, 20h*\n\n\"O Código dos Sabotadores\" com a Dra. Daniely de Albuquerque e a Nutri Ira Soraya\n\nSerá online, ao vivo e *gratuito*. Mas o link só vai para quem está no grupo VIP 👇\n" . WPP_LINK,
+        'message'      => "{$name}, preciso te contar uma coisa importante 💚\n\nO que você chama de *falta de força de vontade* tem nome científico. E tem solução.\n\nSeu cérebro não é seu inimigo — ele só aprendeu estratégias erradas para lidar com o estresse e as emoções.\n\nNa Masterclass *\"O Código dos Sabotadores\"* (11/06 às 20h), a Daniely vai explicar ao vivo exatamente como o *{$p['tipo']}* funciona — e o que fazer nos primeiros 7 dias.\n\n📲 Nos acompanhe no Instagram:\n→ @psidanielyalbuquerque\n→ @irasorayanutri\n→ @oficialemagreser\n\nEntrada pelo grupo VIP 👇\n" . WPP_LINK,
+        'scheduled_at' => $intensifica_d5->format(DateTime::ATOM),
+        'status'       => 'pending',
+    ];
+
+    // WA 6 — 06/06: projeção futura + medo
+    $wpp_rows[] = [
+        'lead_id'      => $lead_id,
+        'to_phone'     => $tel,
+        'to_name'      => $name,
+        'message'      => "{$name}, uma pergunta direta 👇\n\nDaqui a 1 ano — você quer ainda estar tentando a próxima dieta? Ou quer ter finalmente entendido *por que* você se sabota?\n\nA diferença entre esses dois cenários não é força de vontade.\n\n*É um método.* E ele vai ser entregue ao vivo no dia 11/06.\n\nFaltam apenas *5 dias*. O grupo VIP já está quase cheio 👇\n" . WPP_LINK,
+        'scheduled_at' => $intensifica_d6->format(DateTime::ATOM),
+        'status'       => 'pending',
+    ];
+
+    // WA 7 — 07/06: prova social
+    $wpp_rows[] = [
+        'lead_id'      => $lead_id,
+        'to_phone'     => $tel,
+        'to_name'      => $name,
+        'message'      => "{$name} 🌟\n\nA Carolina tinha o mesmo perfil que você: *{$p['tipo']}*.\n\nMesmo ciclo, mesma culpa, mesmas tentativas.\n\nDepois que ela entendeu o mecanismo por trás do comportamento dela, algo mudou. Não foi magia. Foi compreensão real + estratégia certa.\n\n_\"Pela primeira vez na minha vida, eu escolhi. De verdade.\"_ — Carolina, 38 anos\n\nÉ exatamente isso que a Daniely e a Ira vão entregar na Masterclass. Está no grupo? 👇\n" . WPP_LINK,
+        'scheduled_at' => $intensifica_d7->format(DateTime::ATOM),
+        'status'       => 'pending',
+    ];
+
+    // WA 8 — 3 dias antes da masterclass
+    $wpp_rows[] = [
+        'lead_id'      => $lead_id,
+        'to_phone'     => $tel,
+        'to_name'      => $name,
+        'message'      => "⚠️ {$name}, faltam *3 dias* para a Masterclass!\n\n📅 *11 de junho, 20h*\n\n\"O Código dos Sabotadores\" com a Psicóloga Daniely e a Nutri Ira Soraya\n\nSerá online, ao vivo e *gratuito*. Mas o link só vai para quem está no grupo VIP 👇\n" . WPP_LINK,
         'scheduled_at' => $masterclass_3d->format(DateTime::ATOM),
+        'status'       => 'pending',
+    ];
+
+    // WA 9 — 09/06: escassez 48h
+    $wpp_rows[] = [
+        'lead_id'      => $lead_id,
+        'to_phone'     => $tel,
+        'to_name'      => $name,
+        'message'      => "🔴 {$name}, *48 horas* — depois disso, acabou.\n\nO Grupo VIP fecha antes da transmissão e não reabre.\n\nQuem entrar recebe:\n✅ Link da live ao vivo\n✅ Protocolo dos 4 perfis de sabotagem\n✅ Técnica do Confronto Gentil\n✅ Condições especiais do Programa EmagreSer\n\nA transmissão é ao vivo. *Não há garantia de gravação.*\n\n👉 Último aviso 👇\n" . WPP_LINK,
+        'scheduled_at' => $intensifica_d9->format(DateTime::ATOM),
         'status'       => 'pending',
     ];
 
