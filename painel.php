@@ -1,13 +1,17 @@
 <?php
 /**
  * painel.php — Painel de Automação EmagreSer
- * Acesso: /painel.php?token=es2026admin
+ * Acesso protegido por login com sessão PHP.
  */
 
-define('PANEL_TOKEN',          'es2026admin');
+// ── CREDENCIAIS DO PAINEL ────────────────────────────────────────────
+// Altere aqui para definir usuário e senha do painel
+define('PANEL_USER',     'admin');
+define('PANEL_PASS',     '$2y$12$cZdnm2WtOzsJZW0SX98vQOhFMnpzv1Zfs6PQujx121M5jVOaR5o1W'); // hash de "es2026@admin"
+// Para gerar novo hash: php -r "echo password_hash('sua_senha', PASSWORD_BCRYPT, ['cost'=>12]);"
+
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', '***REMOVED_SUPABASE_KEY***');
-// Resend.com — API de e-mail transacional
 define('RESEND_API_KEY',       '***REMOVED_RESEND_KEY***');
 define('SMTP_FROM',            'emagreser@danielydealbuquerque.com.br');
 define('SMTP_FROM_NAME',       'Programa EmagreSer');
@@ -16,11 +20,123 @@ define('ZAPI_TOKEN',           '***REMOVED_ZAPI_TOKEN***');
 define('ZAPI_CLIENT_TOKEN',    '***REMOVED_ZAPI_CLIENT_TOKEN***');
 define('ZAPI_URL',             'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
 
-if (($_GET['token'] ?? '') !== PANEL_TOKEN) {
-    http_response_code(403); exit('Acesso negado. Use ?token=es2026admin');
+// ── SESSÃO E AUTENTICAÇÃO ────────────────────────────────────────────
+session_name('emagreser_admin');
+session_set_cookie_params([
+    'lifetime' => 0,          // sessão encerra ao fechar o browser
+    'path'     => '/',
+    'secure'   => true,        // só HTTPS
+    'httponly' => true,        // inacessível via JS
+    'samesite' => 'Strict',
+]);
+session_start();
+
+$login_file = sys_get_temp_dir() . '/emagreser_login_attempts.json';
+
+function get_attempts(string $ip, string $file): array {
+    if (!file_exists($file)) return ['count' => 0, 'last' => 0];
+    $data = json_decode(file_get_contents($file), true) ?: [];
+    return $data[$ip] ?? ['count' => 0, 'last' => 0];
+}
+function set_attempts(string $ip, array $att, string $file): void {
+    $data = file_exists($file) ? (json_decode(file_get_contents($file), true) ?: []) : [];
+    $data[$ip] = $att;
+    file_put_contents($file, json_encode($data), LOCK_EX);
 }
 
-// ── ENDPOINT DE STATS PARA POLLING AJAX ──────────────────────────
+$login_error = '';
+$client_ip   = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
+// Logout
+if (isset($_GET['logout'])) {
+    session_destroy();
+    header('Location: painel.php');
+    exit;
+}
+
+// Processar POST de login
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['panel_login'])) {
+    $att = get_attempts($client_ip, $login_file);
+    $blocked = ($att['count'] >= 5 && (time() - $att['last']) < 900); // bloqueio 15min
+    if ($blocked) {
+        $login_error = 'Muitas tentativas. Aguarde 15 minutos.';
+    } else {
+        $u = trim($_POST['panel_user'] ?? '');
+        $p = $_POST['panel_pass'] ?? '';
+        if ($u === PANEL_USER && password_verify($p, PANEL_PASS)) {
+            session_regenerate_id(true);
+            $_SESSION['panel_auth'] = true;
+            $_SESSION['panel_ip']   = $client_ip;
+            set_attempts($client_ip, ['count' => 0, 'last' => 0], $login_file);
+            header('Location: painel.php');
+            exit;
+        } else {
+            $att['count']++;
+            $att['last'] = time();
+            set_attempts($client_ip, $att, $login_file);
+            $login_error = 'Usuário ou senha incorretos.';
+            if ($att['count'] >= 5) $login_error = 'Muitas tentativas. Acesso bloqueado por 15 minutos.';
+        }
+    }
+}
+
+// Verificar se está autenticado
+$authenticated = !empty($_SESSION['panel_auth']) && ($_SESSION['panel_ip'] ?? '') === $client_ip;
+
+// Se não autenticado, exibe tela de login
+if (!$authenticated) {
+    ?><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel EmagreSer — Login</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f172a;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-box{background:#1e293b;border-radius:14px;padding:36px 32px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo h1{color:#5eead4;font-size:20px;margin-bottom:4px}
+.login-logo p{color:#64748b;font-size:13px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;color:#94a3b8;font-size:12px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.form-group input{width:100%;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:11px 14px;color:#f1f5f9;font-size:14px;font-family:inherit;transition:border-color .2s}
+.form-group input:focus{outline:none;border-color:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,.15)}
+.btn-login{width:100%;background:#0d9488;color:#fff;border:none;border-radius:8px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;transition:background .2s}
+.btn-login:hover{background:#0f766e}
+.error{background:#450a0a;border:1px solid #7f1d1d;color:#fca5a5;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px}
+.lock-icon{font-size:2.5rem;display:block;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="login-box">
+  <div class="login-logo">
+    <span class="lock-icon">🔐</span>
+    <h1>Programa EmagreSer</h1>
+    <p>Painel de Automação — Acesso Restrito</p>
+  </div>
+  <?php if ($login_error): ?>
+  <div class="error"><?= htmlspecialchars($login_error) ?></div>
+  <?php endif; ?>
+  <form method="post" autocomplete="off">
+    <input type="hidden" name="panel_login" value="1">
+    <div class="form-group">
+      <label>Usuário</label>
+      <input type="text" name="panel_user" required autofocus autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" name="panel_pass" required autocomplete="current-password">
+    </div>
+    <button type="submit" class="btn-login">ENTRAR NO PAINEL →</button>
+  </form>
+</div>
+</body>
+</html><?php
+    exit;
+}
+
+// ── ENDPOINT DE STATS PARA POLLING AJAX (sessão já validada acima) ──
 if (($_GET['action'] ?? '') === 'stats') {
     header('Content-Type: application/json');
     $now_iso = gmdate('Y-m-d\TH:i:s\Z');
@@ -393,9 +509,10 @@ tr:last-child td{border-bottom:none}
 <div class="wrap">
   <div class="header">
     <h1>📊 Painel de Automação — EmagreSer</h1>
-    <span style="display:flex;align-items:center;gap:8px">
+    <span style="display:flex;align-items:center;gap:12px">
       <span id="live-dot" style="width:8px;height:8px;border-radius:50%;background:#64748b;display:inline-block;transition:background .3s"></span>
       <span id="last-update" style="font-size:11px;color:#94a3b8"><?= date('d/m/Y H:i:s') ?></span>
+      <a href="painel.php?logout=1" style="font-size:11px;color:#ef4444;text-decoration:none;background:rgba(239,68,68,.12);padding:4px 10px;border-radius:6px;font-weight:700" title="Sair do painel">🚪 Sair</a>
     </span>
   </div>
   <div id="overdue-badge" style="display:none;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:9px 14px;margin-bottom:10px;font-size:13px;font-weight:600;color:#92400e;text-align:center"></div>
@@ -816,7 +933,6 @@ async function triggerWorker() {
 }
 
 // ── POLLING REAL-TIME (stats a cada 5s, reload completo a cada 60s) ──
-const PANEL_TOKEN = '<?= PANEL_TOKEN ?>';
 let reloadIn = 60;
 
 function setCard(id, val, redIf) {
@@ -835,7 +951,7 @@ function pulse(ok) {
 
 async function pollStats() {
   try {
-    const r = await fetch('painel.php?token=' + PANEL_TOKEN + '&action=stats');
+    const r = await fetch('painel.php?action=stats');
     if (!r.ok) { pulse(false); return; }
     const d = await r.json();
     pulse(true);

@@ -1372,6 +1372,11 @@ function initFloating(){
 }
 
 init();
+
+// Pseudo-cron: dispara worker em background a cada visita (fire-and-forget)
+(function(){
+  fetch('cron_ping.php').catch(()=>{});
+})();
 </script>
 </body>
 </html>
