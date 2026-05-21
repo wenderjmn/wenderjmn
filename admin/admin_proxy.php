@@ -438,7 +438,7 @@ function create_user() {
     if (strlen($password) < 8) {
         echo json_encode(['ok'=>false,'error'=>'Senha deve ter ao menos 8 caracteres']); return;
     }
-    if (!in_array($role, ['super_admin','admin','editor'])) $role = 'editor';
+    if (!in_array($role, ['super_admin','editor_videos','editor_textos','viewer'])) $role = 'viewer';
 
     // Só super_admin pode criar outro super_admin
     $current = $_SESSION['admin'];
@@ -481,7 +481,7 @@ function update_user() {
         echo json_encode(['ok'=>false,'error'=>'Você não pode alterar o próprio cargo']); return;
     }
 
-    if (!in_array($role, ['super_admin','admin','editor'])) $role = 'editor';
+    if (!in_array($role, ['super_admin','editor_videos','editor_textos','viewer'])) $role = 'viewer';
     $current = $_SESSION['admin'];
     if ($role === 'super_admin' && $current['role'] !== 'super_admin') {
         echo json_encode(['ok'=>false,'error'=>'Apenas super_admin pode promover para super_admin']); return;

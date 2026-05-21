@@ -1398,7 +1398,7 @@ const PERM_LIST = [
   {key:'perm_usuarios',  label:'Usuários'},
 ];
 
-const ROLE_LABELS = { super_admin:'🔑 Super Admin', admin:'🛡 Admin', editor:'✏️ Editor' };
+const ROLE_LABELS = { super_admin:'🔑 Super Admin', editor_videos:'🎬 Editor Vídeos', editor_textos:'✏️ Editor Textos', viewer:'👁 Visualizador' };
 
 async function usuariosPage() {
   const main = document.getElementById('main-content');
@@ -1452,8 +1452,9 @@ function userEditForm(u) {
       <div class="field-group" style="margin:0">
         <label>Cargo</label>
         <select id="urole-${u.id}" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:.85rem">
-          <option value="editor" ${u.role==='editor'?'selected':''}>✏️ Editor</option>
-          <option value="admin" ${u.role==='admin'?'selected':''}>🛡 Admin</option>
+          <option value="viewer" ${u.role==='viewer'?'selected':''}>👁 Visualizador</option>
+          <option value="editor_textos" ${u.role==='editor_textos'?'selected':''}>✏️ Editor Textos</option>
+          <option value="editor_videos" ${u.role==='editor_videos'?'selected':''}>🎬 Editor Vídeos</option>
           <option value="super_admin" ${u.role==='super_admin'?'selected':''}>🔑 Super Admin</option>
         </select>
       </div>
@@ -1504,8 +1505,9 @@ function showCreateUser() {
     <div class="field-group" style="margin-bottom:12px">
       <label>Cargo</label>
       <select id="nu-role" style="border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.88rem">
-        <option value="editor">✏️ Editor — pode editar conteúdo</option>
-        <option value="admin">🛡 Admin — acesso amplo</option>
+        <option value="viewer">👁 Visualizador — somente leitura</option>
+        <option value="editor_textos">✏️ Editor Textos — edita textos e conteúdo</option>
+        <option value="editor_videos">🎬 Editor Vídeos — edita vídeos e depoimentos</option>
         <option value="super_admin">🔑 Super Admin — acesso total</option>
       </select>
     </div>
