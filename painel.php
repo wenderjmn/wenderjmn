@@ -1,14 +1,9 @@
 <?php
 /**
  * painel.php — Painel de Automação EmagreSer
- * Acesso protegido por login com sessão PHP.
+ * Autenticação via sessão do admin (admin/admin_proxy.php + tabela admin_users).
+ * Acesso: /painel.php (requer login no admin primeiro)
  */
-
-// ── CREDENCIAIS DO PAINEL ────────────────────────────────────────────
-// Altere aqui para definir usuário e senha do painel
-define('PANEL_USER',     'admin');
-define('PANEL_PASS',     '$2y$12$cZdnm2WtOzsJZW0SX98vQOhFMnpzv1Zfs6PQujx121M5jVOaR5o1W'); // hash de "es2026@admin"
-// Para gerar novo hash: php -r "echo password_hash('sua_senha', PASSWORD_BCRYPT, ['cost'=>12]);"
 
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', '***REMOVED_SUPABASE_KEY***');
@@ -20,121 +15,22 @@ define('ZAPI_TOKEN',           '***REMOVED_ZAPI_TOKEN***');
 define('ZAPI_CLIENT_TOKEN',    '***REMOVED_ZAPI_CLIENT_TOKEN***');
 define('ZAPI_URL',             'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
 
-// ── SESSÃO E AUTENTICAÇÃO ────────────────────────────────────────────
-session_name('emagreser_admin');
-session_set_cookie_params([
-    'lifetime' => 0,          // sessão encerra ao fechar o browser
-    'path'     => '/',
-    'secure'   => true,        // só HTTPS
-    'httponly' => true,        // inacessível via JS
-    'samesite' => 'Strict',
-]);
+// ── SESSÃO: usa o mesmo cookie do admin ──────────────────────────────
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_samesite', 'Lax');
 session_start();
 
-$login_file = sys_get_temp_dir() . '/emagreser_login_attempts.json';
-
-function get_attempts(string $ip, string $file): array {
-    if (!file_exists($file)) return ['count' => 0, 'last' => 0];
-    $data = json_decode(file_get_contents($file), true) ?: [];
-    return $data[$ip] ?? ['count' => 0, 'last' => 0];
-}
-function set_attempts(string $ip, array $att, string $file): void {
-    $data = file_exists($file) ? (json_decode(file_get_contents($file), true) ?: []) : [];
-    $data[$ip] = $att;
-    file_put_contents($file, json_encode($data), LOCK_EX);
-}
-
-$login_error = '';
-$client_ip   = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-
-// Logout
-if (isset($_GET['logout'])) {
-    session_destroy();
-    header('Location: painel.php');
+// Verifica autenticação — mesmo $_SESSION['admin'] do admin_proxy.php
+if (empty($_SESSION['admin'])) {
+    // Redireciona para o login do admin, voltando ao painel depois
+    $redirect = urlencode((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
+        . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
+    header('Location: /admin/?redirect=' . $redirect);
     exit;
 }
 
-// Processar POST de login
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['panel_login'])) {
-    $att = get_attempts($client_ip, $login_file);
-    $blocked = ($att['count'] >= 5 && (time() - $att['last']) < 900); // bloqueio 15min
-    if ($blocked) {
-        $login_error = 'Muitas tentativas. Aguarde 15 minutos.';
-    } else {
-        $u = trim($_POST['panel_user'] ?? '');
-        $p = $_POST['panel_pass'] ?? '';
-        if ($u === PANEL_USER && password_verify($p, PANEL_PASS)) {
-            session_regenerate_id(true);
-            $_SESSION['panel_auth'] = true;
-            $_SESSION['panel_ip']   = $client_ip;
-            set_attempts($client_ip, ['count' => 0, 'last' => 0], $login_file);
-            header('Location: painel.php');
-            exit;
-        } else {
-            $att['count']++;
-            $att['last'] = time();
-            set_attempts($client_ip, $att, $login_file);
-            $login_error = 'Usuário ou senha incorretos.';
-            if ($att['count'] >= 5) $login_error = 'Muitas tentativas. Acesso bloqueado por 15 minutos.';
-        }
-    }
-}
-
-// Verificar se está autenticado
-$authenticated = !empty($_SESSION['panel_auth']) && ($_SESSION['panel_ip'] ?? '') === $client_ip;
-
-// Se não autenticado, exibe tela de login
-if (!$authenticated) {
-    ?><!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Painel EmagreSer — Login</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:#0f172a;font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-.login-box{background:#1e293b;border-radius:14px;padding:36px 32px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.login-logo{text-align:center;margin-bottom:28px}
-.login-logo h1{color:#5eead4;font-size:20px;margin-bottom:4px}
-.login-logo p{color:#64748b;font-size:13px}
-.form-group{margin-bottom:14px}
-.form-group label{display:block;color:#94a3b8;font-size:12px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
-.form-group input{width:100%;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:11px 14px;color:#f1f5f9;font-size:14px;font-family:inherit;transition:border-color .2s}
-.form-group input:focus{outline:none;border-color:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,.15)}
-.btn-login{width:100%;background:#0d9488;color:#fff;border:none;border-radius:8px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;transition:background .2s}
-.btn-login:hover{background:#0f766e}
-.error{background:#450a0a;border:1px solid #7f1d1d;color:#fca5a5;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px}
-.lock-icon{font-size:2.5rem;display:block;margin-bottom:12px}
-</style>
-</head>
-<body>
-<div class="login-box">
-  <div class="login-logo">
-    <span class="lock-icon">🔐</span>
-    <h1>Programa EmagreSer</h1>
-    <p>Painel de Automação — Acesso Restrito</p>
-  </div>
-  <?php if ($login_error): ?>
-  <div class="error"><?= htmlspecialchars($login_error) ?></div>
-  <?php endif; ?>
-  <form method="post" autocomplete="off">
-    <input type="hidden" name="panel_login" value="1">
-    <div class="form-group">
-      <label>Usuário</label>
-      <input type="text" name="panel_user" required autofocus autocomplete="username">
-    </div>
-    <div class="form-group">
-      <label>Senha</label>
-      <input type="password" name="panel_pass" required autocomplete="current-password">
-    </div>
-    <button type="submit" class="btn-login">ENTRAR NO PAINEL →</button>
-  </form>
-</div>
-</body>
-</html><?php
-    exit;
-}
+$admin_user = $_SESSION['admin'];
+$admin_name = $admin_user['username'] ?? 'admin';
 
 // ── ENDPOINT DE STATS PARA POLLING AJAX (sessão já validada acima) ──
 if (($_GET['action'] ?? '') === 'stats') {
@@ -222,28 +118,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($action === 'delete_all_pending_wpp') {
         sb_delete("whatsapp_queue?status=eq.pending"); $msg = '🗑️ Fila de WhatsApp limpa';
-    }
-
-    if ($action === 'save_site_config') {
-        $config_key   = trim($_POST['config_key'] ?? '');
-        $config_value = $_POST['config_value'] ?? '';
-        if ($config_key && preg_match('/^[a-z0-9_]+$/', $config_key)) {
-            $existing = sb_get("site_config?key=eq." . rawurlencode($config_key) . "&limit=1");
-            if (!empty($existing)) {
-                sb_patch("site_config?key=eq." . rawurlencode($config_key), ['value' => $config_value]);
-            } else {
-                sb_post('site_config', [['key' => $config_key, 'value' => $config_value]]);
-            }
-            $msg = "✅ Configuração '{$config_key}' salva com sucesso"; $msg_type = 'ok';
-        } else { $msg = '❌ Chave inválida (use apenas letras minúsculas, números e _)'; $msg_type = 'fail'; }
-    }
-
-    if ($action === 'delete_site_config') {
-        $config_key = trim($_POST['config_key'] ?? '');
-        if ($config_key && preg_match('/^[a-z0-9_]+$/', $config_key)) {
-            sb_delete("site_config?key=eq." . rawurlencode($config_key));
-            $msg = "🗑️ Configuração '{$config_key}' removida"; $msg_type = 'ok';
-        }
     }
 
     if ($action === 'activate_leads') {
@@ -423,9 +297,6 @@ if (is_list($all_wpp_q) || empty($all_wpp_q)) {
     }
 }
 
-// Textos do site
-$site_cfg_rows = sb_get("site_config?order=key.asc&limit=200");
-
 // Diagnóstico do worker
 $log_file   = __DIR__ . '/email_worker.log';
 $log_exists = file_exists($log_file);
@@ -512,7 +383,8 @@ tr:last-child td{border-bottom:none}
     <span style="display:flex;align-items:center;gap:12px">
       <span id="live-dot" style="width:8px;height:8px;border-radius:50%;background:#64748b;display:inline-block;transition:background .3s"></span>
       <span id="last-update" style="font-size:11px;color:#94a3b8"><?= date('d/m/Y H:i:s') ?></span>
-      <a href="painel.php?logout=1" style="font-size:11px;color:#ef4444;text-decoration:none;background:rgba(239,68,68,.12);padding:4px 10px;border-radius:6px;font-weight:700" title="Sair do painel">🚪 Sair</a>
+      <span style="font-size:11px;color:#64748b">👤 <?= htmlspecialchars($admin_name) ?></span>
+      <a href="/admin/" style="font-size:11px;color:#5eead4;text-decoration:none;background:rgba(94,234,212,.1);padding:4px 10px;border-radius:6px;font-weight:700">← Admin</a>
     </span>
   </div>
   <div id="overdue-badge" style="display:none;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:9px 14px;margin-bottom:10px;font-size:13px;font-weight:600;color:#92400e;text-align:center"></div>
@@ -829,55 +701,6 @@ tr:last-child td{border-bottom:none}
       <?php endforeach; ?>
     </table>
     <?php endif; ?>
-  </div>
-
-  <!-- TEXTOS DO SITE (site_config) -->
-  <div class="section">
-    <div class="section-hdr">✏️ Textos e Configurações do Site
-      <span style="font-size:11px;font-weight:400;color:#6b7c67"><?= count($site_cfg_rows) ?> chave(s) cadastrada(s)</span>
-    </div>
-    <div style="padding:14px">
-      <p style="font-size:12px;color:#6b7c67;margin-bottom:12px">Edite os textos da landing page. As alterações ficam disponíveis após recarregar o site (⌘R / F5).</p>
-      <?php if (empty($site_cfg_rows)): ?>
-      <div style="color:#6b7c67;font-size:13px;text-align:center;padding:16px 0">Nenhuma configuração encontrada. Adicione abaixo.</div>
-      <?php else: ?>
-      <table style="margin-bottom:14px">
-        <tr><th style="width:200px">Chave</th><th>Valor</th><th style="width:100px">Ação</th></tr>
-        <?php foreach ($site_cfg_rows as $row): ?>
-        <tr>
-          <td class="cfg-key"><?= htmlspecialchars($row['key']) ?></td>
-          <td>
-            <form method="post" style="margin:0;display:flex;gap:6px;align-items:flex-start">
-              <input type="hidden" name="action" value="save_site_config">
-              <input type="hidden" name="config_key" value="<?= htmlspecialchars($row['key']) ?>">
-              <textarea name="config_value" class="cfg-input" rows="<?= substr_count($row['value']??'',"\n")>0?3:1 ?>"><?= htmlspecialchars($row['value'] ?? '') ?></textarea>
-              <button type="submit" class="btn btn-green btn-sm" style="white-space:nowrap;margin-top:1px">💾 Salvar</button>
-            </form>
-          </td>
-          <td style="text-align:center">
-            <form method="post" style="margin:0" onsubmit="return confirm('Excluir a chave \'<?= htmlspecialchars($row['key']) ?>\'?')">
-              <input type="hidden" name="action" value="delete_site_config">
-              <input type="hidden" name="config_key" value="<?= htmlspecialchars($row['key']) ?>">
-              <button type="submit" class="btn-red">🗑️</button>
-            </form>
-          </td>
-        </tr>
-        <?php endforeach; ?>
-      </table>
-      <?php endif; ?>
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px">
-        <div style="font-weight:700;font-size:12px;margin-bottom:8px">+ Adicionar nova chave</div>
-        <form method="post" style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start">
-          <input type="hidden" name="action" value="save_site_config">
-          <input type="text" name="config_key" placeholder="nome_da_chave" style="padding:5px 8px;border:1px solid #d1d5db;border-radius:5px;font-size:12px;width:200px">
-          <input type="text" name="config_value" placeholder="Valor do texto..." style="padding:5px 8px;border:1px solid #d1d5db;border-radius:5px;font-size:12px;flex:1;min-width:200px">
-          <button type="submit" class="btn btn-blue btn-sm" style="white-space:nowrap">+ Adicionar</button>
-        </form>
-        <div style="margin-top:10px;font-size:11px;color:#6b7c67">
-          <strong>Chaves principais:</strong> hero_headline · hero_subheadline · roma_titulo · roma_descricao · masterclass_nome · masterclass_data · whatsapp_link · fb_pixel_id · ga_measurement_id · live_data
-        </div>
-      </div>
-    </div>
   </div>
 
 </div>
