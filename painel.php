@@ -5,6 +5,20 @@
  * Acesso: /painel.php (requer login no admin primeiro)
  */
 
+date_default_timezone_set('America/Sao_Paulo');
+
+// Converte timestamp UTC do Supabase para horário de Brasília
+function fmtBr(?string $iso, bool $full = false): string {
+    if (!$iso) return '—';
+    try {
+        $dt = new DateTime($iso, new DateTimeZone('UTC'));
+        $dt->setTimezone(new DateTimeZone('America/Sao_Paulo'));
+        return $dt->format($full ? 'd/m/Y H:i:s' : 'd/m/Y H:i');
+    } catch (Exception $e) {
+        return substr($iso, 0, 16);
+    }
+}
+
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', '***REMOVED_SUPABASE_KEY***');
 define('RESEND_API_KEY',       '***REMOVED_RESEND_KEY***');
@@ -618,7 +632,7 @@ tr:last-child td{border-bottom:none}
         <?php foreach ($group['items'] as $r): ?>
         <tr class="detail-row">
           <td colspan="2"><span class="tag"><?= htmlspecialchars($r['template_slug']) ?></span></td>
-          <td><?= substr($r['scheduled_at']??'',0,16) ?></td>
+          <td><?= fmtBr($r['scheduled_at']??null) ?></td>
           <td>
             <div class="detail-actions">
               <form method="post" style="margin:0"><input type="hidden" name="action" value="force_send_email"><input type="hidden" name="item_id" value="<?= htmlspecialchars($r['id']) ?>"><button type="submit" class="btn-force" onclick="return confirm('Forçar envio agora?')">⚡ Forçar</button></form>
@@ -645,7 +659,7 @@ tr:last-child td{border-bottom:none}
       <tr>
         <td><?= htmlspecialchars($r['to_email']) ?></td>
         <td><span class="tag"><?= htmlspecialchars($r['template_slug']) ?></span></td>
-        <td style="font-size:12px;color:#6b7c67"><?= substr($r['sent_at']??'',0,16) ?></td>
+        <td style="font-size:12px;color:#6b7c67"><?= fmtBr($r['sent_at']??null) ?></td>
       </tr>
       <?php endforeach; ?>
     </table>
@@ -689,7 +703,7 @@ tr:last-child td{border-bottom:none}
         <?php foreach ($group['items'] as $r): ?>
         <tr class="detail-row">
           <td colspan="2" style="color:#374151;max-width:300px"><?= htmlspecialchars(substr($r['message']??'',0,80)) ?>…</td>
-          <td><?= substr($r['scheduled_at']??'',0,16) ?></td>
+          <td><?= fmtBr($r['scheduled_at']??null) ?></td>
           <td>
             <div class="detail-actions">
               <form method="post" style="margin:0"><input type="hidden" name="action" value="force_send_wpp"><input type="hidden" name="item_id" value="<?= htmlspecialchars($r['id']) ?>"><button type="submit" class="btn-force" onclick="return confirm('Forçar envio deste WPP agora?')">⚡ Forçar</button></form>
@@ -728,7 +742,7 @@ tr:last-child td{border-bottom:none}
         <td><?= htmlspecialchars($r['to_name'] ?? '—') ?></td>
         <td style="font-size:12px;color:#6b7280"><?= htmlspecialchars($r['to_phone'] ?? '') ?></td>
         <td style="font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars(substr($r['message']??'',0,80)) ?><?= strlen($r['message']??'')>80?'…':'' ?></td>
-        <td style="font-size:12px;white-space:nowrap"><?= $r['sent_at'] ? substr($r['sent_at'],0,16) : '—' ?></td>
+        <td style="font-size:12px;white-space:nowrap"><?= fmtBr($r['sent_at']??null) ?></td>
         <td><?= $badge ?></td>
       </tr>
       <?php endforeach; ?>
