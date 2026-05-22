@@ -1,0 +1,6 @@
+# Credenciais — nunca commitar
+.htaccess
+*.log
+
+# Uploads temporários
+*.tmp

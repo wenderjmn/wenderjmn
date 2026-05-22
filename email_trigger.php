@@ -15,12 +15,12 @@ header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 // ── CONFIGURAÇÕES ────────────────────────────────────────────────
-define('SUPABASE_URL',         getenv('SUPABASE_URL')         ?: 'https://drgrwpmhmrrhxuwxabow.supabase.co');
-define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
-define('SITE_URL',             getenv('SITE_URL')             ?: 'https://www.oficialemagreser.com');
-define('WPP_LINK',             getenv('WPP_LINK')             ?: 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ');
-define('ZAPI_INSTANCE',        '***REMOVED_ZAPI_INSTANCE***');
-define('ZAPI_TOKEN',           '***REMOVED_ZAPI_TOKEN***');
+define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
+define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY'));
+define('SITE_URL',             'https://www.oficialemagreser.com');
+define('WPP_LINK',             'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ');
+define('ZAPI_INSTANCE',        getenv('ZAPI_INSTANCE'));
+define('ZAPI_TOKEN',           getenv('ZAPI_TOKEN'));
 // ────────────────────────────────────────────────────────────────
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['error' => 'POST only']); exit; }

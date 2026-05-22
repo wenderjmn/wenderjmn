@@ -11,7 +11,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Cache-Control: no-store, no-cache');
 
-define('WORKER_SECRET',  '***REMOVED_WORKER_SECRET***');
+define('WORKER_SECRET',  getenv('WORKER_SECRET'));
 define('MIN_INTERVAL',   60);   // segundos mínimos entre runs
 define('STAMP_FILE',     sys_get_temp_dir() . '/emagreser_cron_last.txt');
 

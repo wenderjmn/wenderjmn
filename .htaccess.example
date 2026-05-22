@@ -1,0 +1,9 @@
+# ── Variáveis de ambiente — copie este arquivo para .htaccess e preencha ──
+# .htaccess NÃO deve ser commitado no Git (está no .gitignore)
+SetEnv SUPABASE_SERVICE_KEY COLOQUE_AQUI
+SetEnv RESEND_API_KEY       COLOQUE_AQUI
+SetEnv ZAPI_INSTANCE        COLOQUE_AQUI
+SetEnv ZAPI_TOKEN           COLOQUE_AQUI
+SetEnv ZAPI_CLIENT_TOKEN    COLOQUE_AQUI
+SetEnv WORKER_SECRET        COLOQUE_AQUI
+SetEnv IMPORT_PASS          COLOQUE_AQUI
