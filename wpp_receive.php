@@ -14,8 +14,8 @@
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
 define('ZAPI_CLIENT_TOKEN',    '***REMOVED_ZAPI_CLIENT_TOKEN***');
-define('ZAPI_INSTANCE',        getenv('ZAPI_INSTANCE') ?: '');
-define('ZAPI_TOKEN',           getenv('ZAPI_TOKEN')    ?: '');
+define('ZAPI_INSTANCE',        getenv('ZAPI_INSTANCE') ?: '***REMOVED_ZAPI_INSTANCE***');
+define('ZAPI_TOKEN',           getenv('ZAPI_TOKEN')    ?: '***REMOVED_ZAPI_TOKEN***');
 
 header('Content-Type: application/json');
 
