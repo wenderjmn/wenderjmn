@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /admin.html
+Disallow: /painel.php
+Disallow: /email_worker.php
+Disallow: /email_trigger.php
+Disallow: /import_leads.php
+Disallow: /wpp_webhook.php
+Disallow: /cron_ping.php
+Disallow: /*.log$
+
+Sitemap: https://www.oficialemagreser.com/sitemap.xml

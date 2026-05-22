@@ -5,8 +5,96 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Programa EmagreSer — Descubra seu Perfil Sabotador</title>
 <meta name="description" content="Descubra qual padrão está fazendo você repetir ciclos. Mapeamento gratuito do seu perfil sabotador em 10 perguntas.">
+<link rel="canonical" href="https://www.oficialemagreser.com/">
+
+<!-- Open Graph / Facebook / WhatsApp -->
+<meta property="og:type"        content="website">
+<meta property="og:url"         content="https://www.oficialemagreser.com/">
+<meta property="og:title"       content="Programa EmagreSer — Descubra seu Perfil Sabotador">
+<meta property="og:description" content="Descubra qual padrão está fazendo você repetir ciclos. Mapeamento gratuito do seu perfil sabotador em 10 perguntas.">
+<meta property="og:image"       content="https://www.oficialemagreser.com/og-image.jpg">
+<meta property="og:locale"      content="pt_BR">
+<meta property="og:site_name"   content="EmagreSer">
+
+<!-- Twitter Card -->
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:url"         content="https://www.oficialemagreser.com/">
+<meta name="twitter:title"       content="Programa EmagreSer — Descubra seu Perfil Sabotador">
+<meta name="twitter:description" content="Descubra qual padrão está fazendo você repetir ciclos. Mapeamento gratuito do seu perfil sabotador em 10 perguntas.">
+<meta name="twitter:image"       content="https://www.oficialemagreser.com/og-image.jpg">
+
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://www.oficialemagreser.com/#organization",
+      "name": "EmagreSer",
+      "url": "https://www.oficialemagreser.com",
+      "logo": "https://www.oficialemagreser.com/og-image.jpg",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "emagreser@oficialemagreser.com"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.oficialemagreser.com/#website",
+      "url": "https://www.oficialemagreser.com",
+      "name": "EmagreSer",
+      "publisher": {"@id": "https://www.oficialemagreser.com/#organization"},
+      "inLanguage": "pt-BR"
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://www.oficialemagreser.com/#webpage",
+      "url": "https://www.oficialemagreser.com",
+      "name": "Programa EmagreSer — Descubra seu Perfil Sabotador",
+      "description": "Descubra qual padrão está fazendo você repetir ciclos. Mapeamento gratuito do seu perfil sabotador em 10 perguntas.",
+      "isPartOf": {"@id": "https://www.oficialemagreser.com/#website"},
+      "inLanguage": "pt-BR"
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "O que é o Perfil Sabotador?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "O Perfil Sabotador é um mapeamento comportamental que identifica qual padrão interno está impedindo você de emagrecer de forma definitiva. São 4 perfis principais: Emocional, Perfeccionista, Sabotador Social e Procrastinador."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "O mapeamento é gratuito?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sim! O mapeamento do seu Perfil Sabotador é 100% gratuito. Responda 10 perguntas e descubra qual padrão está te sabotando."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Quanto tempo leva para fazer o mapeamento?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "O quiz completo leva menos de 3 minutos para ser respondido. São 10 perguntas rápidas e objetivas."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://drgrwpmhmrrhxuwxabow.supabase.co">
+<link rel="dns-prefetch" href="https://www.googletagmanager.com">
+<link rel="dns-prefetch" href="https://connect.facebook.net">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -747,17 +835,29 @@ let questions=[];
 let quizState={current:0,answers:[],result:null,done:false};
 let leadData=null;
 
-// Captura UTMs da URL e persiste na sessão (sobrevive a redirecionamentos internos)
+// Captura UTMs da URL — persiste em cookie 30 dias E na sessão
 (function(){
+  function setCookie(name,val,days){
+    const exp=new Date(Date.now()+days*864e5).toUTCString();
+    document.cookie=name+'='+encodeURIComponent(val)+';expires='+exp+';path=/;SameSite=Lax';
+  }
+  function getCookie(name){
+    const m=document.cookie.match('(?:^|; )'+name+'=([^;]*)');
+    return m?decodeURIComponent(m[1]):null;
+  }
   const p=new URLSearchParams(location.search);
-  ['utm_source','utm_medium','utm_campaign'].forEach(function(k){
-    const v=p.get(k);
-    if(v) sessionStorage.setItem(k,v);
+  ['utm_source','utm_medium','utm_campaign'].forEach(function(key){
+    const v=p.get(key);
+    if(v){setCookie(key,v,30);sessionStorage.setItem(key,v);}
+    else if(!sessionStorage.getItem(key)){
+      const c=getCookie(key);
+      if(c) sessionStorage.setItem(key,c);
+    }
   });
   // Detecta fbclid (Meta Ads) e gclid (Google Ads) sem utm_source explícito
   if(!sessionStorage.getItem('utm_source')){
-    if(p.get('fbclid')) sessionStorage.setItem('utm_source','facebook');
-    else if(p.get('gclid')) sessionStorage.setItem('utm_source','google');
+    if(p.get('fbclid')){setCookie('utm_source','facebook',30);sessionStorage.setItem('utm_source','facebook');}
+    else if(p.get('gclid')){setCookie('utm_source','google',30);sessionStorage.setItem('utm_source','google');}
   }
 })();
 function getUtm(k){return sessionStorage.getItem(k)||null;}
@@ -1189,8 +1289,8 @@ async function saveLead(ld, profileLetter, sabotadorNome, scores){
     const lead_id=Array.isArray(rows)&&rows[0]?rows[0].id:null;
     if(lead_id){
       fetch('email_trigger.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lead_id,event:'new_lead'})}).catch(()=>{});
-      if(window.fbq)fbq('track','Lead');
-      if(window.gtag)gtag('event','generate_lead',{currency:'BRL'});
+      if(window.fbq)fbq('track','Lead',{content_name:'Perfil Sabotador',content_category:'Programa EmagreSer',currency:'BRL',value:0});
+      if(window.gtag)gtag('event','generate_lead',{currency:'BRL',value:0,content_name:'Perfil Sabotador'});
     }
   }catch(e){console.error('saveLead failed',e);}
 }
