@@ -13,6 +13,8 @@
  * - Coloque um .htaccess impedindo acesso direto a este arquivo de fora.
  */
 
+if (file_exists(__DIR__ . '/_env.php')) require_once __DIR__ . '/_env.php';
+
 // ── CONFIGURAÇÃO ──────────────────────────────────────────────────────────────
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: 'COLE_AQUI_SUA_SERVICE_ROLE_KEY');

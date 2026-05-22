@@ -3,6 +3,8 @@
 // URL externa: https://www.oficialemagreser.com/email_worker.php?secret=***REMOVED_WORKER_SECRET***
 // CLI Hostinger (backup): php public_html/email_worker.php
 
+if (file_exists(__DIR__ . '/_env.php')) require_once __DIR__ . '/_env.php';
+
 // ── CONFIGURAÇÕES ────────────────────────────────────────────────
 define('WORKER_SECRET',        getenv('WORKER_SECRET'));
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');

@@ -5,6 +5,8 @@
  * Acesso: /painel.php (requer login no admin primeiro)
  */
 
+if (file_exists(__DIR__ . '/_env.php')) require_once __DIR__ . '/_env.php';
+
 date_default_timezone_set('America/Sao_Paulo');
 
 // Converte timestamp UTC do Supabase para horário de Brasília

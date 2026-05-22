@@ -8,6 +8,8 @@
  * Body JSON: { "lead_id": "uuid", "event": "new_lead" }
  */
 
+if (file_exists(__DIR__ . '/_env.php')) require_once __DIR__ . '/_env.php';
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');

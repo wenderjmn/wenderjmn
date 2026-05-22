@@ -1,5 +1,6 @@
 # Credenciais — nunca commitar
 .htaccess
+_env.php
 *.log
 
 # Uploads temporários

@@ -8,6 +8,8 @@
  * Uso Web: faça upload do CSV e acesse /import_leads.php
  */
 
+if (file_exists(__DIR__ . '/_env.php')) require_once __DIR__ . '/_env.php';
+
 define('IMPORT_PASS',          getenv('IMPORT_PASS'));
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY'));

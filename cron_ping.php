@@ -7,6 +7,8 @@
  * Acesso: GET /cron_ping.php (sem autenticação — não expõe dados, só dispara)
  */
 
+if (file_exists(__DIR__ . '/_env.php')) require_once __DIR__ . '/_env.php';
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Cache-Control: no-store, no-cache');
