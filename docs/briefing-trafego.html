@@ -1,0 +1,2301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Briefing Estratégico — Equipe de Tráfego Pago | EmagreSer 2.0</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #e8773a;
+      --orange-dark: #c4591e;
+      --teal: #0d9488;
+      --dark: #111827;
+      --text: #374151;
+      --light-bg: #f4f3ef;
+      --white: #ffffff;
+      --border: #e5e7eb;
+      --red: #ef4444;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --purple: #7c3aed;
+      --blue: #1d4ed8;
+      --sidebar-width: 260px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--light-bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    /* ─── SIDEBAR ─────────────────────────────────────────────── */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: var(--dark);
+      overflow-y: auto;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-logo {
+      padding: 24px 20px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .sidebar-logo .brand {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--orange);
+    }
+
+    .sidebar-logo .doc-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .sidebar-nav {
+      padding: 16px 0;
+      flex: 1;
+    }
+
+    .nav-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      padding: 8px 20px 4px;
+      margin-top: 8px;
+    }
+
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      text-decoration: none;
+      color: rgba(255,255,255,0.65);
+      font-size: 12.5px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar-nav a:hover {
+      color: var(--white);
+      background: rgba(255,255,255,0.06);
+      border-left-color: var(--orange);
+    }
+
+    .nav-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      background: rgba(232,119,58,0.2);
+      color: var(--orange);
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      font-size: 10.5px;
+      color: rgba(255,255,255,0.3);
+      line-height: 1.5;
+    }
+
+    /* ─── HAMBURGER ─────────────────────────────────────────────── */
+    .hamburger {
+      display: none;
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 200;
+      background: var(--dark);
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--white);
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 99;
+    }
+
+    /* ─── MAIN CONTENT ─────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-width);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── HERO ─────────────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(135deg, var(--dark) 0%, #1f2937 60%, #0f172a 100%);
+      padding: 56px 48px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(232,119,58,0.15) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -60px;
+      left: 30%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(13,148,136,0.1) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .badge-confidential {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--orange);
+      color: var(--white);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 20px;
+    }
+
+    .badge-confidential::before {
+      content: '🔒';
+      font-size: 12px;
+    }
+
+    .hero-program {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-title {
+      font-size: clamp(26px, 4vw, 42px);
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-title span {
+      color: var(--orange);
+    }
+
+    .hero-subtitle {
+      font-size: 16px;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 28px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .hero-meta-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.35);
+    }
+
+    .hero-meta-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .hero-divider {
+      width: 40px;
+      height: 4px;
+      background: var(--orange);
+      border-radius: 2px;
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ─── CONTENT AREA ──────────────────────────────────────────── */
+    .content {
+      padding: 40px 48px 64px;
+      flex: 1;
+    }
+
+    /* ─── SECTION CARD ──────────────────────────────────────────── */
+    .section-card {
+      background: var(--white);
+      border-radius: 12px;
+      border-left: 4px solid var(--orange);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: var(--orange);
+      color: var(--white);
+      font-size: 13px;
+      font-weight: 800;
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+
+    .section-icon {
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--dark);
+      letter-spacing: -0.01em;
+    }
+
+    .section-body {
+      padding: 24px 28px;
+    }
+
+    /* ─── TYPOGRAPHY ────────────────────────────────────────────── */
+    h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--dark);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+      margin-top: 24px;
+    }
+
+    h3:first-child { margin-top: 0; }
+
+    h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 8px;
+      margin-top: 20px;
+    }
+
+    h4:first-child { margin-top: 0; }
+
+    p {
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    p:last-child { margin-bottom: 0; }
+
+    ul, ol {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+
+    li {
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    strong {
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    /* ─── HIGHLIGHT BOX ─────────────────────────────────────────── */
+    .highlight-box {
+      background: rgba(232,119,58,0.07);
+      border: 1px solid rgba(232,119,58,0.25);
+      border-left: 3px solid var(--orange);
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin: 16px 0;
+    }
+
+    .highlight-box.teal {
+      background: rgba(13,148,136,0.07);
+      border-color: rgba(13,148,136,0.25);
+      border-left-color: var(--teal);
+    }
+
+    .highlight-box.red {
+      background: rgba(239,68,68,0.07);
+      border-color: rgba(239,68,68,0.25);
+      border-left-color: var(--red);
+    }
+
+    .highlight-box p { margin-bottom: 0; }
+
+    /* ─── TABLES ─────────────────────────────────────────────────── */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 16px 0;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+
+    thead tr {
+      background: var(--dark);
+    }
+
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.8);
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(232,119,58,0.04); }
+
+    tbody td {
+      padding: 11px 16px;
+      color: var(--text);
+      vertical-align: top;
+    }
+
+    tbody td:first-child {
+      font-weight: 600;
+      color: var(--dark);
+    }
+
+    /* ─── KV GRID ───────────────────────────────────────────────── */
+    .kv-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .kv-item {
+      background: var(--light-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .kv-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(55,65,81,0.5);
+      margin-bottom: 4px;
+    }
+
+    .kv-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .kv-value.orange { color: var(--orange); }
+    .kv-value.teal { color: var(--teal); }
+
+    /* ─── AVATAR COMPARISON ─────────────────────────────────────── */
+    .avatar-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    .avatar-card {
+      border-radius: 10px;
+      padding: 18px;
+      border: 2px solid;
+    }
+
+    .avatar-card.avoid {
+      background: rgba(239,68,68,0.05);
+      border-color: rgba(239,68,68,0.2);
+    }
+
+    .avatar-card.focus {
+      background: rgba(13,148,136,0.05);
+      border-color: rgba(13,148,136,0.3);
+    }
+
+    .avatar-card-label {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 12px;
+    }
+
+    .avatar-card.avoid .avatar-card-label { color: var(--red); }
+    .avatar-card.focus .avatar-card-label { color: var(--teal); }
+
+    .avatar-card h4 {
+      font-size: 18px;
+      margin-top: 0;
+      margin-bottom: 14px;
+    }
+
+    .avatar-card.avoid h4 { color: var(--red); }
+    .avatar-card.focus h4 { color: var(--teal); }
+
+    /* ─── SABOTADOR CARDS ───────────────────────────────────────── */
+    .sabotador-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    .sabotador-card {
+      border-radius: 12px;
+      padding: 22px;
+      border-top: 4px solid;
+      background: var(--white);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .sabotador-card.orange { border-top-color: var(--orange); }
+    .sabotador-card.teal { border-top-color: var(--teal); }
+    .sabotador-card.purple { border-top-color: var(--purple); }
+    .sabotador-card.blue { border-top-color: var(--blue); }
+
+    .sabotador-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .sabotador-card.orange .sabotador-label { color: var(--orange); }
+    .sabotador-card.teal .sabotador-label { color: var(--teal); }
+    .sabotador-card.purple .sabotador-label { color: var(--purple); }
+    .sabotador-card.blue .sabotador-label { color: var(--blue); }
+
+    .sabotador-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--dark);
+      margin-bottom: 14px;
+    }
+
+    .sabotador-field {
+      margin-bottom: 12px;
+    }
+
+    .sabotador-field-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(55,65,81,0.5);
+      margin-bottom: 3px;
+    }
+
+    .sabotador-field-value {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .quote-box {
+      background: var(--light-bg);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 12.5px;
+      font-style: italic;
+      color: var(--dark);
+      margin: 8px 0;
+      border-left: 3px solid;
+    }
+
+    .sabotador-card.orange .quote-box { border-left-color: var(--orange); }
+    .sabotador-card.teal .quote-box { border-left-color: var(--teal); }
+    .sabotador-card.purple .quote-box { border-left-color: var(--purple); }
+    .sabotador-card.blue .quote-box { border-left-color: var(--blue); }
+
+    .cta-tag {
+      display: inline-block;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .sabotador-card.orange .cta-tag { background: rgba(232,119,58,0.12); color: var(--orange-dark); }
+    .sabotador-card.teal .cta-tag { background: rgba(13,148,136,0.12); color: var(--teal); }
+    .sabotador-card.purple .cta-tag { background: rgba(124,58,237,0.12); color: var(--purple); }
+    .sabotador-card.blue .cta-tag { background: rgba(29,78,216,0.12); color: var(--blue); }
+
+    /* ─── FUNNEL ─────────────────────────────────────────────────── */
+    .funnel-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      padding: 8px 0;
+    }
+
+    .funnel-step {
+      width: 100%;
+      max-width: 600px;
+      background: var(--white);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 22px;
+      position: relative;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    .funnel-step.top { border-color: var(--orange); }
+    .funnel-step.mid { border-color: #d1d5db; }
+    .funnel-step.cta { border-color: var(--teal); }
+    .funnel-step.convert { border-color: var(--orange); background: rgba(232,119,58,0.04); }
+    .funnel-step.close { border-color: var(--dark); background: var(--dark); }
+
+    .funnel-step-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 4px;
+    }
+
+    .funnel-step.top .funnel-step-label { color: var(--orange); }
+    .funnel-step.mid .funnel-step-label { color: var(--text); }
+    .funnel-step.cta .funnel-step-label { color: var(--teal); }
+    .funnel-step.convert .funnel-step-label { color: var(--orange); }
+    .funnel-step.close .funnel-step-label { color: rgba(255,255,255,0.5); }
+
+    .funnel-step-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 8px;
+    }
+
+    .funnel-step.close .funnel-step-title { color: var(--white); }
+
+    .funnel-step-desc {
+      font-size: 12.5px;
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    .funnel-step.close .funnel-step-desc { color: rgba(255,255,255,0.7); }
+
+    .funnel-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 36px;
+      color: var(--orange);
+      font-size: 22px;
+    }
+
+    .funnel-parallel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .funnel-parallel .funnel-step {
+      max-width: none;
+    }
+
+    .funnel-parallel-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(55,65,81,0.4);
+      text-align: center;
+      padding: 4px 0;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    /* ─── CHECKLIST ──────────────────────────────────────────────── */
+    .checklist-group {
+      margin-bottom: 24px;
+    }
+
+    .checklist-group-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--dark);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .checklist-group-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      background: var(--light-bg);
+      border: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    .checklist-item:hover { background: #eceae4; }
+
+    .check-box {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #d1d5db;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      background: var(--white);
+    }
+
+    .check-text {
+      font-size: 13.5px;
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    /* ─── RISK BADGES ────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .badge.alta { background: rgba(239,68,68,0.12); color: var(--red); }
+    .badge.media { background: rgba(245,158,11,0.15); color: #b45309; }
+    .badge.baixa { background: rgba(16,185,129,0.12); color: #065f46; }
+
+    /* ─── CREATIVE CARDS ─────────────────────────────────────────── */
+    .creative-card {
+      background: var(--light-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+    }
+
+    .creative-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .creative-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--white);
+      flex-shrink: 0;
+    }
+
+    .creative-num.orange { background: var(--orange); }
+    .creative-num.teal { background: var(--teal); }
+    .creative-num.purple { background: var(--purple); }
+    .creative-num.blue { background: var(--blue); }
+    .creative-num.dark { background: var(--dark); }
+
+    .creative-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .creative-field {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 10px;
+    }
+
+    .creative-field-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(55,65,81,0.45);
+    }
+
+    .creative-field-value {
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .headline-display {
+      background: var(--dark);
+      color: var(--white);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin: 8px 0;
+    }
+
+    /* ─── TEAM TABLE ─────────────────────────────────────────────── */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      margin: 16px 0;
+    }
+
+    .team-card {
+      background: var(--light-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      border-top: 3px solid var(--orange);
+    }
+
+    .team-role {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--orange);
+      margin-bottom: 4px;
+    }
+
+    .team-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 6px;
+    }
+
+    .team-resp {
+      font-size: 12.5px;
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    /* ─── URL TAG ────────────────────────────────────────────────── */
+    .url-tag {
+      display: inline-flex;
+      align-items: center;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-family: monospace;
+      color: #166534;
+      margin: 2px 0;
+    }
+
+    code {
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--orange-dark);
+    }
+
+    .code-block {
+      background: var(--dark);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-family: monospace;
+      font-size: 12.5px;
+      color: #86efac;
+      margin: 12px 0;
+      overflow-x: auto;
+      line-height: 1.7;
+    }
+
+    /* ─── INFO ROW ───────────────────────────────────────────────── */
+    .info-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 14px 0;
+    }
+
+    .info-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--light-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12.5px;
+      color: var(--text);
+    }
+
+    .info-pill strong { color: var(--dark); }
+
+    /* ─── DIVIDER ────────────────────────────────────────────────── */
+    .section-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    /* ─── FOOTER ─────────────────────────────────────────────────── */
+    footer {
+      background: var(--dark);
+      color: rgba(255,255,255,0.4);
+      text-align: center;
+      font-size: 12px;
+      padding: 20px 24px;
+      letter-spacing: 0.04em;
+    }
+
+    footer strong { color: rgba(255,255,255,0.65); }
+
+    /* ─── MEDIA QUERIES ──────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .hamburger {
+        display: flex;
+      }
+
+      .overlay.active {
+        display: block;
+      }
+
+      .main {
+        margin-left: 0;
+      }
+
+      .hero {
+        padding: 64px 24px 36px;
+      }
+
+      .content {
+        padding: 24px 20px 48px;
+      }
+
+      .sabotador-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .avatar-compare {
+        grid-template-columns: 1fr;
+      }
+
+      .funnel-parallel {
+        grid-template-columns: 1fr;
+      }
+
+      .kv-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .hero-title { font-size: 22px; }
+      .kv-grid { grid-template-columns: 1fr; }
+      .hero-meta { gap: 12px; }
+      .section-body { padding: 18px; }
+      .section-header { padding: 18px; }
+    }
+
+    /* ─── PRINT ──────────────────────────────────────────────────── */
+    @media print {
+      .sidebar, .hamburger, .overlay { display: none !important; }
+      .main { margin-left: 0 !important; }
+      .hero { padding: 32px; }
+      .content { padding: 20px; }
+      .section-card { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; border-left: 4px solid var(--orange); }
+      body { font-size: 13px; }
+      .funnel-step { break-inside: avoid; }
+      .sabotador-card { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">EmagreSer 2.0</div>
+    <div class="doc-title">Briefing Estratégico — Equipe de Tráfego Pago</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-label">Navegação</div>
+    <a href="#s1"><span class="nav-num">1</span> Visão Geral do Lançamento</a>
+    <a href="#s2"><span class="nav-num">2</span> O Avatar: Helena</a>
+    <a href="#s3"><span class="nav-num">3</span> Os 4 Perfis Sabotadores</a>
+    <a href="#s4"><span class="nav-num">4</span> Estrutura do Funil</a>
+    <a href="#s5"><span class="nav-num">5</span> Estratégia de Audiências</a>
+    <a href="#s6"><span class="nav-num">6</span> Eventos de Conversão</a>
+    <a href="#s7"><span class="nav-num">7</span> Orçamento e Métricas</a>
+    <a href="#s8"><span class="nav-num">8</span> Criativos: Ângulos e Formatos</a>
+    <a href="#s9"><span class="nav-num">9</span> Copy da Landing Page</a>
+    <a href="#s10"><span class="nav-num">10</span> Integração Técnica</a>
+    <a href="#s11"><span class="nav-num">11</span> Riscos e Contingência</a>
+    <a href="#s12"><span class="nav-num">12</span> Checklist Pré-Lançamento</a>
+    <a href="#s13"><span class="nav-num">13</span> Contatos da Equipe</a>
+  </div>
+  <div class="sidebar-footer">
+    Documento Interno &mdash; Não compartilhar<br />
+    Wender Martinez &copy; Maio 2026
+  </div>
+</nav>
+
+<!-- HAMBURGER -->
+<button class="hamburger" id="hamburger" aria-label="Abrir menu">
+  <span></span>
+  <span></span>
+  <span></span>
+</button>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay"></div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-top">
+      <div class="hero-program">Programa EmagreSer 2.0 &mdash; Lançamento Interno Junho 2026</div>
+      <span class="badge-confidential">Confidencial</span>
+    </div>
+    <div class="hero-divider"></div>
+    <div class="hero-title">BRIEFING ESTRATÉGICO<br /><span>Equipe de Tráfego Pago</span></div>
+    <div class="hero-subtitle">Guia completo de campanha, audiências, criativos e métricas para o lançamento interno de Junho 2026.</div>
+    <div class="hero-meta">
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Preparado por</div>
+        <div class="hero-meta-value">Wender Martinez</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Data</div>
+        <div class="hero-meta-value">Maio 2026</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Investimento Total</div>
+        <div class="hero-meta-value">R$ 7.500,00</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Meta de Faturamento</div>
+        <div class="hero-meta-value">R$ 59.940,00</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Meta de Vagas</div>
+        <div class="hero-meta-value">60 alunas</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ─── SECTION 1 ─────────────────────────────────────────── -->
+    <div class="section-card" id="s1">
+      <div class="section-header">
+        <div class="section-badge">1</div>
+        <div class="section-icon">🚀</div>
+        <div class="section-title">Visão Geral do Lançamento</div>
+      </div>
+      <div class="section-body">
+
+        <h3>O Programa</h3>
+        <div class="kv-grid">
+          <div class="kv-item">
+            <div class="kv-label">Nome do Programa</div>
+            <div class="kv-value">EmagreSer 2.0</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Formato</div>
+            <div class="kv-value">12 Sessões Hotseat ao Vivo + Curso Gravado (1 ano)</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Ticket</div>
+            <div class="kv-value orange">R$ 999,00</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Meta de Vagas</div>
+            <div class="kv-value">60 alunas</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Faturamento Alvo</div>
+            <div class="kv-value teal">R$ 59.940,00</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Metodologia de Lançamento</div>
+            <div class="kv-value">Lançamento Interno (Fórmula Érico Rocha)</div>
+          </div>
+        </div>
+
+        <h3>Mentoras</h3>
+        <div class="info-row">
+          <div class="info-pill"><strong>Ira Soraya</strong> — Nutricionista</div>
+          <div class="info-pill"><strong>Daniely Albuquerque</strong> — Psicóloga Especialista em Obesidade</div>
+        </div>
+
+        <div class="highlight-box">
+          <p><strong>Metodologia:</strong> Neuropsicologia aplicada ao comportamento alimentar. As sessões de Hotseat ao vivo acontecem no Google Meet. O acesso ao curso gravado é por 1 ano completo.</p>
+        </div>
+
+        <h3>Cronograma de Fases</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Fase</th>
+                <th>Período</th>
+                <th>O Que Acontece</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Fase 1 — Plantio</td>
+                <td>Até 24/05</td>
+                <td>Landing page no ar, reengajamento da base</td>
+              </tr>
+              <tr>
+                <td>Fase 2 — Captação Pesada</td>
+                <td>04/05 a 24/05</td>
+                <td>Tráfego pago no máximo, CPLs na edição</td>
+              </tr>
+              <tr>
+                <td>Fase 3 — O Evento</td>
+                <td>25/05 a 31/05</td>
+                <td>CPL1 (25/05), CPL2 (27/05), CPL3 (29/05)</td>
+              </tr>
+              <tr>
+                <td>Fase 4 — Vendas</td>
+                <td>01/06 a 05/06</td>
+                <td>Carrinho aberto, bônus de ação rápida 24h</td>
+              </tr>
+              <tr>
+                <td>Encerramento</td>
+                <td>05/06 às 23h59</td>
+                <td>Fechamento do carrinho — urgência máxima</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 2 ─────────────────────────────────────────── -->
+    <div class="section-card" id="s2">
+      <div class="section-header">
+        <div class="section-badge">2</div>
+        <div class="section-icon">👤</div>
+        <div class="section-title">O Avatar: Helena</div>
+      </div>
+      <div class="section-body">
+
+        <div class="highlight-box">
+          <p><strong>Por que Helena (não Mari)?</strong> Este é o Lançamento 2. A Turma 1 foi vendida para "Mari" (mulher 30–45 anos, renda média, dor de culpa). Agora elevamos o posicionamento para "Helena" — a versão que cansou de ser vítima e quer estratégia.</p>
+        </div>
+
+        <h3>Dados Demográficos</h3>
+        <div class="kv-grid">
+          <div class="kv-item">
+            <div class="kv-label">Gênero / Idade</div>
+            <div class="kv-value">Mulher, 38 a 48 anos</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Perfil Profissional</div>
+            <div class="kv-value">Gestora, profissional liberal (advogada, médica, arquiteta) ou empreendedora</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Renda Pessoal</div>
+            <div class="kv-value orange">Acima de R$ 8.000,00</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Renda Familiar</div>
+            <div class="kv-value orange">Acima de R$ 15.000,00</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Localização</div>
+            <div class="kv-value">Capitais e cidades médias — Sul / Sudeste / Centro-Oeste</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Estado Civil</div>
+            <div class="kv-value">Casada ou divorciada, com filhos</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Religião / Valores</div>
+            <div class="kv-value">Cristã moderada ou espiritualista — valoriza legado, família, autodomínio</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Orientação Política</div>
+            <div class="kv-value">Centro a centro-direita — valoriza responsabilidade individual e autonomia</div>
+          </div>
+        </div>
+
+        <h3>A Dor Central</h3>
+        <div class="highlight-box red">
+          <p>Helena <strong>não sofre de falta de informação nutricional</strong>. Ela sofre de <strong>INCOERÊNCIA</strong>. Ela lidera equipes, cuida de outros, toma decisões complexas — mas não consegue "mandar na própria boca". Isso é uma <strong>dor de STATUS</strong>: ela se sente uma fraude.</p>
+        </div>
+        <p><strong>A raiz técnica:</strong> Fadiga de Decisão + Sequestro Emocional do Sistema Límbico. O Córtex Pré-Frontal (razão) é dominado pelo Sistema Límbico (impulso) quando ela chega esgotada em casa.</p>
+
+        <h3>Os Medos de Helena</h3>
+        <ul>
+          <li><strong>Medo do ciclo sanfona:</strong> emagrecer e engordar de novo destrói a autoestima de autoridade</li>
+          <li><strong>Medo de perder tempo:</strong> com mais um método que não funciona para o seu perfil</li>
+          <li><strong>Medo de parecer "fraca":</strong> ou "sem controle" para alguém do seu círculo social e profissional</li>
+        </ul>
+
+        <h3>O Desejo Real</h3>
+        <div class="highlight-box teal">
+          <p>Não é "emagrecer". É <strong>CONTROLE E LIBERDADE</strong>. Helena quer parar o ciclo do efeito sanfona de vez. Ela quer ser estável. Ela quer não pensar em comida o tempo todo.</p>
+        </div>
+
+        <h3>A "Roma" — Super Promessa</h3>
+        <div class="headline-display">
+          "Aprenda a silenciar os sabotadores da sua mente e destrave o seu corpo para um emagrecimento definitivo e sem culpa em 12 semanas."
+        </div>
+
+        <h3>Comparativo Mari vs. Helena (Importante para os Criativos)</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Critério</th>
+                <th>Mari (evitar)</th>
+                <th>Helena (focar)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Gatilho de venda</td>
+                <td>Paz e acolhimento</td>
+                <td>Controle e Liberdade</td>
+              </tr>
+              <tr>
+                <td>Tom da comunicação</td>
+                <td>Gentileza, abraço</td>
+                <td>Estratégia, verdade útil</td>
+              </tr>
+              <tr>
+                <td>Objeção de tempo</td>
+                <td>"Não vou dar conta"</td>
+                <td>"Não quero perder tempo"</td>
+              </tr>
+              <tr>
+                <td>Relação com o preço</td>
+                <td>Gasto a justificar</td>
+                <td>Investimento em eficiência</td>
+              </tr>
+              <tr>
+                <td>O "inimigo"</td>
+                <td>Método punitivo</td>
+                <td>Fadiga de Decisão</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Comportamento Digital de Helena</h3>
+        <div class="kv-grid">
+          <div class="kv-item">
+            <div class="kv-label">Instagram</div>
+            <div class="kv-value" style="font-size:13px; font-weight: 400;">Segue mentoras de negócios, neurociência, lifestyle elegante, psicologia sênior</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">YouTube / Podcasts</div>
+            <div class="kv-value" style="font-size:13px; font-weight: 400;">Huberman Lab, Joel Jota, alta performance, documentários</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">WhatsApp</div>
+            <div class="kv-value" style="font-size:13px; font-weight: 400;">Grupos de networking profissional, listas de transmissão curadas</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Pinterest</div>
+            <div class="kv-value" style="font-size:13px; font-weight: 400;">Decoração, viagens de luxo</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Horário de Consumo</div>
+            <div class="kv-value" style="font-size:13px; font-weight: 400;">Manhã cedo (6h–8h) ou noite depois que os filhos dormem (21h+)</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Não Tolera</div>
+            <div class="kv-value" style="font-size:13px; font-weight: 400; color: var(--red);">Linguagem vitimista, frases genéricas de autoajuda, tom de "desafio de 21 dias"</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 3 ─────────────────────────────────────────── -->
+    <div class="section-card" id="s3">
+      <div class="section-header">
+        <div class="section-badge">3</div>
+        <div class="section-icon">🧠</div>
+        <div class="section-title">Os 4 Perfis Sabotadores — Base dos Criativos</div>
+      </div>
+      <div class="section-body">
+
+        <div class="highlight-box teal">
+          <p><strong>Por que isso importa para tráfego:</strong> Cada perfil é um ângulo criativo diferente. Um anúncio que fala para a "Compensadora Noturna" não converte a "Recompensadora". Segmente os criativos por perfil para aumentar CTR e reduzir CPL.</p>
+        </div>
+
+        <div class="sabotador-grid">
+
+          <!-- PERFIL A -->
+          <div class="sabotador-card orange">
+            <div class="sabotador-label">Perfil A</div>
+            <div class="sabotador-title">A Recompensadora<br /><small style="font-size:12px; font-weight:500; color: #6b7280;">(Desconto no Prato)</small></div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Comportamento</div>
+              <div class="sabotador-field-value">Usa a comida como principal ferramenta de alívio emocional. A comida é a recompensa silenciosa após um dia difícil.</div>
+            </div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Gatilho Emocional</div>
+              <div class="sabotador-field-value">Tensão, brigas, sensação de "eu mereço um carinho"</div>
+            </div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Frase de Identificação</div>
+              <div class="quote-box">"Sinto que o mundo me deve algo e a geladeira é o único lugar que não me pede nada em troca"</div>
+            </div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Ângulo do Anúncio</div>
+              <span class="cta-tag">"Se a comida é o único momento de paz do seu dia, você precisa ler isso"</span>
+            </div>
+          </div>
+
+          <!-- PERFIL B -->
+          <div class="sabotador-card teal">
+            <div class="sabotador-label">Perfil B</div>
+            <div class="sabotador-title">O Piloto Automático<br /><small style="font-size:12px; font-weight:500; color: #6b7280;">(A Comilona Invisível)</small></div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Comportamento</div>
+              <div class="sabotador-field-value">Baixa consciência alimentar, come de forma reativa ao ambiente sem decisão consciente.</div>
+            </div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Gatilho Emocional</div>
+              <div class="sabotador-field-value">Distração, presença de comida, outras pessoas comendo</div>
+            </div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Frase de Identificação</div>
+              <div class="quote-box">"Quando vejo, já estou com um pacote aberto na mão sem nem ter decidido comer"</div>
+            </div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Ângulo do Anúncio</div>
+              <span class="cta-tag">"Você já terminou um pacote inteiro sem perceber como começou?"</span>
+            </div>
+          </div>
+
+          <!-- PERFIL C -->
+          <div class="sabotador-card purple">
+            <div class="sabotador-label">Perfil C</div>
+            <div class="sabotador-title">A Prisioneira do Esforço<br /><small style="font-size:12px; font-weight:500; color: #6b7280;">(Tudo ou Nada)</small></div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Comportamento</div>
+              <div class="sabotador-field-value">Perfeccionismo rígido que gera exaustão e abandono total ao menor erro. Ciclo compulsivo de reinício.</div>
+            </div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Gatilho Emocional</div>
+              <div class="sabotador-field-value">Medo de falhar, obsessão por controle total</div>
+            </div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Frase de Identificação</div>
+              <div class="quote-box">"Já estraguei tudo mesmo, agora tanto faz, segunda eu recomeço"</div>
+            </div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Ângulo do Anúncio</div>
+              <span class="cta-tag">"Se um deslize te faz jogar a semana toda fora, o problema não é a dieta"</span>
+            </div>
+          </div>
+
+          <!-- PERFIL D -->
+          <div class="sabotador-card blue">
+            <div class="sabotador-label">Perfil D</div>
+            <div class="sabotador-title">A Compensadora Noturna<br /><small style="font-size:12px; font-weight:500; color: #6b7280;">(Efeito Rebote)</small></div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Comportamento</div>
+              <div class="sabotador-field-value">Restrição severa de dia que gera urgência biológica e emocional à noite. O autocontrole tem "horário de validade".</div>
+            </div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Gatilho Emocional</div>
+              <div class="sabotador-field-value">O cair da noite, esgotamento do autocontrole</div>
+            </div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Frase de Identificação</div>
+              <div class="quote-box">"Sou a aluna exemplar até o pôr do sol. Depois disso, as regras perdem o sentido"</div>
+            </div>
+            <div class="sabotador-field">
+              <div class="sabotador-field-label">Ângulo do Anúncio</div>
+              <span class="cta-tag">"Você passa o dia inteiro sendo 'certinha' e desfaz tudo à noite?"</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 4 ─────────────────────────────────────────── -->
+    <div class="section-card" id="s4">
+      <div class="section-header">
+        <div class="section-badge">4</div>
+        <div class="section-icon">🔽</div>
+        <div class="section-title">Estrutura do Funil — Jornada do Lead</div>
+      </div>
+      <div class="section-body">
+
+        <div class="funnel-wrap">
+
+          <!-- Step 1 -->
+          <div class="funnel-step top">
+            <div class="funnel-step-label">Topo do Funil</div>
+            <div class="funnel-step-title">📢 Anúncio Meta Ads (Facebook / Instagram)</div>
+            <div class="funnel-step-desc">Criativos em Reels, carrossel e imagem estática. Ângulos baseados nos 4 perfis sabotadores. Audiências: Lookalike 1% + Interesses + Retargeting por fase.</div>
+          </div>
+          <div class="funnel-arrow">↓</div>
+
+          <!-- Step 2 -->
+          <div class="funnel-step mid">
+            <div class="funnel-step-label">Landing Page</div>
+            <div class="funnel-step-title">🔒 Landing Page Cega — www.oficialemagreser.com</div>
+            <div class="funnel-step-desc">
+              Página sem menu, sem informações do curso, sem preço.<br />
+              <strong>Único objetivo:</strong> iniciar o "Teste dos Sabotadores".<br />
+              Headline foca no bloqueio mental/emocional, não em emagrecimento físico.<br />
+              <strong>CTA:</strong> "Iniciar Teste Gratuito" (2 minutos, 10 perguntas)
+            </div>
+          </div>
+          <div class="funnel-arrow">↓</div>
+
+          <!-- Step 3 -->
+          <div class="funnel-step mid">
+            <div class="funnel-step-label">Captura de Lead</div>
+            <div class="funnel-step-title">📋 Formulário — Nome + E-mail + WhatsApp</div>
+            <div class="funnel-step-desc">
+              Aparece <strong>antes do resultado</strong> para maximizar o opt-in.<br />
+              Texto de conversão: <em>"Seu diagnóstico está pronto — onde enviamos?"</em><br />
+              Dados salvos automaticamente no banco de dados com UTMs rastreados.
+            </div>
+          </div>
+          <div class="funnel-arrow">↓</div>
+
+          <!-- Step 4 -->
+          <div class="funnel-step cta">
+            <div class="funnel-step-label">Resultado Personalizado</div>
+            <div class="funnel-step-title">🧠 Página de Resultado — Diagnóstico do Perfil Sabotador</div>
+            <div class="funnel-step-desc">
+              • Nomeia o perfil da usuária (ex: <em>"Você é a Compensadora Noturna"</em>)<br />
+              • Valida a dor com empatia profunda e sem julgamento<br />
+              • Explica brevemente o mecanismo neurológico por trás do comportamento<br />
+              • <strong>CTA Principal:</strong> "Entrar no Grupo VIP do Workshop EmagreSer no WhatsApp" (link direto)<br />
+              • <strong>CTA Secundário:</strong> Confirma que receberá mais informações por e-mail
+            </div>
+          </div>
+          <div class="funnel-arrow">↓</div>
+
+          <!-- Parallel: WhatsApp + Email -->
+          <div class="funnel-parallel-label">▼ Dois canais em paralelo ▼</div>
+          <div class="funnel-parallel">
+            <div class="funnel-step mid">
+              <div class="funnel-step-label">WhatsApp</div>
+              <div class="funnel-step-title">💬 Grupo VIP WhatsApp</div>
+              <div class="funnel-step-desc">
+                Câmara de aquecimento silenciosa.<br />
+                Apenas admins postam.<br />
+                Conteúdo de valor + doutrinação para o Workshop gratuito.
+              </div>
+            </div>
+            <div class="funnel-step mid">
+              <div class="funnel-step-label">E-mail Automático</div>
+              <div class="funnel-step-title">📧 Sequência de Nurture</div>
+              <div class="funnel-step-desc">
+                E1: Resultado + dor (imediato)<br />
+                E2: Novidade — Workshop (D+2)<br />
+                E3: Prova social Turma 1 (D+4)<br />
+                E4: Reengajamento masterclass (D+8)<br />
+                E5: 3 dias antes do evento<br />
+                E6: Dia do evento, manhã<br />
+                E7: 1h antes (11/06, 19h)
+              </div>
+            </div>
+          </div>
+          <div class="funnel-arrow">↓</div>
+
+          <!-- Step 5 -->
+          <div class="funnel-step mid">
+            <div class="funnel-step-label">Pré-Lançamento</div>
+            <div class="funnel-step-title">🎬 CPL 1, 2 e 3 — Conteúdo de Pré-Lançamento</div>
+            <div class="funnel-step-desc">
+              <strong>CPL 1 (25/05):</strong> "O Diagnóstico" — a verdadeira raiz do efeito sanfona<br />
+              <strong>CPL 2 (27/05):</strong> "A Amostra do Tratamento" — técnica prática + pequena vitória<br />
+              <strong>CPL 3 (29/05):</strong> "A Prescrição" — apresentação da solução + ancoragem de R$ 999
+            </div>
+          </div>
+          <div class="funnel-arrow">↓</div>
+
+          <!-- Step 6 -->
+          <div class="funnel-step convert">
+            <div class="funnel-step-label">Abertura do Carrinho</div>
+            <div class="funnel-step-title">🛒 Abertura do Carrinho — 01/06 às 08h</div>
+            <div class="funnel-step-desc">
+              <strong>Bônus de Ação Rápida 24h:</strong> Sessão individual de 30 min com Daniely (apenas as 10 primeiras).<br />
+              60 vagas totais disponíveis.
+            </div>
+          </div>
+          <div class="funnel-arrow">↓</div>
+
+          <!-- Step 7 -->
+          <div class="funnel-step mid">
+            <div class="funnel-step-label">Gestão de Retenção</div>
+            <div class="funnel-step-title">⚠️ Vale da Morte — 02/06 a 04/06</div>
+            <div class="funnel-step-desc">
+              <strong>Terça (02/06):</strong> "Resumo da Ópera" por e-mail e WhatsApp<br />
+              <strong>Quarta (03/06):</strong> E-mail de Garantia — quebra a objeção de risco<br />
+              <strong>Quinta (04/06):</strong> Abordagem 1:1 para boletos/PIX gerados e não pagos
+            </div>
+          </div>
+          <div class="funnel-arrow">↓</div>
+
+          <!-- Step 8 -->
+          <div class="funnel-step close">
+            <div class="funnel-step-label">Encerramento</div>
+            <div class="funnel-step-title">🔒 Fechamento do Carrinho — 05/06 às 23h59</div>
+            <div class="funnel-step-desc">Urgência máxima. Comunicação multi-canal: e-mail + WhatsApp + retargeting pago.</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 5 ─────────────────────────────────────────── -->
+    <div class="section-card" id="s5">
+      <div class="section-header">
+        <div class="section-badge">5</div>
+        <div class="section-icon">🎯</div>
+        <div class="section-title">Estratégia de Audiências — Meta Ads</div>
+      </div>
+      <div class="section-body">
+
+        <h3>5.1 — Custom Audience (Público Personalizado) — Base dos 2.500 Leads</h3>
+        <ul>
+          <li>Upload da base histórica da clínica (já higienizada em formato E.164: <code>5547XXXXXXXXX</code>)</li>
+          <li>Identificadores: <strong>telefone + e-mail + primeiro nome</strong> — aumenta significativamente o Match Rate</li>
+          <li><strong>Uso principal:</strong> geração de Lookalike (não retargeting direto — base fria/morna)</li>
+          <li>Tamanho ideal para Lookalike: mínimo 1.000 linhas com boa qualidade de dados</li>
+        </ul>
+
+        <h3>5.2 — Lookalike Audience (Público Semelhante) — Foco Principal</h3>
+        <ul>
+          <li>Gerado a partir da base de 2.500 leads higienizados</li>
+          <li><strong>Lookalike 1%</strong> (frio mas estatisticamente idêntico ao perfil): ~1,5 a 2 milhões de brasileiros</li>
+          <li>Este será o público principal da "Captação Pesada" com os R$ 7.500 de investimento</li>
+          <li><strong>Layering recomendado:</strong> Lookalike 1% + filtro Mulheres 35–50 + filtro de renda (se disponível na região)</li>
+        </ul>
+
+        <h3>5.3 — Retargeting (Remarketing)</h3>
+        <ul>
+          <li>Visitantes da landing page que não converteram (evento <code>PageView</code> sem <code>Lead</code>)</li>
+          <li>Visualizadores dos CPLs (75%+ do vídeo)</li>
+          <li>Pessoas que abriram o carrinho mas não compraram (evento <code>InitiateCheckout</code> sem <code>Purchase</code>)</li>
+        </ul>
+
+        <h3>5.4 — Públicos de Interesse (Cold Audiences Secundários)</h3>
+        <p>Usar em paralelo ao Lookalike para ampliar alcance:</p>
+        <ul>
+          <li><strong>Interesses gerais:</strong> Psicologia, Nutrição, Emagrecimento, Saúde da Mulher, Bem-estar</li>
+          <li><strong>Interesses de alta renda/performance:</strong> Empreendedorismo Feminino, Alta Performance, Meditação</li>
+          <li><strong>Comportamentos:</strong> Compradoras online frequentes, Usuárias de aplicativos de saúde</li>
+          <li><strong>Demographic:</strong> Mulheres 35–52 anos, Brasil</li>
+        </ul>
+
+        <h3>5.5 — Públicos a EXCLUIR (Obrigatório)</h3>
+        <div class="highlight-box red">
+          <ul style="margin-bottom:0;">
+            <li><strong>Compradoras</strong> (evento <code>Purchase</code>) — não gastar budget em quem já converteu</li>
+            <li><strong>E-mails das 2.500 leads</strong> já em reengajamento orgânico (Custom Audience de exclusão)</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ─── SECTION 6 ─────────────────────────────────────────── -->
+    <div class="section-card" id="s6">
+      <div class="section-header">
+        <div class="section-badge">6</div>
+        <div class="section-icon">📊</div>
+        <div class="section-title">Eventos de Conversão — Pixel Meta / GTM</div>
+      </div>
+      <div class="section-body">
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Evento</th>
+                <th>Quando Dispara</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>PageView</code></td>
+                <td>Toda visita à LP</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><code>ViewContent</code></td>
+                <td>Landing page carregada completamente</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><code>Lead</code></td>
+                <td>Formulário enviado (captura nome / e-mail / WhatsApp)</td>
+                <td>R$ 2,50 (CPL máximo)</td>
+              </tr>
+              <tr>
+                <td><code>CompleteRegistration</code></td>
+                <td>Após a usuária visualizar a página de resultado</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><code>Contact</code></td>
+                <td>Clique no link do Grupo VIP WhatsApp</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><code>InitiateCheckout</code></td>
+                <td>Acesso à página de vendas</td>
+                <td>R$ 999</td>
+              </tr>
+              <tr>
+                <td><code>Purchase</code></td>
+                <td>Confirmação de compra realizada</td>
+                <td>R$ 999</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Instruções de Implementação</h3>
+        <ul>
+          <li>O Pixel da Meta deve estar no <code>&lt;head&gt;</code> de <strong>todas</strong> as páginas ativas (LP, resultado, obrigado)</li>
+          <li>Configurar a <strong>API de Conversões (CAPI)</strong> no servidor para evitar perda de dados por bloqueadores de anúncio</li>
+          <li>O evento <code>Lead</code> deve passar os campos: <code>email</code>, <code>phone</code>, <code>first_name</code> (hasheados em SHA-256) para maximizar o match rate</li>
+        </ul>
+
+      </div>
+    </div>
+
+    <!-- ─── SECTION 7 ─────────────────────────────────────────── -->
+    <div class="section-card" id="s7">
+      <div class="section-header">
+        <div class="section-badge">7</div>
+        <div class="section-icon">💰</div>
+        <div class="section-title">Orçamento e Métricas-Alvo</div>
+      </div>
+      <div class="section-body">
+
+        <div class="kv-grid">
+          <div class="kv-item">
+            <div class="kv-label">Investimento Total</div>
+            <div class="kv-value orange">R$ 7.500,00</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Plataforma</div>
+            <div class="kv-value">Meta Ads (Facebook + Instagram)</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">Meta de Leads</div>
+            <div class="kv-value">3.000 leads</div>
+          </div>
+          <div class="kv-item">
+            <div class="kv-label">CPL Necessário</div>
+            <div class="kv-value orange">R$ 2,50 (teto absoluto)</div>
+          </div>
+        </div>
+
+        <h3>Distribuição do Budget por Fase</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Fase</th>
+                <th>Período</th>
+                <th>Budget</th>
+                <th>Objetivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Aquecimento / Testes</td>
+                <td>Até 03/05</td>
+                <td><strong>R$ 500</strong></td>
+                <td>Testar criativos, encontrar CPL base</td>
+              </tr>
+              <tr>
+                <td>Captação Pesada</td>
+                <td>04/05 a 24/05</td>
+                <td><strong>R$ 5.500</strong></td>
+                <td>Volume máximo de leads</td>
+              </tr>
+              <tr>
+                <td>Retargeting CPLs</td>
+                <td>25/05 a 31/05</td>
+                <td><strong>R$ 800</strong></td>
+                <td>Reengajar leads para assistir os CPLs</td>
+              </tr>
+              <tr>
+                <td>Fechamento de Carrinho</td>
+                <td>01/06 a 05/06</td>
+                <td><strong>R$ 700</strong></td>
+                <td>Converter leads quentes</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Métricas-Alvo e Alertas</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Métrica</th>
+                <th>Meta</th>
+                <th>Alerta (acima disso → pausar/otimizar)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>CPL (Custo por Lead)</td>
+                <td><strong style="color: var(--green);">R$ 2,50</strong></td>
+                <td><strong style="color: var(--red);">R$ 4,00</strong></td>
+              </tr>
+              <tr>
+                <td>CTR (Click-Through Rate)</td>
+                <td><strong style="color: var(--green);">&gt; 1,5%</strong></td>
+                <td><strong style="color: var(--red);">&lt; 0,8%</strong></td>
+              </tr>
+              <tr>
+                <td>Taxa de Opt-in da LP</td>
+                <td><strong style="color: var(--green);">&gt; 30%</strong></td>
+                <td><strong style="color: var(--red);">&lt; 20%</strong></td>
+              </tr>
+              <tr>
+                <td>CPC (Custo por Clique)</td>
+                <td><strong style="color: var(--green);">&lt; R$ 1,20</strong></td>
+                <td><strong style="color: var(--red);">&gt; R$ 2,00</strong></td>
+              </tr>
+              <tr>
+                <td>Meta de leads total</td>
+                <td><strong>3.000 leads</strong></td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td>Taxa de conversão esperada</td>
+                <td><strong>2% (60 / 3.000)</strong></td>
+                <td>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Regras de Escalonamento</h3>
+        <div class="highlight-box teal">
+          <ul style="margin-bottom:0;">
+            <li><strong>Audiências com CPL &lt; R$ 2,50</strong> → escalar imediatamente (aumentar budget em 20–30% a cada 48h)</li>
+            <li><strong>Frequência ideal:</strong> 2,5 a 3,5 por semana por usuário (acima disso, trocar criativo)</li>
+            <li><strong>Audiências com CPL &gt; R$ 4,00 por 3 dias seguidos</strong> → pausar e substituir criativo ou público</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ─── SECTION 8 ─────────────────────────────────────────── -->
+    <div class="section-card" id="s8">
+      <div class="section-header">
+        <div class="section-badge">8</div>
+        <div class="section-icon">🎨</div>
+        <div class="section-title">Criativos: Ângulos e Formatos</div>
+      </div>
+      <div class="section-body">
+
+        <h3>Formatos Recomendados (em ordem de prioridade)</h3>
+        <ol>
+          <li><strong>Reels / Vídeo vertical 9:16 (15–30 segundos)</strong> — melhor desempenho para cold audience</li>
+          <li><strong>Carrossel com perguntas do quiz (curiosity gap)</strong> — excelente para engajamento e leads qualificados</li>
+          <li><strong>Story com enquete/quiz interativo</strong> — ideal para retargeting de warm audience</li>
+          <li><strong>Imagem estática com headline de impacto</strong> — eficiente para retargeting</li>
+        </ol>
+
+        <div class="section-divider"></div>
+        <h3>Os 4 Ângulos Principais — Um por Perfil Sabotador</h3>
+
+        <!-- Ângulo 1 -->
+        <div class="creative-card">
+          <div class="creative-card-header">
+            <div class="creative-num orange">A</div>
+            <div class="creative-card-title">Ângulo 1 — "A Recompensadora"</div>
+          </div>
+          <div class="headline-display">"Se a geladeira é o único lugar que não te pede nada, você precisa ler isso"</div>
+          <div class="creative-field">
+            <div class="creative-field-label">Hook de Vídeo</div>
+            <div class="creative-field-value"><em>"Eu sei exatamente o que você faz às 22h quando finalmente senta no sofá..."</em></div>
+          </div>
+          <div class="creative-field">
+            <div class="creative-field-label">Copy</div>
+            <div class="creative-field-value">Fala sobre a comida como recompensa silenciosa. Não há julgamento. Há neurociência. A culpa não é fraqueza de caráter — é um circuito cerebral que pode ser reprogramado.</div>
+          </div>
+          <div class="creative-field">
+            <div class="creative-field-label">CTA</div>
+            <div class="creative-field-value"><strong>"Descubra em 2 min por que seu cérebro faz isso →"</strong></div>
+          </div>
+        </div>
+
+        <!-- Ângulo 2 -->
+        <div class="creative-card">
+          <div class="creative-card-header">
+            <div class="creative-num teal">B</div>
+            <div class="creative-card-title">Ângulo 2 — "O Piloto Automático"</div>
+          </div>
+          <div class="headline-display">"Você já terminou um pacote inteiro sem perceber como começou?"</div>
+          <div class="creative-field">
+            <div class="creative-field-label">Hook de Vídeo</div>
+            <div class="creative-field-value"><em>"Isso não é falta de força de vontade. É o seu cérebro no modo automático."</em></div>
+          </div>
+          <div class="creative-field">
+            <div class="creative-field-label">Copy</div>
+            <div class="creative-field-value">Explica o mecanismo do comer inconsciente: comportamento reativo ao ambiente, ausência de decisão consciente, e como o córtex pré-frontal se desconecta nos momentos de distração.</div>
+          </div>
+          <div class="creative-field">
+            <div class="creative-field-label">CTA</div>
+            <div class="creative-field-value"><strong>"Teste gratuito: descubra qual é o seu padrão →"</strong></div>
+          </div>
+        </div>
+
+        <!-- Ângulo 3 -->
+        <div class="creative-card">
+          <div class="creative-card-header">
+            <div class="creative-num purple">C</div>
+            <div class="creative-card-title">Ângulo 3 — "A Prisioneira do Esforço"</div>
+          </div>
+          <div class="headline-display">"Um deslize e você joga a semana toda fora. O problema não é a dieta."</div>
+          <div class="creative-field">
+            <div class="creative-field-label">Hook de Vídeo</div>
+            <div class="creative-field-value"><em>"Segunda eu recomeço. Quarta eu recomeço. Segunda eu recomeço... Até quando?"</em></div>
+          </div>
+          <div class="creative-field">
+            <div class="creative-field-label">Copy</div>
+            <div class="creative-field-value">O perfeccionismo que gera abandono. O ciclo tudo-ou-nada. A exaustão mental do eterno recomeço. Não é falta de comprometimento — é um padrão neurológico identificável e tratável.</div>
+          </div>
+          <div class="creative-field">
+            <div class="creative-field-label">CTA</div>
+            <div class="creative-field-value"><strong>"Descubra o padrão que te faz começar de novo toda segunda →"</strong></div>
+          </div>
+        </div>
+
+        <!-- Ângulo 4 -->
+        <div class="creative-card">
+          <div class="creative-card-header">
+            <div class="creative-num blue">D</div>
+            <div class="creative-card-title">Ângulo 4 — "A Compensadora Noturna"</div>
+          </div>
+          <div class="headline-display">"Certinha o dia todo. E aí chega a noite..."</div>
+          <div class="creative-field">
+            <div class="creative-field-label">Hook de Vídeo</div>
+            <div class="creative-field-value"><em>"Das 6h às 18h você é a mais disciplinada. Depois disso, o seu corpo cobra a conta."</em></div>
+          </div>
+          <div class="creative-field">
+            <div class="creative-field-label">Copy</div>
+            <div class="creative-field-value">A biologia da restrição severa. O mecanismo de urgência noturna. Não é fraqueza — é uma resposta fisiológica ao déficit calórico e ao esgotamento do autocontrole (ego depletion). O corpo cria dívidas que cobra com juros.</div>
+          </div>
+          <div class="creative-field">
+            <div class="creative-field-label">CTA</div>
+            <div class="creative-field-value"><strong>"Entenda o mecanismo e pare de se culpar →"</strong></div>
+          </div>
+        </div>
+
+        <!-- Ângulo Universal -->
+        <div class="creative-card">
+          <div class="creative-card-header">
+            <div class="creative-num dark">★</div>
+            <div class="creative-card-title">Ângulo Universal — Para Lookalike Frio</div>
+          </div>
+          <div class="headline-display">"Você já tentou de tudo para emagrecer e continua no mesmo lugar?"</div>
+          <div class="creative-field">
+            <div class="creative-field-label">Hook de Vídeo</div>
+            <div class="creative-field-value"><em>"Não é falta de força de vontade. É um padrão mental que nenhuma dieta resolve."</em></div>
+          </div>
+          <div class="creative-field">
+            <div class="creative-field-label">Copy</div>
+            <div class="creative-field-value">Introduz o conceito do Sabotador Mental sem nomear os 4 perfis. Cria curiosidade e convida ao auto-diagnóstico. Funciona para cold audiences que ainda não conhecem as mentoras.</div>
+          </div>
+          <div class="creative-field">
+            <div class="creative-field-label">CTA</div>
+            <div class="creative-field-value"><strong>"Descubra QUAL é o seu sabotador em 2 minutos — teste gratuito →"</strong></div>
+          </div>
+        </div>
+
+        <h3>Criativos de Prova Social (Retargeting Quente)</h3>
+        <ul>
+          <li>Depoimentos em vídeo das alunas da Turma 1 (extraídos pelo Diego)</li>
+          <li><strong>Formato:</strong> antes/depois MENTAL (não físico — respeita a ética do CRP e a política de saúde da Meta)</li>
+          <li><strong>Foco das falas:</strong>
+            <ul>
+              <li>"Eu parei de começar toda segunda"</li>
+              <li>"Finalmente entendi por que eu comia daquele jeito"</li>
+              <li>"Não sigo mais dieta, sigo o método"</li>
+            </ul>
+          </li>
+        </ul>
+
+      </div>
+    </div>
+
+    <!-- ─── SECTION 9 ─────────────────────────────────────────── -->
+    <div class="section-card" id="s9">
+      <div class="section-header">
+        <div class="section-badge">9</div>
+        <div class="section-icon">✍️</div>
+        <div class="section-title">Copy da Landing Page — Orientações para Criativos</div>
+      </div>
+      <div class="section-body">
+
+        <div class="avatar-compare">
+          <div class="avatar-card avoid">
+            <div class="avatar-card-label">❌ A LP NÃO menciona</div>
+            <ul>
+              <li>O nome do programa EmagreSer 2.0</li>
+              <li>Preço ou número de vagas disponíveis</li>
+              <li>Currículos extensos das mentoras</li>
+              <li>Qualquer menu de navegação</li>
+              <li>Termos como "emagrecer X quilos"</li>
+              <li>Prazo garantido de resultados</li>
+            </ul>
+          </div>
+          <div class="avatar-card focus">
+            <div class="avatar-card-label">✅ A LP SIM menciona</div>
+            <ul>
+              <li>O conceito do Sabotador Mental</li>
+              <li>A promessa de descobrir "qual é o seu padrão"</li>
+              <li>A ciência por trás (credibilidade sem ser clínico demais)</li>
+              <li>Social proof mínimo: "Junte-se a mais de 2.000 mulheres que já descobriram o seu sabotador"</li>
+              <li>CTA único e claro para o teste gratuito</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="highlight-box">
+          <p><strong>Regra de Ouro para Todos os Criativos:</strong> O anúncio e a LP devem ter a <strong>MESMA mensagem</strong>. Se o anúncio fala sobre "comer sem perceber", a LP deve reforçar exatamente isso no hero imediatamente. Qualquer desconexão entre o anúncio e a LP aumenta o bounce rate e destrói o CPL.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ─── SECTION 10 ─────────────────────────────────────────── -->
+    <div class="section-card" id="s10">
+      <div class="section-header">
+        <div class="section-badge">10</div>
+        <div class="section-icon">⚙️</div>
+        <div class="section-title">Integração Técnica — Para o Analista de Tráfego</div>
+      </div>
+      <div class="section-body">
+
+        <h3>URLs Ativas</h3>
+        <ul style="list-style: none; padding: 0;">
+          <li style="margin-bottom: 8px;"><div class="url-tag">https://www.oficialemagreser.com</div> — Landing Page / Quiz</li>
+          <li style="margin-bottom: 8px;"><div class="url-tag">https://www.oficialemagreser.com/admin/</div> — Painel Admin</li>
+          <li style="margin-bottom: 8px;"><div class="url-tag">Webhook Z-API</div> — WhatsApp (configurado no servidor)</li>
+          <li style="margin-bottom: 8px;"><div class="url-tag">Resend.com</div> — Sequência de e-mail automática</li>
+        </ul>
+
+        <h3>Onde Configurar os Eventos</h3>
+        <ul>
+          <li><strong>Pixel da Meta:</strong> instalar via GTM ou diretamente no <code>&lt;head&gt;</code> da LP — obrigatório em todas as páginas</li>
+          <li><strong>API de Conversões:</strong> endpoint disponível no servidor (solicitar ao Wender para credenciais)</li>
+          <li><strong>UTM Parameters:</strong> usar em TODOS os anúncios para rastrear por criativo e público</li>
+        </ul>
+
+        <h3>Exemplo de UTM Estruturado</h3>
+        <div class="code-block">?utm_source=facebook<br />&utm_medium=cpc<br />&utm_campaign=captacao-pesada<br />&utm_content=angulo-recompensadora</div>
+        <p style="margin-top: 6px; font-size: 13px; color: var(--text);">Os UTMs são salvos automaticamente na tabela <code>leads</code> no banco de dados para análise posterior.</p>
+
+        <h3>Nomenclatura de Campanhas (Padrão Obrigatório)</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Nível</th>
+                <th>Formato</th>
+                <th>Exemplo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Campanha</td>
+                <td><code>[FASE]_[PÚBLICO]</code></td>
+                <td><code>CAPTACAO_LOOKALIKE1PCT</code></td>
+              </tr>
+              <tr>
+                <td>Conjunto de Anúncios</td>
+                <td><code>[GÊNERO]_[FAIXA_ETÁRIA]_[LOCALIZAÇÃO]</code></td>
+                <td><code>F_35-50_SUL-SUDESTE</code></td>
+              </tr>
+              <tr>
+                <td>Anúncio</td>
+                <td><code>[ÂNGULO]_[FORMATO]_[VERSÃO]</code></td>
+                <td><code>RECOMPENSADORA_REELS_V1</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ─── SECTION 11 ─────────────────────────────────────────── -->
+    <div class="section-card" id="s11">
+      <div class="section-header">
+        <div class="section-badge">11</div>
+        <div class="section-icon">⚠️</div>
+        <div class="section-title">Riscos e Planos de Contingência</div>
+      </div>
+      <div class="section-body">
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Risco</th>
+                <th>Prob.</th>
+                <th>Plano B</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>CPL acima de R$ 4,00 nas primeiras semanas</td>
+                <td><span class="badge media">Média</span></td>
+                <td>Testar novos ângulos criativos; revisar público-alvo; reduzir faixa etária para 38–48 anos</td>
+              </tr>
+              <tr>
+                <td>Match Rate baixo na Custom Audience (&lt; 30%)</td>
+                <td><span class="badge alta">Alta</span></td>
+                <td>Adicionar e-mail além do telefone no upload; incluir primeiro nome para aumentar o matching</td>
+              </tr>
+              <tr>
+                <td>Rejeição de anúncio por política da Meta (claims de saúde)</td>
+                <td><span class="badge media">Média</span></td>
+                <td>Evitar palavras proibidas: "emagrecer X kg", "perder peso garantido", "cura". Focar em comportamento, não em resultado físico mensurável</td>
+              </tr>
+              <tr>
+                <td>Mentoras não entregam CPLs até 24/05</td>
+                <td><span class="badge alta">Alta</span></td>
+                <td>Escalar conteúdo orgânico nos grupos; usar depoimentos da Turma 1 como substituto de aquecimento</td>
+              </tr>
+              <tr>
+                <td>Taxa de abertura de e-mail baixa (&lt; 20%)</td>
+                <td><span class="badge media">Média</span></td>
+                <td>Revisar autenticação DKIM/SPF/DMARC no domínio; testar diferentes subject lines com A/B</td>
+              </tr>
+              <tr>
+                <td>Grupos VIP WhatsApp invadidos por curiosos</td>
+                <td><span class="badge baixa">Baixa</span></td>
+                <td>Configurar grupos como "Apenas Admins podem enviar mensagens"; nunca divulgar o link publicamente</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ─── SECTION 12 ─────────────────────────────────────────── -->
+    <div class="section-card" id="s12">
+      <div class="section-header">
+        <div class="section-badge">12</div>
+        <div class="section-icon">✅</div>
+        <div class="section-title">Checklist Pré-Lançamento — Validação Final</div>
+      </div>
+      <div class="section-body">
+
+        <!-- Infraestrutura -->
+        <div class="checklist-group">
+          <div class="checklist-group-title">⚙️ Infraestrutura Técnica</div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">Landing page no ar e testada em dispositivos mobile (iOS e Android)</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">Pixel da Meta instalado e disparando todos os eventos corretamente</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">API de Conversões (CAPI) configurada e validada no Events Manager</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">Formulário de captura salvando leads no banco de dados com UTMs</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">E-mail worker funcionando (teste de disparo realizado com e-mail real)</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">Z-API WhatsApp conectado e enviando mensagens de boas-vindas automaticamente</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">Domínio Resend verificado (DKIM / SPF / DMARC configurados)</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">Admin panel acessível e funcional — visualização de leads em tempo real</div></div>
+        </div>
+
+        <!-- Conteúdo -->
+        <div class="checklist-group">
+          <div class="checklist-group-title">✍️ Conteúdo e Copy</div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">10 perguntas do quiz com copy V2 validado pela Daniely Albuquerque</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">4 páginas de resultado com copy final aprovado (uma por perfil sabotador)</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">Link do Grupo VIP WhatsApp atualizado na página de resultado da LP</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">7 templates de e-mail escritos, revisados e aprovados pelas mentoras</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">CPL 1, 2 e 3 gravados e entregues ao Diego para edição (prazo: 03/05)</div></div>
+        </div>
+
+        <!-- Tráfego -->
+        <div class="checklist-group">
+          <div class="checklist-group-title">📢 Tráfego Pago</div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">Conta de anúncios Meta verificada, com crédito disponível e limite aprovado</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">Termos de Custom Audiences aceitos na plataforma do Meta Ads Manager</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">Base de 2.500 leads higienizada em formato E.164 e pronta para upload</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">Criativos produzidos por ângulo: vídeos (Reels) + imagens estáticas + carrosséis</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">Campanhas criadas e em revisão no Meta Ads Manager (ativar em 04/05)</div></div>
+          <div class="checklist-item"><div class="check-box"></div><div class="check-text">UTMs configurados em absolutamente todos os links de anúncios</div></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ─── SECTION 13 ─────────────────────────────────────────── -->
+    <div class="section-card" id="s13">
+      <div class="section-header">
+        <div class="section-badge">13</div>
+        <div class="section-icon">👥</div>
+        <div class="section-title">Contatos da Equipe</div>
+      </div>
+      <div class="section-body">
+
+        <div class="team-grid">
+          <div class="team-card">
+            <div class="team-role">Estratégia &amp; Tráfego</div>
+            <div class="team-name">Wender Martinez</div>
+            <div class="team-resp">Gestão dos R$ 7.500 de budget em Meta Ads, landing page, sistema técnico, integração de dados e coordenação geral do lançamento.</div>
+          </div>
+          <div class="team-card">
+            <div class="team-role">Mentora Nutricionista</div>
+            <div class="team-name">Ira Soraya</div>
+            <div class="team-resp">Validação clínica do conteúdo nutricional, gravação dos CPLs, condução das lives de hotseat e presença nos eventos ao vivo.</div>
+          </div>
+          <div class="team-card">
+            <div class="team-role">Mentora Psicóloga</div>
+            <div class="team-name">Daniely Albuquerque</div>
+            <div class="team-resp">Validação clínica do quiz e das páginas de resultado, gravação dos CPLs, condução das sessões de hotseat e bônus de sessão individual.</div>
+          </div>
+          <div class="team-card">
+            <div class="team-role">Edição de Vídeo</div>
+            <div class="team-name">Diego</div>
+            <div class="team-resp">Edição dos CPLs 1, 2 e 3, produção dos depoimentos da Turma 1, criação de Reels e conteúdos em vídeo para os criativos de tráfego pago.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <footer>
+    <strong>EmagreSer 2.0</strong> &mdash; Documento Interno &mdash; Não compartilhar externamente &mdash;
+    Preparado por Wender Martinez &mdash; Maio 2026
+  </footer>
+
+</div><!-- /main -->
+
+<script>
+  // Hamburger menu
+  const hamburger = document.getElementById('hamburger');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    overlay.classList.add('active');
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
+  }
+
+  hamburger.addEventListener('click', () => {
+    if (sidebar.classList.contains('open')) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  });
+
+  overlay.addEventListener('click', closeSidebar);
+
+  // Close sidebar on nav link click (mobile)
+  document.querySelectorAll('.sidebar-nav a').forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        closeSidebar();
+      }
+    });
+  });
+
+  // Highlight active nav on scroll
+  const sections = document.querySelectorAll('[id^="s"]');
+  const navLinks = document.querySelectorAll('.sidebar-nav a');
+
+  function setActive() {
+    let current = '';
+    sections.forEach(section => {
+      const sectionTop = section.offsetTop - 80;
+      if (window.scrollY >= sectionTop) {
+        current = section.getAttribute('id');
+      }
+    });
+
+    navLinks.forEach(link => {
+      link.style.color = '';
+      link.style.borderLeftColor = '';
+      link.style.background = '';
+      if (link.getAttribute('href') === '#' + current) {
+        link.style.color = '#ffffff';
+        link.style.borderLeftColor = '#e8773a';
+        link.style.background = 'rgba(255,255,255,0.06)';
+      }
+    });
+  }
+
+  window.addEventListener('scroll', setActive, { passive: true });
+  setActive();
+</script>
+
+</body>
+</html>
