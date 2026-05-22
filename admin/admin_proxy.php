@@ -557,10 +557,21 @@ function wpp_stats() {
         );
         $counts[$s] = $r['count'] ?? 0;
     }
+    // Counts de confirmação de entrega
+    $r = sb_request('GET', 'whatsapp_queue', null,
+        'read_at=not.is.null&select=id&limit=1',
+        ['Prefer: count=exact']
+    );
+    $counts['read'] = $r['count'] ?? 0;
+    $r = sb_request('GET', 'whatsapp_queue', null,
+        'delivered_at=not.is.null&read_at=is.null&select=id&limit=1',
+        ['Prefer: count=exact']
+    );
+    $counts['delivered'] = $r['count'] ?? 0;
 
     // Últimas 100 msgs enviadas
     $sent = sb_request('GET', 'whatsapp_queue', null,
-        'status=eq.sent&select=id,to_name,to_phone,message,sent_at,scheduled_at&order=sent_at.desc&limit=100'
+        'status=eq.sent&select=id,to_name,to_phone,message,sent_at,scheduled_at,delivery_status,delivered_at,read_at,zapi_message_id&order=sent_at.desc&limit=100'
     );
 
     // Fila pendente/falha (próximas a processar)

@@ -1605,11 +1605,12 @@ async function wppLoad() {
 
   el.innerHTML = `
     <!-- Stats -->
-    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
-      <div class="stat-card"><div class="stat-num">${c.sent||0}</div><div class="stat-label">✅ Enviadas</div></div>
+    <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
+      <div class="stat-card"><div class="stat-num">${c.sent||0}</div><div class="stat-label">📤 Enviadas</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#065f46">${c.read||0}</div><div class="stat-label">👁 Lidas</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#1e40af">${c.delivered||0}</div><div class="stat-label">✅ Entregues</div></div>
       <div class="stat-card"><div class="stat-num">${c.pending||0}</div><div class="stat-label">⏳ Pendentes</div></div>
       <div class="stat-card"><div class="stat-num" style="color:${(c.failed||0)>0?'var(--red)':'var(--cta)'}">${c.failed||0}</div><div class="stat-label">❌ Falhas</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:${(c.processing||0)>0?'#f59e0b':'var(--cta)'}">${c.processing||0}</div><div class="stat-label">🔄 Em processamento</div></div>
     </div>
 
     <!-- Ações -->
@@ -1659,14 +1660,28 @@ async function wppLoad() {
       <div class="card-title">✅ Histórico de enviadas <span>${(r.sent||[]).length}</span></div>
       ${(r.sent||[]).length ? `
       <div class="table-wrap"><table>
-        <thead><tr><th>Lead</th><th>Telefone</th><th>Mensagem</th><th>Enviado em</th></tr></thead>
+        <thead><tr><th>Lead</th><th>Telefone</th><th>Mensagem</th><th>Enviado em</th><th>Confirmação</th></tr></thead>
         <tbody>
-          ${(r.sent||[]).map(m => `<tr>
-            <td style="font-weight:600;font-size:.85rem">${escHtml(m.to_name||'—')}</td>
-            <td style="font-size:.8rem;color:var(--text3)">${escHtml(m.to_phone||'')}</td>
-            <td style="font-size:.78rem;color:var(--text2);max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml((m.message||'').slice(0,140))}${(m.message||'').length>140?'…':''}</td>
-            <td style="font-size:.78rem;color:var(--text3);white-space:nowrap">${m.sent_at ? new Date(m.sent_at).toLocaleString('pt-BR') : '—'}</td>
-          </tr>`).join('')}
+          ${(r.sent||[]).map(m => {
+            const ds = (m.delivery_status||'').toLowerCase();
+            let badge = '';
+            if (m.read_at || ds === 'read' || ds === 'played') {
+              badge = `<span title="Lido em ${m.read_at ? new Date(m.read_at).toLocaleString('pt-BR') : ''}" style="display:inline-flex;align-items:center;gap:3px;background:#d1fae5;color:#065f46;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px">👁 Lido</span>`;
+            } else if (m.delivered_at || ds === 'received') {
+              badge = `<span title="Entregue em ${m.delivered_at ? new Date(m.delivered_at).toLocaleString('pt-BR') : ''}" style="display:inline-flex;align-items:center;gap:3px;background:#dbeafe;color:#1e40af;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px">✅ Entregue</span>`;
+            } else if (ds === 'sent' || m.zapi_message_id) {
+              badge = `<span style="display:inline-flex;align-items:center;gap:3px;background:#f3f4f6;color:#6b7280;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:20px">📤 Enviado</span>`;
+            } else {
+              badge = `<span style="font-size:.7rem;color:var(--text3)">—</span>`;
+            }
+            return `<tr>
+              <td style="font-weight:600;font-size:.85rem">${escHtml(m.to_name||'—')}</td>
+              <td style="font-size:.8rem;color:var(--text3)">${escHtml(m.to_phone||'')}</td>
+              <td style="font-size:.78rem;color:var(--text2);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml((m.message||'').slice(0,120))}${(m.message||'').length>120?'…':''}</td>
+              <td style="font-size:.78rem;color:var(--text3);white-space:nowrap">${m.sent_at ? new Date(m.sent_at).toLocaleString('pt-BR') : '—'}</td>
+              <td style="white-space:nowrap">${badge}</td>
+            </tr>`;
+          }).join('')}
         </tbody>
       </table></div>` : `<p style="color:var(--text3);font-size:.85rem">Nenhuma mensagem enviada ainda.</p>`}
     </div>`;
