@@ -73,10 +73,18 @@ switch ($action) {
     case 'wpp_cancel_msg':  require_auth(); wpp_cancel_msg();  break;
 
     // Templates de e-mail
-    case 'list_email_templates':  require_auth(); list_email_templates();  break;
-    case 'get_email_template':    require_auth(); get_email_template();    break;
-    case 'save_email_template':   require_auth(); save_email_template();   break;
-    case 'delete_email_template': require_auth(); delete_email_template(); break;
+    case 'list_email_templates':   require_auth(); list_email_templates();   break;
+    case 'get_email_template':     require_auth(); get_email_template();     break;
+    case 'save_email_template':    require_auth(); save_email_template();    break;
+    case 'delete_email_template':  require_auth(); delete_email_template();  break;
+    case 'toggle_email_template':  require_auth(); toggle_email_template();  break;
+
+    // Templates de WhatsApp
+    case 'list_wpp_templates':     require_auth(); list_wpp_templates();     break;
+    case 'get_wpp_template':       require_auth(); get_wpp_template();       break;
+    case 'save_wpp_template':      require_auth(); save_wpp_template();      break;
+    case 'delete_wpp_template':    require_auth(); delete_wpp_template();    break;
+    case 'toggle_wpp_template':    require_auth(); toggle_wpp_template();    break;
 
     // Usuários do painel
     case 'list_users':    require_auth(); list_users();    break;
@@ -365,7 +373,7 @@ function wpp_cancel_msg() {
 
 // ── EMAIL TEMPLATES HANDLERS ──────────────────────────────────────────────────
 function list_email_templates() {
-    $res = sb_request('GET', 'email_templates', null, 'select=slug,subject,updated_at&order=slug.asc&limit=200');
+    $res = sb_request('GET', 'email_templates', null, 'select=slug,subject,active,updated_at&order=slug.asc&limit=200');
     echo json_encode(['ok' => true, 'data' => $res['body'] ?? []]);
 }
 
@@ -374,7 +382,7 @@ function get_email_template() {
     if (!$slug || !preg_match('/^[a-z0-9_\-]+$/', $slug)) {
         echo json_encode(['ok'=>false,'error'=>'Slug inválido']); return;
     }
-    $res = sb_request('GET', 'email_templates', null, 'slug=eq.' . rawurlencode($slug) . '&select=slug,subject,body_html&limit=1');
+    $res = sb_request('GET', 'email_templates', null, 'slug=eq.' . rawurlencode($slug) . '&select=slug,subject,body_html,active&limit=1');
     $row = $res['body'][0] ?? null;
     echo json_encode(['ok' => (bool)$row, 'data' => $row]);
 }
@@ -383,33 +391,21 @@ function save_email_template() {
     $slug      = trim($_POST['slug']      ?? '');
     $subject   = trim($_POST['subject']   ?? '');
     $body_html = $_POST['body_html']      ?? '';
-
     if (!$slug || !preg_match('/^[a-z0-9_\-]+$/', $slug)) {
         echo json_encode(['ok'=>false,'error'=>'Slug inválido']); return;
     }
     if (!$subject) { echo json_encode(['ok'=>false,'error'=>'Assunto obrigatório']); return; }
-
     $data = ['slug'=>$slug,'subject'=>$subject,'body_html'=>$body_html,'updated_at'=>date('c')];
-    // Tenta upsert via header Prefer:resolution=merge-duplicates
-    $url  = SUPABASE_URL . '/rest/v1/email_templates';
-    $hdrs = [
-        'apikey: ' . SUPABASE_SERVICE_KEY,
-        'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
-        'Content-Type: application/json',
-        'Prefer: resolution=merge-duplicates,return=minimal',
-    ];
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CUSTOMREQUEST  => 'POST',
-        CURLOPT_HTTPHEADER     => $hdrs,
-        CURLOPT_POSTFIELDS     => json_encode($data),
-        CURLOPT_TIMEOUT        => 15,
-    ]);
-    curl_exec($ch);
-    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    echo json_encode(['ok' => ($code >= 200 && $code < 300)]);
+    $res = sb_upsert('email_templates', $data, 'slug');
+    echo json_encode(['ok' => $res]);
+}
+
+function toggle_email_template() {
+    $slug   = trim($_POST['slug']   ?? '');
+    $active = ($_POST['active'] ?? '1') === '1';
+    if (!$slug) { echo json_encode(['ok'=>false,'error'=>'Slug obrigatório']); return; }
+    $res = sb_request('PATCH', 'email_templates?slug=eq.' . rawurlencode($slug), ['active'=>$active,'updated_at'=>date('c')]);
+    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
 }
 
 function delete_email_template() {
@@ -418,6 +414,54 @@ function delete_email_template() {
         echo json_encode(['ok'=>false,'error'=>'Slug inválido']); return;
     }
     $res = sb_request('DELETE', 'email_templates?slug=eq.' . rawurlencode($slug));
+    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
+}
+
+// ── WPP TEMPLATES HANDLERS ────────────────────────────────────────────────────
+function list_wpp_templates() {
+    $res = sb_request('GET', 'wpp_templates', null, 'select=id,slug,name,message,active,updated_at&order=name.asc&limit=200');
+    echo json_encode(['ok' => true, 'data' => $res['body'] ?? []]);
+}
+
+function get_wpp_template() {
+    $id = (int)($_POST['id'] ?? 0);
+    if (!$id) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $res = sb_request('GET', 'wpp_templates', null, 'id=eq.' . $id . '&select=id,slug,name,message,active&limit=1');
+    $row = $res['body'][0] ?? null;
+    echo json_encode(['ok' => (bool)$row, 'data' => $row]);
+}
+
+function save_wpp_template() {
+    $id      = (int)($_POST['id']      ?? 0);
+    $slug    = trim($_POST['slug']    ?? '');
+    $name    = trim($_POST['name']    ?? '');
+    $message = $_POST['message']      ?? '';
+    if (!$name)    { echo json_encode(['ok'=>false,'error'=>'Nome obrigatório']); return; }
+    if (!$message) { echo json_encode(['ok'=>false,'error'=>'Mensagem obrigatória']); return; }
+    if (!$slug)    $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '_', $name));
+
+    $data = ['slug'=>$slug,'name'=>$name,'message'=>$message,'updated_at'=>date('c')];
+    if ($id) {
+        $res = sb_request('PATCH', 'wpp_templates?id=eq.' . $id, $data);
+        echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
+    } else {
+        $res = sb_upsert('wpp_templates', $data, 'slug');
+        echo json_encode(['ok' => $res]);
+    }
+}
+
+function toggle_wpp_template() {
+    $id     = (int)($_POST['id']     ?? 0);
+    $active = ($_POST['active'] ?? '1') === '1';
+    if (!$id) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $res = sb_request('PATCH', 'wpp_templates?id=eq.' . $id, ['active'=>$active,'updated_at'=>date('c')]);
+    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
+}
+
+function delete_wpp_template() {
+    $id = (int)($_POST['id'] ?? 0);
+    if (!$id) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $res = sb_request('DELETE', 'wpp_templates?id=eq.' . $id);
     echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
 }
 
@@ -592,6 +636,29 @@ function require_auth() {
 
 function is_valid_uuid($str) {
     return (bool)preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $str);
+}
+
+function sb_upsert(string $table, array $data, string $conflict_col): bool {
+    $url  = SUPABASE_URL . '/rest/v1/' . $table;
+    $hdrs = [
+        'apikey: '        . SUPABASE_SERVICE_KEY,
+        'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
+        'Content-Type: application/json',
+        'Prefer: resolution=merge-duplicates,return=minimal',
+    ];
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST  => 'POST',
+        CURLOPT_HTTPHEADER     => $hdrs,
+        CURLOPT_POSTFIELDS     => json_encode($data),
+        CURLOPT_TIMEOUT        => 15,
+        CURLOPT_SSL_VERIFYPEER => true,
+    ]);
+    curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return $code >= 200 && $code < 300;
 }
 
 function sb_request(string $method, string $path, ?array $body = null, string $query = ''): array {

@@ -186,6 +186,7 @@ tbody td{padding:10px 12px;vertical-align:top}
       <div class="nav-item" data-page="leads" onclick="goPage('leads')"><span class="nav-item-icon">👥</span> Leads</div>
       <div class="nav-item" data-page="templates" onclick="goPage('templates')"><span class="nav-item-icon">📧</span> Templates E-mail</div>
       <div class="nav-item" data-page="whatsapp" onclick="goPage('whatsapp')"><span class="nav-item-icon">📱</span> WhatsApp</div>
+      <div class="nav-item" data-page="wpp_templates" onclick="goPage('wpp_templates')"><span class="nav-item-icon">💬</span> Templates WPP</div>
       <div class="nav-item" data-page="usuarios" onclick="goPage('usuarios')"><span class="nav-item-icon">👤</span> Usuários</div>
     </nav>
     <div class="sidebar-footer">
@@ -272,7 +273,7 @@ function goPage(name) {
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === name);
   });
-  const pages = { dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras, config: configPage, leads, templates: emailTemplates, whatsapp: wppPage, usuarios: usuariosPage };
+  const pages = { dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras, config: configPage, leads, templates: emailTemplates, whatsapp: wppPage, wpp_templates: wppTemplatesPage, usuarios: usuariosPage };
   if (pages[name]) pages[name]();
 }
 
@@ -1274,7 +1275,7 @@ async function tplSaveNew() {
 async function tplDelete(slug) {
   if (!confirm(`Excluir o template "${slug}"? Essa ação não pode ser desfeita.`)) return;
   const r = await proxyWrite({ action: 'delete_email_template', slug });
-  if (r.ok) { toast('Template excluído'); await tplLoadList(); document.getElementById('tpl-editor').innerHTML = '<p style="color:#9ca3af;text-align:center;margin:auto">Selecione um template para editar</p>'; }
+  if (r.ok) { toast('Template excluído'); window._tplActive = null; await tplLoadList(); const topbar=document.getElementById('tpl-topbar'); const preview=document.getElementById('tpl-preview-panel'); const empty=document.getElementById('tpl-empty'); if(topbar) topbar.style.display='none'; if(preview) preview.style.display='none'; if(empty) empty.style.display='block'; }
   else toast('Erro ao excluir', 'error');
 }
 
@@ -1708,6 +1709,211 @@ async function wppCancel(id) {
   const r = await proxyWrite({ action: 'wpp_cancel_msg', id });
   if (r.ok) { toast('Mensagem cancelada.'); await wppLoad(); }
   else toast('Erro ao cancelar: ' + (r.error||''), 'error');
+}
+
+/* ── WPP TEMPLATES ───────────────────────────────────────────────── */
+async function wppTemplatesPage() {
+  document.getElementById('main-content').innerHTML = `
+    <div class="page-title">Templates WhatsApp</div>
+    <div class="page-sub">Crie, edite e ative/desative as mensagens enviadas pelo WhatsApp.</div>
+    <div style="display:flex;gap:16px;align-items:flex-start">
+      <!-- Lista lateral -->
+      <div style="width:240px;min-width:240px;background:#fff;border-radius:12px;border:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:20px;max-height:calc(100vh - 120px);overflow:hidden">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+          <span style="font-weight:700;font-size:.9rem">💬 Templates WPP</span>
+          <button onclick="wptNew()" style="background:var(--cta);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600">+ Novo</button>
+        </div>
+        <div id="wpt-list" style="overflow-y:auto;padding:8px;flex:1"><div style="padding:10px;color:#9ca3af;font-size:13px">Carregando…</div></div>
+      </div>
+      <!-- Área principal -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+        <!-- Formulário de edição -->
+        <div id="wpt-form" style="display:none;background:#fff;border-radius:12px;border:1px solid var(--border);padding:24px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+            <div>
+              <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Template</div>
+              <div id="wpt-slug-display" style="font-size:.9rem;font-weight:700;color:#1c1917;font-family:monospace"></div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button id="wpt-toggle-btn" onclick="wptToggle()" style="border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:600;border:1px solid var(--border);background:#f3f4f6"></button>
+              <button onclick="wptDelete()" style="background:#fff1f2;border:1px solid #fecdd3;color:#e11d48;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:500">🗑 Excluir</button>
+              <button onclick="wptSave()" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:13px;cursor:pointer;font-weight:700">💾 Salvar</button>
+            </div>
+          </div>
+          <input type="hidden" id="wpt-id" value="">
+          <div class="field-group">
+            <label>Nome do template <span style="font-weight:400;color:var(--text3);font-size:.75rem">(interno, para identificar)</span></label>
+            <input id="wpt-name" placeholder="Ex: Reengajamento D+1" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:.88rem">
+          </div>
+          <div class="field-group">
+            <label>Identificador (slug) <span style="font-weight:400;color:var(--text3);font-size:.75rem">(letras minúsculas, números e _ apenas)</span></label>
+            <input id="wpt-slug" placeholder="reengajamento_d1" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:.88rem;font-family:monospace">
+          </div>
+          <div class="field-group">
+            <label>Mensagem <span style="font-weight:400;color:var(--text3);font-size:.75rem">— Variáveis: <code>{{nome}}</code> <code>{{link_wpp}}</code> <code>{{link_site}}</code> <code>{{link_descadastro}}</code></span></label>
+            <textarea id="wpt-message" rows="10" oninput="wptUpdatePreview()" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:.88rem;resize:vertical;line-height:1.6;font-family:inherit" placeholder="Olá {{nome}}! 👋\n\nSua mensagem aqui..."></textarea>
+          </div>
+          <!-- Pré-visualização -->
+          <div style="margin-top:4px">
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Pré-visualização</div>
+            <div id="wpt-preview" style="background:#dcfce7;border-radius:12px 12px 12px 4px;padding:14px 16px;font-size:.88rem;line-height:1.7;white-space:pre-wrap;max-width:480px;color:#1c1917;box-shadow:0 1px 4px rgba(0,0,0,.07)"></div>
+          </div>
+        </div>
+        <!-- Formulário novo -->
+        <div id="wpt-new-form" style="display:none;background:#fff;border-radius:12px;border:1px solid var(--border);padding:24px">
+          <div style="font-weight:700;font-size:1rem;margin-bottom:18px;color:var(--text)">Novo Template WhatsApp</div>
+          <div class="field-group">
+            <label>Nome do template</label>
+            <input id="wpt-new-name" placeholder="Ex: Reengajamento D+1" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:.88rem" oninput="wptAutoSlug()">
+          </div>
+          <div class="field-group">
+            <label>Identificador (slug)</label>
+            <input id="wpt-new-slug" placeholder="reengajamento_d1" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:.88rem;font-family:monospace">
+          </div>
+          <div class="field-group">
+            <label>Mensagem <span style="font-weight:400;color:var(--text3);font-size:.75rem">— Variáveis: <code>{{nome}}</code> <code>{{link_wpp}}</code> <code>{{link_site}}</code></span></label>
+            <textarea id="wpt-new-message" rows="10" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:.88rem;resize:vertical;line-height:1.6;font-family:inherit" placeholder="Olá {{nome}}! 👋\n\nSua mensagem aqui..."></textarea>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button onclick="wptCreate()" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;cursor:pointer;font-weight:700">💾 Criar Template</button>
+            <button onclick="document.getElementById('wpt-new-form').style.display='none'" style="background:#f3f4f6;border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;cursor:pointer">Cancelar</button>
+          </div>
+        </div>
+        <!-- Estado vazio -->
+        <div id="wpt-empty" style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:60px;text-align:center;color:#9ca3af">
+          ← Selecione um template ou clique em "+ Novo" para criar
+        </div>
+      </div>
+    </div>`;
+  await wptLoadList();
+}
+
+let _wptActive = null;
+
+async function wptLoadList() {
+  const r = await proxyWrite({ action: 'list_wpp_templates' });
+  const list = document.getElementById('wpt-list');
+  if (!list) return;
+  if (!r.ok || !r.data?.length) { list.innerHTML = '<p style="padding:12px;color:#9ca3af;font-size:13px">Nenhum template</p>'; return; }
+  list.innerHTML = r.data.map(t => `
+    <div onclick="wptLoad(${t.id})" id="wpt-item-${t.id}"
+      style="padding:10px 14px;border-radius:8px;cursor:pointer;margin-bottom:4px;transition:background .15s;opacity:${t.active?1:.5}"
+      onmouseover="this.style.background='#f4f3ef'" onmouseout="this.style.background=_wptActive===${t.id}?'#f0fdfa':''">
+      <div style="font-size:13px;font-weight:600;color:#1c1917">${escHtml(t.name)}</div>
+      <div style="font-size:11px;font-family:monospace;color:#6b7280;margin-top:2px">${escHtml(t.slug)}</div>
+      <div style="font-size:11px;color:${t.active?'var(--green)':'var(--text3)'};margin-top:2px">${t.active?'● Ativo':'○ Inativo'}</div>
+    </div>`).join('');
+}
+
+async function wptLoad(id) {
+  _wptActive = id;
+  document.querySelectorAll('#wpt-list > div').forEach(el => el.style.background = '');
+  const item = document.getElementById('wpt-item-' + id);
+  if (item) item.style.background = '#fff7ed';
+
+  const r = await proxyWrite({ action: 'get_wpp_template', id });
+  if (!r.ok || !r.data) { toast('Erro ao carregar template', 'error'); return; }
+  const t = r.data;
+
+  document.getElementById('wpt-new-form').style.display = 'none';
+  document.getElementById('wpt-empty').style.display = 'none';
+  const form = document.getElementById('wpt-form');
+  form.style.display = 'block';
+
+  document.getElementById('wpt-id').value        = t.id;
+  document.getElementById('wpt-slug-display').textContent = t.slug;
+  document.getElementById('wpt-slug').value      = t.slug;
+  document.getElementById('wpt-name').value      = t.name;
+  document.getElementById('wpt-message').value   = t.message;
+
+  const toggleBtn = document.getElementById('wpt-toggle-btn');
+  if (toggleBtn) {
+    toggleBtn.textContent  = t.active ? '⏸ Desativar' : '▶ Ativar';
+    toggleBtn.style.background = t.active ? '#fef2f2' : '#f0fdf4';
+    toggleBtn.style.color      = t.active ? '#dc2626'  : '#16a34a';
+    toggleBtn.style.borderColor= t.active ? '#fecaca'  : '#bbf7d0';
+    toggleBtn.dataset.active   = t.active ? '1' : '0';
+  }
+
+  wptUpdatePreview();
+}
+
+function wptUpdatePreview() {
+  const msg = document.getElementById('wpt-message')?.value || '';
+  const preview = document.getElementById('wpt-preview');
+  if (!preview) return;
+  const rendered = msg
+    .replace(/\{\{nome\}\}/g, 'Maria')
+    .replace(/\{\{link_wpp\}\}/g, 'https://chat.whatsapp.com/…')
+    .replace(/\{\{link_site\}\}/g, 'https://www.oficialemagreser.com')
+    .replace(/\{\{link_descadastro\}\}/g, 'https://www.oficialemagreser.com/descadastro');
+  preview.textContent = rendered;
+}
+
+function wptNew() {
+  _wptActive = null;
+  document.querySelectorAll('#wpt-list > div').forEach(el => el.style.background = '');
+  document.getElementById('wpt-form').style.display = 'none';
+  document.getElementById('wpt-empty').style.display = 'none';
+  document.getElementById('wpt-new-form').style.display = 'block';
+  document.getElementById('wpt-new-name').value = '';
+  document.getElementById('wpt-new-slug').value = '';
+  document.getElementById('wpt-new-message').value = '';
+}
+
+function wptAutoSlug() {
+  const name = document.getElementById('wpt-new-name')?.value || '';
+  const slug = name.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  const slugEl = document.getElementById('wpt-new-slug');
+  if (slugEl) slugEl.value = slug;
+}
+
+async function wptCreate() {
+  const name    = document.getElementById('wpt-new-name')?.value?.trim();
+  const slug    = document.getElementById('wpt-new-slug')?.value?.trim();
+  const message = document.getElementById('wpt-new-message')?.value;
+  if (!name)    { toast('Nome obrigatório', 'error'); return; }
+  if (!message) { toast('Mensagem obrigatória', 'error'); return; }
+  const r = await proxyWrite({ action: 'save_wpp_template', name, slug: slug||name.toLowerCase().replace(/\s+/g,'_'), message });
+  if (r.ok) { toast('Template criado!'); await wptLoadList(); document.getElementById('wpt-new-form').style.display = 'none'; document.getElementById('wpt-empty').style.display = 'block'; }
+  else toast('Erro ao criar: ' + (r.error||''), 'error');
+}
+
+async function wptSave() {
+  const id      = document.getElementById('wpt-id')?.value;
+  const name    = document.getElementById('wpt-name')?.value?.trim();
+  const slug    = document.getElementById('wpt-slug')?.value?.trim();
+  const message = document.getElementById('wpt-message')?.value;
+  if (!name)    { toast('Nome obrigatório', 'error'); return; }
+  if (!message) { toast('Mensagem obrigatória', 'error'); return; }
+  const r = await proxyWrite({ action: 'save_wpp_template', id, name, slug, message });
+  if (r.ok) { toast('Template salvo!'); await wptLoadList(); }
+  else toast('Erro ao salvar: ' + (r.error||''), 'error');
+}
+
+async function wptToggle() {
+  const id  = document.getElementById('wpt-id')?.value;
+  const btn = document.getElementById('wpt-toggle-btn');
+  const isActive = btn?.dataset.active === '1';
+  const r = await proxyWrite({ action: 'toggle_wpp_template', id, active: isActive ? '0' : '1' });
+  if (r.ok) { toast(isActive ? 'Template desativado.' : 'Template ativado!'); await wptLoadList(); await wptLoad(parseInt(id)); }
+  else toast('Erro: ' + (r.error||''), 'error');
+}
+
+async function wptDelete() {
+  const id   = document.getElementById('wpt-id')?.value;
+  const name = document.getElementById('wpt-name')?.value;
+  if (!confirm(`Excluir o template "${name}"? Essa ação não pode ser desfeita.`)) return;
+  const r = await proxyWrite({ action: 'delete_wpp_template', id });
+  if (r.ok) {
+    toast('Template excluído.');
+    _wptActive = null;
+    await wptLoadList();
+    document.getElementById('wpt-form').style.display = 'none';
+    document.getElementById('wpt-empty').style.display = 'block';
+  } else toast('Erro ao excluir: ' + (r.error||''), 'error');
 }
 
 /* ── INIT ─────────────────────── */
