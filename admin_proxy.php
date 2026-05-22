@@ -17,7 +17,7 @@ if (file_exists(__DIR__ . '/_env.php')) require_once __DIR__ . '/_env.php';
 
 // ── CONFIGURAÇÃO ──────────────────────────────────────────────────────────────
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
-define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: 'COLE_AQUI_SUA_SERVICE_ROLE_KEY');
+define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
 
 // Tempo de expiração da sessão em segundos (4 horas)
 define('SESSION_LIFETIME', 14400);
@@ -595,7 +595,7 @@ function is_valid_uuid($str) {
 }
 
 function sb_request(string $method, string $path, ?array $body = null, string $query = ''): array {
-    if (SUPABASE_SERVICE_KEY === 'COLE_AQUI_SUA_SERVICE_ROLE_KEY') {
+    if (strlen(SUPABASE_SERVICE_KEY) < 20) {
         return ['status' => 503, 'body' => null, 'error' => 'Service key não configurada'];
     }
 

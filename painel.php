@@ -5,6 +5,7 @@
  * Acesso: /painel.php (requer login no admin primeiro)
  */
 
+// Carrega credenciais do arquivo de ambiente (se existir no servidor)
 if (file_exists(__DIR__ . '/_env.php')) require_once __DIR__ . '/_env.php';
 
 date_default_timezone_set('America/Sao_Paulo');
@@ -22,13 +23,13 @@ function fmtBr(?string $iso, bool $full = false): string {
 }
 
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
-define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY'));
-define('RESEND_API_KEY',       getenv('RESEND_API_KEY'));
+define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
+define('RESEND_API_KEY',       getenv('RESEND_API_KEY')       ?: '***REMOVED_RESEND_KEY***');
 define('SMTP_FROM',            'emagreser@oficialemagreser.com');
 define('SMTP_FROM_NAME',       'Programa EmagreSer');
-define('ZAPI_INSTANCE',        getenv('ZAPI_INSTANCE'));
-define('ZAPI_TOKEN',           getenv('ZAPI_TOKEN'));
-define('ZAPI_CLIENT_TOKEN',    getenv('ZAPI_CLIENT_TOKEN'));
+define('ZAPI_INSTANCE',        getenv('ZAPI_INSTANCE')        ?: '***REMOVED_ZAPI_INSTANCE***');
+define('ZAPI_TOKEN',           getenv('ZAPI_TOKEN')           ?: '***REMOVED_ZAPI_TOKEN***');
+define('ZAPI_CLIENT_TOKEN',    getenv('ZAPI_CLIENT_TOKEN')    ?: '***REMOVED_ZAPI_CLIENT_TOKEN***');
 define('ZAPI_URL',             'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
 
 // ── SESSÃO: usa o mesmo cookie do admin ──────────────────────────────
@@ -38,7 +39,6 @@ session_start();
 
 // Verifica autenticação — mesmo $_SESSION['admin'] do admin_proxy.php
 if (empty($_SESSION['admin'])) {
-    // Redireciona para o login do admin, voltando ao painel depois
     $redirect = urlencode((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
         . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
     header('Location: /admin/?redirect=' . $redirect);
@@ -48,23 +48,23 @@ if (empty($_SESSION['admin'])) {
 $admin_user = $_SESSION['admin'];
 $admin_name = $admin_user['username'] ?? 'admin';
 
-// ── ENDPOINT DE STATS PARA POLLING AJAX (sessão já validada acima) ──
+// ── ENDPOINT DE STATS PARA POLLING AJAX ──────────────────────────────
 if (($_GET['action'] ?? '') === 'stats') {
     header('Content-Type: application/json');
     $now_iso = gmdate('Y-m-d\TH:i:s\Z');
     echo json_encode([
-        'ts'          => date('H:i:s'),
-        'leads_total' => count(sb_get("leads?select=id")),
-        'leads_queued'=> count(sb_get("leads?sequence_queued_at=not.is.null&select=id")),
-        'email_sent'  => count(sb_get("email_queue?status=eq.sent&select=id")),
-        'email_pend'  => count(sb_get("email_queue?status=eq.pending&select=id")),
-        'email_fail'  => count(sb_get("email_queue?status=eq.failed&select=id")),
-        'email_stuck' => count(sb_get("email_queue?status=eq.processing&select=id")),
-        'wpp_sent'    => count(sb_get("whatsapp_queue?status=eq.sent&select=id")),
-        'wpp_pend'    => count(sb_get("whatsapp_queue?status=eq.pending&select=id")),
-        'wpp_fail'    => count(sb_get("whatsapp_queue?status=eq.failed&select=id")),
-        'wpp_stuck'   => count(sb_get("whatsapp_queue?status=eq.processing&select=id")),
-        'wpp_overdue' => count(sb_get("whatsapp_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&select=id")),
+        'ts'           => date('H:i:s'),
+        'leads_total'  => count(sb_get("leads?select=id")),
+        'leads_queued' => count(sb_get("leads?sequence_queued_at=not.is.null&select=id")),
+        'email_sent'   => count(sb_get("email_queue?status=eq.sent&select=id")),
+        'email_pend'   => count(sb_get("email_queue?status=eq.pending&select=id")),
+        'email_fail'   => count(sb_get("email_queue?status=eq.failed&select=id")),
+        'email_stuck'  => count(sb_get("email_queue?status=eq.processing&select=id")),
+        'wpp_sent'     => count(sb_get("whatsapp_queue?status=eq.sent&select=id")),
+        'wpp_pend'     => count(sb_get("whatsapp_queue?status=eq.pending&select=id")),
+        'wpp_fail'     => count(sb_get("whatsapp_queue?status=eq.failed&select=id")),
+        'wpp_stuck'    => count(sb_get("whatsapp_queue?status=eq.processing&select=id")),
+        'wpp_overdue'  => count(sb_get("whatsapp_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&select=id")),
         'email_overdue'=> count(sb_get("email_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&select=id")),
     ]);
     exit;
@@ -153,11 +153,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'force_send_email') {
         $id = sanitize_uuid($_POST['item_id'] ?? '');
         if ($id) {
-            // Só força se ainda estiver pending (evita reenvio duplo por clique repetido)
             $items = sb_get("email_queue?id=eq.{$id}&status=in.(pending,failed)&limit=1");
             if (!empty($items)) {
                 $item = $items[0];
-                // Trava atômica antes de enviar
                 sb_patch("email_queue?id=eq.{$id}", ['status'=>'processing','attempts'=>($item['attempts']+1)]);
                 $tpls = sb_get("email_templates?slug=eq." . rawurlencode($item['template_slug']) . "&limit=1");
                 if (!empty($tpls)) {
@@ -208,18 +206,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // ── PROCESSAR FILA AGORA (roda o worker inline) ──────────────────
+    // ── PROCESSAR FILA AGORA ─────────────────────────────────────────
     if ($action === 'process_now') {
-        // gmdate evita o '+' do timezone no URL que quebra a query Supabase
         $now_iso  = gmdate('Y-m-d\TH:i:s\Z');
         $pending  = sb_get("email_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=lt.3&order=scheduled_at.asc&limit=20");
         $sent_c = 0; $fail_c = 0;
-        if (is_list($pending) || empty($pending)) {
+        if (is_seq_list($pending) || empty($pending)) {
             foreach ($pending as $item) {
                 if (!is_array($item) || !isset($item['id'])) continue;
                 sb_patch("email_queue?id=eq.{$item['id']}", ['attempts'=>($item['attempts']+1)]);
                 $tpls = sb_get("email_templates?slug=eq.".rawurlencode($item['template_slug'])."&limit=1");
-                if (!is_list($tpls) || empty($tpls)) { sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>'failed','error_msg'=>'template not found']); $fail_c++; continue; }
+                if (!is_seq_list($tpls) || empty($tpls)) { sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>'failed','error_msg'=>'template not found']); $fail_c++; continue; }
                 $tpl  = $tpls[0];
                 $extra = $item['extra_vars'] ?? []; if (is_string($extra)) $extra = json_decode($extra, true) ?: [];
                 $vars = array_merge(['{{nome}}'=>htmlspecialchars($item['to_name']??'você'),'{{link_descadastro}}'=>'https://www.oficialemagreser.com/descadastro.php?email='.urlencode($item['to_email']),'{{link_wpp}}'=>'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ','{{link_site}}'=>'https://www.oficialemagreser.com','{{emoji}}'=>'','{{tipo}}'=>'','{{titulo}}'=>'','{{descricao}}'=>''], $extra);
@@ -241,7 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $wpp_pending = sb_get("whatsapp_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=lt.3&order=scheduled_at.asc&limit=10");
         $wpp_sent_c = 0;
-        if (is_list($wpp_pending) || empty($wpp_pending)) {
+        if (is_seq_list($wpp_pending) || empty($wpp_pending)) {
             foreach ($wpp_pending as $item) {
                 if (!is_array($item) || !isset($item['id'])) continue;
                 sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['attempts'=>($item['attempts']+1)]);
@@ -256,7 +253,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 usleep(300000);
             }
         }
-        // Confirmação real: conta quantos foram gravados no email_log agora
         $confirmed_c = count(sb_get("email_log?created_at=gte.{$now_iso}&select=id"));
         if ($sent_c === 0 && $fail_c === 0 && $wpp_sent_c === 0) {
             $msg = "ℹ️ Nenhum item na fila estava vencido agora. Use ⚡ Forçar em itens individuais se precisar enviar antes do horário.";
@@ -264,18 +260,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $msg = "✅ Enviados via Resend: {$sent_c} e-mail(s) | Confirmado no log: {$confirmed_c} | Falhas: {$fail_c} | WPP: {$wpp_sent_c}";
             if ($fail_c > 0 && $sent_c === 0) $msg_type = 'fail';
-            elseif ($confirmed_c < $sent_c) { $msg .= " ⚠️ Diferença entre aceito e confirmado — verifique spam ou logs do servidor."; $msg_type = 'warn'; }
+            elseif ($confirmed_c < $sent_c) { $msg .= " ⚠️ Diferença entre aceito e confirmado — verifique spam ou logs."; $msg_type = 'warn'; }
             else $msg_type = 'ok';
         }
     }
 
-    // PRG: redireciona após qualquer POST para evitar re-envio ao atualizar a página
+    // PRG: redireciona após POST para evitar re-envio ao atualizar
     $qs = $msg ? '?msg=' . urlencode($msg) . '&mt=' . urlencode($msg_type ?? 'ok') : '';
     header('Location: /painel.php' . $qs);
     exit;
 }
 
-// Recupera mensagem de flash da query string (vinda do redirect)
+// Recupera mensagem flash da query string
 if (!$msg && isset($_GET['msg'])) {
     $msg      = $_GET['msg'];
     $msg_type = $_GET['mt'] ?? 'ok';
@@ -300,14 +296,14 @@ $recent_fail   = sb_get("email_queue?status=eq.failed&select=id,to_email,to_name
 $wpp_fail_list = sb_get("whatsapp_queue?status=eq.failed&select=id,to_phone,message,error_msg,attempts,created_at&order=created_at.desc&limit=20");
 $wpp_sent_list = sb_get("whatsapp_queue?status=eq.sent&select=id,to_name,to_phone,message,sent_at,delivery_status,delivered_at,read_at,zapi_message_id&order=sent_at.desc&limit=50");
 
-// Fila completa para agrupar por lead
-$all_email_q   = sb_get("email_queue?status=eq.pending&select=id,to_email,to_name,lead_id,template_slug,scheduled_at,attempts&order=scheduled_at.asc&limit=200");
-$all_wpp_q     = sb_get("whatsapp_queue?status=eq.pending&select=id,to_phone,to_name,lead_id,message,scheduled_at,attempts&order=scheduled_at.asc&limit=200");
+// Fila completa agrupada por lead
+$all_email_q = sb_get("email_queue?status=eq.pending&select=id,to_email,to_name,lead_id,template_slug,scheduled_at,attempts&order=scheduled_at.asc&limit=200");
+$all_wpp_q   = sb_get("whatsapp_queue?status=eq.pending&select=id,to_phone,to_name,lead_id,message,scheduled_at,attempts&order=scheduled_at.asc&limit=200");
 
-// Agrupa por lead (garante que é lista válida — descarta erros do Supabase)
-function is_list(array $a): bool { return !empty($a) && array_keys($a) === range(0, count($a)-1); }
+function is_seq_list(array $a): bool { return !empty($a) && array_keys($a) === range(0, count($a)-1); }
+
 $email_by_lead = [];
-if (is_list($all_email_q) || empty($all_email_q)) {
+if (is_seq_list($all_email_q) || empty($all_email_q)) {
     foreach ($all_email_q as $r) {
         if (!is_array($r) || !isset($r['to_email'])) continue;
         $k = $r['to_email'];
@@ -316,11 +312,11 @@ if (is_list($all_email_q) || empty($all_email_q)) {
     }
 }
 $wpp_by_lead = [];
-if (is_list($all_wpp_q) || empty($all_wpp_q)) {
+if (is_seq_list($all_wpp_q) || empty($all_wpp_q)) {
     foreach ($all_wpp_q as $r) {
         if (!is_array($r) || !isset($r['to_phone'])) continue;
         $k = $r['to_phone'];
-        if (!isset($wpp_by_lead[$k])) $wpp_by_lead[$k] = ['name'=>$r['to_name'] ?? $k, 'phone'=>$k,'items'=>[]];
+        if (!isset($wpp_by_lead[$k])) $wpp_by_lead[$k] = ['name'=>$r['to_name']??$k,'phone'=>$k,'items'=>[]];
         $wpp_by_lead[$k]['items'][] = $r;
     }
 }
@@ -330,11 +326,7 @@ $log_file   = __DIR__ . '/email_worker.log';
 $log_exists = file_exists($log_file);
 $log_last   = $log_exists ? file_get_contents($log_file) : '';
 $log_lines  = $log_last ? array_slice(array_filter(explode("\n", trim($log_last))), -5) : [];
-$now_ts = time();
-$log_age_ok = false;
-if ($log_exists) {
-    $log_age_ok = ($now_ts - filemtime($log_file)) < 1800; // rodou nos últimos 30min
-}
+$log_age_ok = $log_exists && (time() - filemtime($log_file)) < 1800;
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -381,8 +373,6 @@ tr:last-child td{border-bottom:none}
 .btn-force{background:#7c3aed;color:#fff;font-size:11px;padding:4px 9px;border-radius:5px;border:none;cursor:pointer}
 .btn-force:hover{background:#6d28d9}
 .btn-sm{font-size:11px;padding:4px 10px;width:auto}
-
-/* ACORDEÃO DE LEADS */
 .lead-row{cursor:pointer;background:#f0fdf4;transition:background .15s}
 .lead-row:hover{background:#dcfce7}
 .lead-row td{font-weight:700;font-size:13px;padding:9px 10px}
@@ -391,17 +381,12 @@ tr:last-child td{border-bottom:none}
 .detail-rows.open{display:table-row-group}
 .detail-row td{background:#fafafa;padding:6px 10px 6px 24px;font-size:12px;border-bottom:1px solid #f0f0f0}
 .detail-actions{display:flex;gap:6px;align-items:center}
-
-/* DIAGNÓSTICO */
 .diag{background:#fff;border-radius:10px;border:1px solid #ede9e2;padding:14px 18px;margin-bottom:14px;font-size:12px}
 .diag h4{margin:0 0 8px;font-size:13px;font-weight:700;color:#0f172a}
 .diag-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
 .diag-ok{color:#059669;font-weight:700}.diag-warn{color:#d97706;font-weight:700}.diag-fail{color:#dc2626;font-weight:700}
 .log-pre{background:#1e293b;color:#a3e635;font-family:monospace;font-size:11px;padding:10px;border-radius:6px;margin-top:8px;max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
-
 .refresh-bar{background:#1e293b;color:#64748b;text-align:center;font-size:11px;padding:5px;position:sticky;bottom:0}
-.cfg-input{width:100%;padding:5px 8px;border:1px solid #d1d5db;border-radius:5px;font-size:12px;resize:vertical;min-height:32px;font-family:Arial,sans-serif}
-.cfg-key{font-family:monospace;font-size:11px;color:#7c3aed;white-space:nowrap;padding-right:8px}
 </style>
 </head>
 <body>
@@ -410,7 +395,7 @@ tr:last-child td{border-bottom:none}
     <h1>📊 Painel de Automação — EmagreSer</h1>
     <span style="display:flex;align-items:center;gap:12px">
       <span id="live-dot" style="width:8px;height:8px;border-radius:50%;background:#64748b;display:inline-block;transition:background .3s"></span>
-      <span id="last-update" style="font-size:11px;color:#94a3b8"><?= date('d/m/Y H:i:s') ?></span>
+      <span id="last-update" style="font-size:11px;color:#94a3b8">Atualizado: <?= date('H:i:s') ?></span>
       <span style="font-size:11px;color:#64748b">👤 <?= htmlspecialchars($admin_name) ?></span>
       <a href="/admin/" style="font-size:11px;color:#5eead4;text-decoration:none;background:rgba(94,234,212,.1);padding:4px 10px;border-radius:6px;font-weight:700">← Admin</a>
     </span>
@@ -434,8 +419,8 @@ tr:last-child td{border-bottom:none}
       <?php endif; ?>
     </div>
     <div class="diag-row">
-      <?php $resend_ok = defined('RESEND_API_KEY') && RESEND_API_KEY !== 'COLOQUE_SUA_RESEND_API_KEY_AQUI' && strlen(RESEND_API_KEY) > 10; ?>
-      <?= $resend_ok ? '<span class="diag-ok">✅</span> Resend API Key configurada' : '<span class="diag-fail">❌</span> Resend API Key não configurada — coloque em painel.php e email_worker.php' ?>
+      <?php $resend_ok = strlen(RESEND_API_KEY) > 10; ?>
+      <?= $resend_ok ? '<span class="diag-ok">✅</span> Resend API Key configurada' : '<span class="diag-fail">❌</span> Resend API Key não configurada' ?>
     </div>
     <div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap">
       <form method="post" style="margin:0">
@@ -460,12 +445,10 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
-  <!-- MANUTENÇÃO DA FILA — sempre visível -->
+  <!-- MANUTENÇÃO DA FILA -->
   <div class="section">
     <div class="section-hdr">🔧 Manutenção da Fila</div>
     <div style="padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
-
-      <!-- E-MAIL -->
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px">
         <div style="font-weight:700;font-size:13px;margin-bottom:10px">📧 E-mail</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
@@ -478,8 +461,6 @@ tr:last-child td{border-bottom:none}
           <form method="post" style="margin:0" onsubmit="return confirm('Excluir todos com falha?')"><input type="hidden" name="action" value="delete_all_failed_email"><button type="submit" class="btn btn-red" <?= $email_fail==0?'disabled style="opacity:.45"':'' ?>>🗑️ Excluir falhas</button></form>
         </div>
       </div>
-
-      <!-- WHATSAPP -->
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px">
         <div style="font-weight:700;font-size:13px;margin-bottom:10px">💬 WhatsApp</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
@@ -492,11 +473,10 @@ tr:last-child td{border-bottom:none}
           <form method="post" style="margin:0" onsubmit="return confirm('Excluir todos com falha?')"><input type="hidden" name="action" value="delete_all_failed_wpp"><button type="submit" class="btn btn-red" <?= $wpp_fail==0?'disabled style="opacity:.45"':'' ?>>🗑️ Excluir falhas</button></form>
         </div>
       </div>
-
     </div>
   </div>
 
-  <!-- CARDS STATS — ids usados pelo polling JS -->
+  <!-- CARDS STATS -->
   <div class="cards">
     <div class="card"><div class="n" id="stat-leads"><?= $leads_total ?></div><div class="l">Leads cadastradas</div></div>
     <div class="card"><div class="n" id="stat-queued"><?= $leads_queued ?></div><div class="l">Na automação</div></div>
@@ -540,7 +520,7 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
-  <!-- E-MAILS COM FALHA — sempre visível -->
+  <!-- E-MAILS COM FALHA -->
   <div class="section">
     <div class="section-hdr">
       <?php if ($email_fail > 0): ?>⚠️ <?= $email_fail ?> e-mail(s) com falha<?php else: ?>✅ E-mails com falha (nenhum)<?php endif; ?>
@@ -574,7 +554,7 @@ tr:last-child td{border-bottom:none}
     <?php endif; ?>
   </div>
 
-  <!-- WHATSAPP COM FALHA — sempre visível -->
+  <!-- WHATSAPP COM FALHA -->
   <div class="section">
     <div class="section-hdr">
       <?php if ($wpp_fail > 0): ?>⚠️ <?= $wpp_fail ?> WhatsApp(s) com falha<?php else: ?>✅ WhatsApp com falha (nenhum)<?php endif; ?>
@@ -625,20 +605,16 @@ tr:last-child td{border-bottom:none}
     <div style="padding:14px;color:#6b7c67;text-align:center">Nenhum e-mail pendente</div>
     <?php else: ?>
     <table>
-      <tr><th>Lead</th><th>Mensagens</th><th>Próximo envio</th><th>Ações</th></tr>
+      <tr><th>Lead</th><th>Mensagens</th><th>Próximo envio (Brasília)</th><th>Ações</th></tr>
       <?php foreach ($email_by_lead as $key => $group):
         $gid = 'eg-' . md5($key);
         $next = $group['items'][0]['scheduled_at'] ?? '';
-        $next_dt = $next ? substr($next,0,16) : '—';
         $overdue = $next && strtotime($next) < time();
       ?>
       <tr class="lead-row" onclick="toggleGroup('<?= $gid ?>')">
-        <td>
-          <?= htmlspecialchars($group['name']) ?>
-          <span style="font-size:11px;font-weight:400;color:#6b7c67;display:block"><?= htmlspecialchars($key) ?></span>
-        </td>
+        <td><?= htmlspecialchars($group['name']) ?><span style="font-size:11px;font-weight:400;color:#6b7c67;display:block"><?= htmlspecialchars($key) ?></span></td>
         <td><?= count($group['items']) ?> e-mail(s) <span class="toggle-icon" id="icon-<?= $gid ?>">▶</span></td>
-        <td style="<?= $overdue?'color:#dc2626;font-weight:700':'' ?>"><?= $next_dt ?><?= $overdue?' ⚠️ atrasado':'' ?></td>
+        <td style="<?= $overdue?'color:#dc2626;font-weight:700':'' ?>"><?= fmtBr($next ?: null) ?><?= $overdue?' ⚠️ atrasado':'' ?></td>
         <td></td>
       </tr>
       <tbody id="<?= $gid ?>" class="detail-rows">
@@ -660,14 +636,14 @@ tr:last-child td{border-bottom:none}
     <?php endif; ?>
   </div>
 
-  <!-- LOG DE ENVIADOS -->
+  <!-- LOG DE E-MAILS ENVIADOS -->
   <div class="section">
     <div class="section-hdr">✅ Últimos E-mails Enviados</div>
     <?php if (empty($recent_sent)): ?>
     <div style="padding:14px;color:#6b7c67;text-align:center">Nenhum e-mail enviado ainda</div>
     <?php else: ?>
     <table>
-      <tr><th>E-mail</th><th>Template</th><th>Enviado em</th></tr>
+      <tr><th>E-mail</th><th>Template</th><th>Enviado em (Brasília)</th></tr>
       <?php foreach ($recent_sent as $r): ?>
       <tr>
         <td><?= htmlspecialchars($r['to_email']) ?></td>
@@ -696,20 +672,16 @@ tr:last-child td{border-bottom:none}
     <div style="padding:14px;color:#6b7c67;text-align:center">Nenhum WhatsApp pendente</div>
     <?php else: ?>
     <table>
-      <tr><th>Lead</th><th>Mensagens</th><th>Próximo envio</th><th>Ações</th></tr>
+      <tr><th>Lead</th><th>Mensagens</th><th>Próximo envio (Brasília)</th><th>Ações</th></tr>
       <?php foreach ($wpp_by_lead as $key => $group):
         $gid = 'wg-' . md5($key);
         $next = $group['items'][0]['scheduled_at'] ?? '';
-        $next_dt = $next ? substr($next,0,16) : '—';
         $overdue = $next && strtotime($next) < time();
       ?>
       <tr class="lead-row" onclick="toggleGroup('<?= $gid ?>')">
-        <td>
-          <?= htmlspecialchars($group['name']) ?>
-          <span style="font-size:11px;font-weight:400;color:#6b7c67;display:block"><?= htmlspecialchars($key) ?></span>
-        </td>
+        <td><?= htmlspecialchars($group['name']) ?><span style="font-size:11px;font-weight:400;color:#6b7c67;display:block"><?= htmlspecialchars($key) ?></span></td>
         <td><?= count($group['items']) ?> msg(s) <span class="toggle-icon" id="icon-<?= $gid ?>">▶</span></td>
-        <td style="<?= $overdue?'color:#dc2626;font-weight:700':'' ?>"><?= $next_dt ?><?= $overdue?' ⚠️ atrasado':'' ?></td>
+        <td style="<?= $overdue?'color:#dc2626;font-weight:700':'' ?>"><?= fmtBr($next ?: null) ?><?= $overdue?' ⚠️ atrasado':'' ?></td>
         <td></td>
       </tr>
       <tbody id="<?= $gid ?>" class="detail-rows">
@@ -731,20 +703,20 @@ tr:last-child td{border-bottom:none}
     <?php endif; ?>
   </div>
 
-  <!-- ── Histórico WPP enviados ── -->
+  <!-- HISTÓRICO WPP ENVIADOS COM CONFIRMAÇÃO -->
   <div class="section">
     <div class="section-hdr">✅ WhatsApp enviados — <?= count($wpp_sent_list) ?> mensagem(ns)</div>
     <?php if (empty($wpp_sent_list)): ?>
     <div style="padding:14px;color:#6b7c67;text-align:center">Nenhum WhatsApp enviado ainda</div>
     <?php else: ?>
     <table>
-      <tr><th>Lead</th><th>Telefone</th><th>Mensagem</th><th>Enviado em</th><th>Confirmação</th></tr>
+      <tr><th>Lead</th><th>Telefone</th><th>Mensagem</th><th>Enviado em (Brasília)</th><th>Confirmação</th></tr>
       <?php foreach ($wpp_sent_list as $r):
         $ds = strtolower($r['delivery_status'] ?? '');
         if (!empty($r['read_at']) || $ds === 'read' || $ds === 'played') {
-          $badge = '<span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px" title="Lido em ' . htmlspecialchars(substr($r['read_at']??'',0,16)) . '">👁 Lido</span>';
+          $badge = '<span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px" title="Lido em ' . htmlspecialchars(fmtBr($r['read_at']??null)) . '">👁 Lido</span>';
         } elseif (!empty($r['delivered_at']) || $ds === 'received') {
-          $badge = '<span style="background:#dbeafe;color:#1e40af;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px" title="Entregue em ' . htmlspecialchars(substr($r['delivered_at']??'',0,16)) . '">✅ Entregue</span>';
+          $badge = '<span style="background:#dbeafe;color:#1e40af;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px" title="Entregue em ' . htmlspecialchars(fmtBr($r['delivered_at']??null)) . '">✅ Entregue</span>';
         } elseif ($ds === 'sent' || !empty($r['zapi_message_id'])) {
           $badge = '<span style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px">📤 Enviado</span>';
         } else {
@@ -767,7 +739,6 @@ tr:last-child td{border-bottom:none}
 <div class="refresh-bar">Stats ao vivo (5s) · Recarga completa em <span id="countdown-bar">60</span>s &nbsp;·&nbsp; <span id="last-update-bar"><?= date('H:i:s') ?></span></div>
 
 <script>
-// Acordeão
 function toggleGroup(id) {
   const el = document.getElementById(id);
   const icon = document.getElementById('icon-' + id);
@@ -775,7 +746,6 @@ function toggleGroup(id) {
   const open = el.classList.toggle('open');
   if (icon) icon.textContent = open ? '▼' : '▶';
 }
-
 function toggleAll(type) {
   const prefix = type === 'email' ? 'eg-' : 'wg-';
   const groups = document.querySelectorAll('[id^="' + prefix + '"]');
@@ -786,8 +756,6 @@ function toggleAll(type) {
     else         { g.classList.add('open');    if(icon) icon.textContent='▼'; }
   });
 }
-
-// ── DISPARAR WORKER VIA AJAX ──────────────────────────────────────
 async function triggerWorker() {
   const btn = document.getElementById('btn-trigger-worker');
   const res = document.getElementById('worker-result');
@@ -798,71 +766,58 @@ async function triggerWorker() {
     const d = await r.json();
     res.style.display = 'block';
     if (d.ok) {
-      res.style.background = '#f0fdf4'; res.style.borderColor = '#bbf7d0'; res.style.color = '#065f46';
-      res.textContent = '✅ Worker executado — ' + (d.emails || 0) + ' e-mail(s) processado(s). ' + (d.log ? d.log.join(' | ') : '');
+      res.style.background='#f0fdf4';res.style.borderColor='#bbf7d0';res.style.color='#065f46';
+      res.textContent = '✅ Worker executado — '+(d.emails||0)+' e-mail(s) processado(s). '+(d.log?d.log.join(' | '):'');
     } else {
-      res.style.background = '#fef9c3'; res.style.borderColor = '#fde047'; res.style.color = '#854d0e';
-      res.textContent = '⚠️ ' + (d.msg || JSON.stringify(d));
+      res.style.background='#fef9c3';res.style.borderColor='#fde047';res.style.color='#854d0e';
+      res.textContent = '⚠️ '+(d.msg||JSON.stringify(d));
     }
-    // Atualiza stats imediatamente
     pollStats();
   } catch(e) {
-    res.style.display = 'block';
-    res.style.background = '#fee2e2'; res.style.borderColor = '#fca5a5'; res.style.color = '#991b1b';
-    res.textContent = '❌ Erro ao chamar worker: ' + e.message;
+    res.style.display='block';res.style.background='#fee2e2';res.style.borderColor='#fca5a5';res.style.color='#991b1b';
+    res.textContent = '❌ Erro ao chamar worker: '+e.message;
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '🚀 Disparar Worker (AJAX)'; }
+    if (btn) { btn.disabled=false; btn.textContent='🚀 Disparar Worker (AJAX)'; }
   }
 }
-
-// ── POLLING REAL-TIME (stats a cada 5s, reload completo a cada 60s) ──
 let reloadIn = 60;
-
 function setCard(id, val, redIf) {
   const el = document.getElementById(id);
   if (!el) return;
   el.textContent = val;
-  el.className = 'n' + (redIf ? ' red' : (val > 0 && id.includes('pend') ? ' amber' : ''));
+  el.className = 'n'+(redIf?' red':(val>0&&id.includes('pend')?' amber':''));
 }
-
 function pulse(ok) {
   const dot = document.getElementById('live-dot');
   if (!dot) return;
   dot.style.background = ok ? '#10b981' : '#ef4444';
   setTimeout(() => { dot.style.background = '#64748b'; }, 600);
 }
-
 async function pollStats() {
   try {
     const r = await fetch('painel.php?action=stats');
     if (!r.ok) { pulse(false); return; }
     const d = await r.json();
     pulse(true);
-
-    setCard('stat-leads',     d.leads_total,  false);
-    setCard('stat-queued',    d.leads_queued, false);
-    setCard('stat-esent',     d.email_sent,   false);
-    setCard('stat-epend',     d.email_pend,   false);
-    setCard('stat-efail',     d.email_fail,   d.email_fail > 0);
-    setCard('stat-wsent',     d.wpp_sent,     false);
-    setCard('stat-wpend',     d.wpp_pend,     false);
-    setCard('stat-wfail',     d.wpp_fail,     d.wpp_fail > 0);
-
-    // Alerta de itens vencidos
-    const overdue = (d.email_overdue || 0) + (d.wpp_overdue || 0);
+    setCard('stat-leads',  d.leads_total, false);
+    setCard('stat-queued', d.leads_queued,false);
+    setCard('stat-esent',  d.email_sent,  false);
+    setCard('stat-epend',  d.email_pend,  false);
+    setCard('stat-efail',  d.email_fail,  d.email_fail>0);
+    setCard('stat-wsent',  d.wpp_sent,    false);
+    setCard('stat-wpend',  d.wpp_pend,    false);
+    setCard('stat-wfail',  d.wpp_fail,    d.wpp_fail>0);
+    const overdue = (d.email_overdue||0)+(d.wpp_overdue||0);
     const ob = document.getElementById('overdue-badge');
-    if (ob) { ob.textContent = overdue > 0 ? '⚠️ ' + overdue + ' item(ns) vencido(s) aguardando worker' : ''; ob.style.display = overdue > 0 ? 'block' : 'none'; }
-
+    if (ob) { ob.textContent=overdue>0?'⚠️ '+overdue+' item(ns) vencido(s) aguardando worker':''; ob.style.display=overdue>0?'block':'none'; }
     const ts = document.getElementById('last-update');
-    if (ts) ts.textContent = 'Atualizado: ' + d.ts;
-
+    if (ts) ts.textContent = 'Atualizado: '+d.ts;
     reloadIn--;
     const cb = document.getElementById('countdown-bar');
-    if (cb) cb.textContent = reloadIn + 's';
+    if (cb) cb.textContent = reloadIn+'s';
     if (reloadIn <= 0) location.reload();
   } catch(e) { pulse(false); }
 }
-
 pollStats();
 setInterval(pollStats, 5000);
 </script>
@@ -878,7 +833,6 @@ function sanitize_uuid(string $s): string {
 function send_smtp(string $to, string $toName, string $subject, string $body): array {
     $from = SMTP_FROM_NAME . ' <' . SMTP_FROM . '>';
     $text = strip_tags(str_replace(['<br>','<br/>','<br />'], "\n", $body));
-
     $payload = json_encode([
         'from'     => $from,
         'to'       => [$toName ? "{$toName} <{$to}>" : $to],
@@ -887,27 +841,22 @@ function send_smtp(string $to, string $toName, string $subject, string $body): a
         'html'     => $body,
         'text'     => $text,
     ]);
-
     $ch = curl_init('https://api.resend.com/emails');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => $payload,
         CURLOPT_TIMEOUT        => 20,
-        CURLOPT_HTTPHEADER     => [
-            'Authorization: Bearer ' . RESEND_API_KEY,
-            'Content-Type: application/json',
-        ],
+        CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . RESEND_API_KEY, 'Content-Type: application/json'],
     ]);
     $res  = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $err  = curl_error($ch);
     curl_close($ch);
-
     if ($err) return ['ok'=>false, 'msg'=>"cURL: {$err}"];
     $data = json_decode($res, true);
-    if ($code === 200 || $code === 201) return ['ok'=>true, 'msg'=>'resend_id:' . ($data['id'] ?? 'ok')];
-    return ['ok'=>false, 'msg'=>"Resend [{$code}]: " . ($data['message'] ?? $res)];
+    if ($code === 200 || $code === 201) return ['ok'=>true, 'msg'=>'resend_id:'.($data['id']??'ok')];
+    return ['ok'=>false, 'msg'=>"Resend [{$code}]: ".($data['message']??$res)];
 }
 
 function send_whatsapp(string $phone, string $message): array {
