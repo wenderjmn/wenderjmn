@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $result = send_whatsapp($item['to_phone'], $item['message']);
                 if ($result['ok']) {
                     $now = gmdate('Y-m-d\TH:i:s\Z');
-                    sb_patch("whatsapp_queue?id=eq.{$id}", ['status'=>'sent','sent_at'=>$now]);
+                    sb_patch("whatsapp_queue?id=eq.{$id}", ['status'=>'sent','sent_at'=>$now,'zapi_message_id'=>$result['zaapId']??null,'delivery_status'=>'sent']);
                     $msg = "✅ WhatsApp forçado para {$item['to_phone']}"; $msg_type = 'ok';
                 } else {
                     sb_patch("whatsapp_queue?id=eq.{$id}", ['status'=>'failed','error_msg'=>$result['msg'],'attempts'=>($item['attempts']+1)]);
@@ -855,7 +855,8 @@ function send_whatsapp(string $phone, string $message): array {
     curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>json_encode(['phone'=>$phone,'message'=>$message]),CURLOPT_TIMEOUT=>15,CURLOPT_HTTPHEADER=>['Content-Type: application/json','Client-Token: '.ZAPI_CLIENT_TOKEN]]);
     $res = curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
     $data = json_decode($res, true);
-    return ($code===200 && !empty($data['zaapId'])) ? ['ok'=>true,'msg'=>'sent'] : ['ok'=>false,'msg'=>$res];
+    if ($code===200 && !empty($data['zaapId'])) return ['ok'=>true,'msg'=>'sent','zaapId'=>$data['zaapId']];
+    return ['ok'=>false,'msg'=>$res,'zaapId'=>null];
 }
 
 function sb_get(string $path): array {

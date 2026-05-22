@@ -115,7 +115,12 @@ if (ZAPI_INSTANCE && ZAPI_TOKEN) {
         $result = send_whatsapp($item['to_phone'], $item['message']);
 
         if ($result['ok']) {
-            sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['status'=>'sent','sent_at'=>$now_iso]);
+            sb_patch("whatsapp_queue?id=eq.{$item['id']}", [
+                'status'          => 'sent',
+                'sent_at'         => $now_iso,
+                'zapi_message_id' => $result['zaapId'] ?? null,
+                'delivery_status' => 'sent',
+            ]);
             $log[] = "✅ WA enviado para {$item['to_phone']}";
         } else {
             $status = ($item['attempts'] + 1) >= 3 ? 'failed' : 'pending';
@@ -197,8 +202,8 @@ function send_whatsapp(string $phone, string $message): array {
     curl_close($ch);
 
     $data = json_decode($res, true);
-    if ($code === 200 && !empty($data['zaapId'])) return ['ok'=>true,'msg'=>'sent'];
-    return ['ok'=>false,'msg'=>$res];
+    if ($code === 200 && !empty($data['zaapId'])) return ['ok'=>true,'msg'=>'sent','zaapId'=>$data['zaapId']];
+    return ['ok'=>false,'msg'=>$res,'zaapId'=>null];
 }
 
 // ── FUNÇÕES SUPABASE ──────────────────────────────────────────────
