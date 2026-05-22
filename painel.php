@@ -231,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['attempts'=>($item['attempts']+1)]);
                 $result = send_whatsapp($item['to_phone'], $item['message']);
                 if ($result['ok']) {
-                    sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['status'=>'sent','sent_at'=>$now_iso]);
+                    sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['status'=>'sent','sent_at'=>$now_iso,'zapi_message_id'=>$result['zaapId']??null,'delivery_status'=>'sent']);
                     $wpp_sent_c++;
                 } else {
                     $status = $item['attempts'] >= 2 ? 'failed' : 'pending';
@@ -271,6 +271,7 @@ $wpp_stuck     = count(sb_get("whatsapp_queue?status=eq.processing&select=id"));
 $recent_sent   = sb_get("email_log?select=to_email,template_slug,sent_at,smtp_response&order=sent_at.desc&limit=20");
 $recent_fail   = sb_get("email_queue?status=eq.failed&select=id,to_email,to_name,template_slug,error_msg,attempts,created_at&order=created_at.desc&limit=20");
 $wpp_fail_list = sb_get("whatsapp_queue?status=eq.failed&select=id,to_phone,message,error_msg,attempts,created_at&order=created_at.desc&limit=20");
+$wpp_sent_list = sb_get("whatsapp_queue?status=eq.sent&select=id,to_name,to_phone,message,sent_at,delivery_status,delivered_at,read_at,zapi_message_id&order=sent_at.desc&limit=50");
 
 // Fila completa para agrupar por lead
 $all_email_q   = sb_get("email_queue?status=eq.pending&select=id,to_email,to_name,lead_id,template_slug,scheduled_at,attempts&order=scheduled_at.asc&limit=200");
@@ -698,6 +699,38 @@ tr:last-child td{border-bottom:none}
         </tr>
         <?php endforeach; ?>
       </tbody>
+      <?php endforeach; ?>
+    </table>
+    <?php endif; ?>
+  </div>
+
+  <!-- ── Histórico WPP enviados ── -->
+  <div class="section">
+    <div class="section-hdr">✅ WhatsApp enviados — <?= count($wpp_sent_list) ?> mensagem(ns)</div>
+    <?php if (empty($wpp_sent_list)): ?>
+    <div style="padding:14px;color:#6b7c67;text-align:center">Nenhum WhatsApp enviado ainda</div>
+    <?php else: ?>
+    <table>
+      <tr><th>Lead</th><th>Telefone</th><th>Mensagem</th><th>Enviado em</th><th>Confirmação</th></tr>
+      <?php foreach ($wpp_sent_list as $r):
+        $ds = strtolower($r['delivery_status'] ?? '');
+        if (!empty($r['read_at']) || $ds === 'read' || $ds === 'played') {
+          $badge = '<span style="background:#d1fae5;color:#065f46;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px" title="Lido em ' . htmlspecialchars(substr($r['read_at']??'',0,16)) . '">👁 Lido</span>';
+        } elseif (!empty($r['delivered_at']) || $ds === 'received') {
+          $badge = '<span style="background:#dbeafe;color:#1e40af;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px" title="Entregue em ' . htmlspecialchars(substr($r['delivered_at']??'',0,16)) . '">✅ Entregue</span>';
+        } elseif ($ds === 'sent' || !empty($r['zapi_message_id'])) {
+          $badge = '<span style="background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px">📤 Enviado</span>';
+        } else {
+          $badge = '<span style="color:#9ca3af;font-size:11px">—</span>';
+        }
+      ?>
+      <tr>
+        <td><?= htmlspecialchars($r['to_name'] ?? '—') ?></td>
+        <td style="font-size:12px;color:#6b7280"><?= htmlspecialchars($r['to_phone'] ?? '') ?></td>
+        <td style="font-size:12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars(substr($r['message']??'',0,80)) ?><?= strlen($r['message']??'')>80?'…':'' ?></td>
+        <td style="font-size:12px;white-space:nowrap"><?= $r['sent_at'] ? substr($r['sent_at'],0,16) : '—' ?></td>
+        <td><?= $badge ?></td>
+      </tr>
       <?php endforeach; ?>
     </table>
     <?php endif; ?>
