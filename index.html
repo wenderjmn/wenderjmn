@@ -986,10 +986,37 @@ function buildHeroSlot(elId, url, label){
   if(!wrap)return;
   const id=ytId(url||'');
   if(id){
-    wrap.innerHTML=`<iframe src="https://www.youtube.com/embed/${id}?playsinline=1&rel=0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy"></iframe><div class="hero-video-label">${label}</div>`;
+    const ytUrl=`https://www.youtube.com/watch?v=${id}`;
+    const embedUrl=`https://www.youtube.com/embed/${id}?playsinline=1&rel=0`;
+    const iframe=document.createElement('iframe');
+    iframe.src=embedUrl;
+    iframe.allow='accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture';
+    iframe.allowFullscreen=true;
+    iframe.loading='lazy';
+    iframe.style.cssText='width:100%;height:100%;border:none;display:block';
+    iframe.addEventListener('error',function(){ytFallback(wrap,ytUrl,label);});
+    // Fallback via postMessage se o player reportar erro (erro 153, 150, etc.)
+    wrap.innerHTML='';
+    wrap.appendChild(iframe);
+    wrap.insertAdjacentHTML('beforeend',`<div class="hero-video-label">${label}</div>`);
+    // Detecta erro 153 via onload vazio (iframe carrega mas player falha)
+    iframe.onload=function(){
+      try{
+        const doc=iframe.contentDocument||iframe.contentWindow.document;
+        if(doc&&doc.body&&doc.body.innerHTML==='')ytFallback(wrap,ytUrl,label);
+      }catch(e){/* cross-origin — normal */}
+    };
   }else{
     wrap.innerHTML=`<div class="vph"><span style="font-size:1.6rem">🎥</span><span style="font-size:.72rem;color:var(--text3)">Em breve</span></div><div class="hero-video-label">${label}</div>`;
   }
+}
+function ytFallback(wrap,ytUrl,label){
+  wrap.innerHTML=`
+    <a href="${ytUrl}" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;background:#111;color:#fff;gap:10px;text-decoration:none">
+      <svg width="48" height="34" viewBox="0 0 48 34" fill="none"><rect width="48" height="34" rx="8" fill="#FF0000"/><path d="M19 10l14 7-14 7V10z" fill="#fff"/></svg>
+      <span style="font-size:.72rem;font-weight:600;opacity:.85">Assistir no YouTube</span>
+    </a>
+    <div class="hero-video-label">${label}</div>`;
 }
 
 function buildMentorVideo(elId,url,name){
