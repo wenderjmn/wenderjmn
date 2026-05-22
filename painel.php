@@ -922,8 +922,12 @@ function send_whatsapp(string $phone, string $message): array {
 function sb_get(string $path): array {
     $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $path);
     curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_HTTPHEADER=>['apikey: '.SUPABASE_SERVICE_KEY,'Authorization: Bearer '.SUPABASE_SERVICE_KEY,'Prefer: count=none']]);
-    $res = curl_exec($ch); curl_close($ch);
-    return json_decode($res, true) ?: [];
+    $res  = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($code < 200 || $code >= 300) return [];
+    $decoded = json_decode($res, true);
+    return is_array($decoded) ? $decoded : [];
 }
 
 function sb_post(string $table, array $data): void {
