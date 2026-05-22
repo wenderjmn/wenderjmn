@@ -11,7 +11,7 @@
 define('IMPORT_PASS',          getenv('IMPORT_PASS')          ?: '***REMOVED_IMPORT_PASS***');
 define('SUPABASE_URL',         getenv('SUPABASE_URL')         ?: 'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
-define('SITE_URL',             getenv('SITE_URL')             ?: 'https://emagreser.danielydealbuquerque.com.br');
+define('SITE_URL',             getenv('SITE_URL')             ?: 'https://www.oficialemagreser.com');
 define('WPP_LINK',             getenv('WPP_LINK')             ?: 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ');
 
 $is_cli = php_sapi_name() === 'cli';

@@ -1,6 +1,6 @@
 <?php
 // email_worker.php — Disparado via cron externo (cron-job.org) ou CLI.
-// URL externa: https://emagreser.danielydealbuquerque.com.br/email_worker.php?secret=***REMOVED_WORKER_SECRET***
+// URL externa: https://www.oficialemagreser.com/email_worker.php?secret=***REMOVED_WORKER_SECRET***
 // CLI Hostinger (backup): php public_html/email_worker.php
 
 // ── CONFIGURAÇÕES ────────────────────────────────────────────────
@@ -10,7 +10,7 @@ define('SUPABASE_SERVICE_KEY', '***REMOVED_SUPABASE_KEY***');
 
 // Resend.com — API de e-mail transacional
 define('RESEND_API_KEY',  '***REMOVED_RESEND_KEY***');
-define('SMTP_FROM',       'emagreser@danielydealbuquerque.com.br');
+define('SMTP_FROM',       'emagreser@oficialemagreser.com');
 define('SMTP_FROM_NAME',  'Programa EmagreSer');
 
 // Z-API WhatsApp
@@ -65,9 +65,9 @@ foreach ($pending as $item) {
     if (is_string($extra)) $extra = json_decode($extra, true) ?: [];
     $vars = array_merge([
         '{{nome}}'             => htmlspecialchars($item['to_name'] ?? 'você'),
-        '{{link_descadastro}}' => 'https://emagreser.danielydealbuquerque.com.br/descadastro.php?email=' . urlencode($item['to_email']),
+        '{{link_descadastro}}' => 'https://www.oficialemagreser.com/descadastro.php?email=' . urlencode($item['to_email']),
         '{{link_wpp}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
-        '{{link_site}}'        => 'https://emagreser.danielydealbuquerque.com.br',
+        '{{link_site}}'        => 'https://www.oficialemagreser.com',
         '{{emoji}}'            => '',
         '{{tipo}}'             => '',
         '{{titulo}}'           => '',

@@ -8,7 +8,7 @@
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', '***REMOVED_SUPABASE_KEY***');
 define('RESEND_API_KEY',       '***REMOVED_RESEND_KEY***');
-define('SMTP_FROM',            'emagreser@danielydealbuquerque.com.br');
+define('SMTP_FROM',            'emagreser@oficialemagreser.com');
 define('SMTP_FROM_NAME',       'Programa EmagreSer');
 define('ZAPI_INSTANCE',        '***REMOVED_ZAPI_INSTANCE***');
 define('ZAPI_TOKEN',           '***REMOVED_ZAPI_TOKEN***');
@@ -150,9 +150,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (is_string($extra)) $extra = json_decode($extra, true) ?: [];
                     $vars = array_merge([
                         '{{nome}}'             => htmlspecialchars($item['to_name'] ?? 'você'),
-                        '{{link_descadastro}}' => 'https://emagreser.danielydealbuquerque.com.br/descadastro.php?email='.urlencode($item['to_email']),
+                        '{{link_descadastro}}' => 'https://www.oficialemagreser.com/descadastro.php?email='.urlencode($item['to_email']),
                         '{{link_wpp}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
-                        '{{link_site}}'        => 'https://emagreser.danielydealbuquerque.com.br',
+                        '{{link_site}}'        => 'https://www.oficialemagreser.com',
                         '{{emoji}}'            => '', '{{tipo}}' => '', '{{titulo}}' => '', '{{descricao}}' => '',
                     ], $extra);
                     $subject = str_replace(array_keys($vars), array_values($vars), $tpl['subject']);
@@ -206,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!is_list($tpls) || empty($tpls)) { sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>'failed','error_msg'=>'template not found']); $fail_c++; continue; }
                 $tpl  = $tpls[0];
                 $extra = $item['extra_vars'] ?? []; if (is_string($extra)) $extra = json_decode($extra, true) ?: [];
-                $vars = array_merge(['{{nome}}'=>htmlspecialchars($item['to_name']??'você'),'{{link_descadastro}}'=>'https://emagreser.danielydealbuquerque.com.br/descadastro.php?email='.urlencode($item['to_email']),'{{link_wpp}}'=>'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ','{{link_site}}'=>'https://emagreser.danielydealbuquerque.com.br','{{emoji}}'=>'','{{tipo}}'=>'','{{titulo}}'=>'','{{descricao}}'=>''], $extra);
+                $vars = array_merge(['{{nome}}'=>htmlspecialchars($item['to_name']??'você'),'{{link_descadastro}}'=>'https://www.oficialemagreser.com/descadastro.php?email='.urlencode($item['to_email']),'{{link_wpp}}'=>'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ','{{link_site}}'=>'https://www.oficialemagreser.com','{{emoji}}'=>'','{{tipo}}'=>'','{{titulo}}'=>'','{{descricao}}'=>''], $extra);
                 $subject = str_replace(array_keys($vars),array_values($vars),$tpl['subject']);
                 $body    = str_replace(array_keys($vars),array_values($vars),$tpl['body_html']);
                 if (stripos($body,'<html')===false) $body='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"></head><body>'.$body.'</body></html>';
