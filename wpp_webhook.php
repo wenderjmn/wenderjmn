@@ -42,15 +42,20 @@ if (!$data) {
 $log_line = date('Y-m-d H:i:s') . ' ' . substr($raw, 0, 300) . "\n";
 file_put_contents(__DIR__ . '/wpp_webhook.log', $log_line, FILE_APPEND);
 
-// Só processa eventos de entrega de mensagens enviadas por nós
+// DeliveryCallbackDto: sempre sobre mensagens que enviamos — fromMe não existe neste evento
 $type       = $data['type']       ?? $data['event']  ?? '';
 $message_id = $data['messageId']  ?? $data['zaapId'] ?? '';
 $status     = strtoupper($data['status'] ?? '');
-$from_me    = $data['fromMe']     ?? false;
 
-// Aceita: DeliveryCallbackDto, MessageStatusCallback ou equivalente
-if (!$from_me || !$message_id || !$status) {
+// Rejeita apenas se não tiver messageId ou status (campos obrigatórios)
+if (!$message_id || !$status) {
     echo json_encode(['ok' => true, 'skipped' => true]);
+    exit;
+}
+
+// Ignora status que não são de entrega
+if (!in_array($status, ['SENT','RECEIVED','READ','PLAYED','PENDING','FAILED'])) {
+    echo json_encode(['ok' => true, 'skipped' => true, 'reason' => 'not_delivery_status']);
     exit;
 }
 

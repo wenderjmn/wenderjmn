@@ -266,6 +266,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             else $msg_type = 'ok';
         }
     }
+
+    // PRG: redireciona após qualquer POST para evitar re-envio ao atualizar a página
+    $qs = $msg ? '?msg=' . urlencode($msg) . '&mt=' . urlencode($msg_type ?? 'ok') : '';
+    header('Location: /painel.php' . $qs);
+    exit;
+}
+
+// Recupera mensagem de flash da query string (vinda do redirect)
+if (!$msg && isset($_GET['msg'])) {
+    $msg      = $_GET['msg'];
+    $msg_type = $_GET['mt'] ?? 'ok';
 }
 
 // ── DADOS ─────────────────────────────────────────────────────────────
