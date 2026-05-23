@@ -6,19 +6,20 @@
 if (file_exists(__DIR__ . '/_env.php')) require_once __DIR__ . '/_env.php';
 
 // ── CONFIGURAÇÕES ────────────────────────────────────────────────
-define('WORKER_SECRET',        getenv('WORKER_SECRET'));
+// Fallbacks hardcoded garantem que o worker funciona mesmo sem _env.php ou sem env vars no cron
+define('WORKER_SECRET',        getenv('WORKER_SECRET')        ?: '***REMOVED_WORKER_SECRET***');
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
-define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY'));
+define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
 
 // Resend.com — API de e-mail transacional
-define('RESEND_API_KEY',  getenv('RESEND_API_KEY'));
+define('RESEND_API_KEY',  getenv('RESEND_API_KEY')  ?: '***REMOVED_RESEND_KEY***');
 define('SMTP_FROM',       'emagreser@oficialemagreser.com');
 define('SMTP_FROM_NAME',  'Programa EmagreSer');
 
 // Z-API WhatsApp
-define('ZAPI_INSTANCE',     getenv('ZAPI_INSTANCE'));
-define('ZAPI_TOKEN',        getenv('ZAPI_TOKEN'));
-define('ZAPI_CLIENT_TOKEN', getenv('ZAPI_CLIENT_TOKEN'));
+define('ZAPI_INSTANCE',     getenv('ZAPI_INSTANCE')     ?: '***REMOVED_ZAPI_INSTANCE***');
+define('ZAPI_TOKEN',        getenv('ZAPI_TOKEN')        ?: '***REMOVED_ZAPI_TOKEN***');
+define('ZAPI_CLIENT_TOKEN', getenv('ZAPI_CLIENT_TOKEN') ?: '***REMOVED_ZAPI_CLIENT_TOKEN***');
 define('ZAPI_URL',          'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
 
 define('BATCH_SIZE', 20);
@@ -28,7 +29,7 @@ define('BATCH_SIZE', 20);
 $via_http = (php_sapi_name() !== 'cli');
 if ($via_http) {
     $secret = $_GET['secret'] ?? $_SERVER['HTTP_X_WORKER_SECRET'] ?? '';
-    if ($secret !== WORKER_SECRET) {
+    if (!WORKER_SECRET || $secret !== WORKER_SECRET) {
         http_response_code(403);
         exit(json_encode(['error' => 'Forbidden']));
     }
@@ -45,6 +46,16 @@ if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
 }
 
 $log = [];
+
+// ── VALIDAÇÃO DE CREDENCIAIS ─────────────────────────────────────
+if (!SUPABASE_SERVICE_KEY) {
+    $ts  = date('Y-m-d H:i:s');
+    $err = "[{$ts}] ERRO FATAL: SUPABASE_SERVICE_KEY não configurada. Worker abortado.\n";
+    file_put_contents(__DIR__ . '/email_worker.log', $err, FILE_APPEND);
+    flock($lock, LOCK_UN); fclose($lock);
+    if ($via_http) echo json_encode(['ok'=>false,'error'=>'missing SUPABASE_SERVICE_KEY']);
+    exit;
+}
 
 // ── PROCESSAR FILA DE E-MAILS ────────────────────────────────────
 $now_iso = gmdate('Y-m-d\TH:i:s\Z'); // sem '+' no timezone, evita quebra de URL
@@ -107,7 +118,9 @@ foreach ($pending as $item) {
 }
 
 // ── PROCESSAR FILA DE WHATSAPP ────────────────────────────────────
-if (ZAPI_INSTANCE && ZAPI_TOKEN) {
+if (!ZAPI_INSTANCE || !ZAPI_TOKEN) {
+    $log[] = "⚠️ WPP pulado: ZAPI_INSTANCE ou ZAPI_TOKEN não configurados";
+} else {
     $wpp_pending = sb_get("whatsapp_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=lt.3&order=scheduled_at.asc&limit=10");
 
     foreach ($wpp_pending as $item) {
@@ -138,11 +151,12 @@ flock($lock, LOCK_UN);
 fclose($lock);
 
 $ts = date('Y-m-d H:i:s');
-$output = "[{$ts}] Worker rodou. " . count($pending) . " email(s), " . count($wpp_pending ?? []) . " WPP processados.\n" . implode("\n", $log) . "\n";
+$wpp_count = isset($wpp_pending) ? count($wpp_pending) : 0;
+$output = "[{$ts}] Worker rodou. " . count($pending) . " email(s), {$wpp_count} WPP processados.\n" . implode("\n", $log) . "\n";
 file_put_contents(__DIR__ . '/email_worker.log', $output, FILE_APPEND);
 
 if ($via_http) {
-    echo json_encode(['ok' => true, 'ts' => $ts, 'emails' => count($pending), 'log' => $log]);
+    echo json_encode(['ok' => true, 'ts' => $ts, 'emails' => count($pending), 'wpp' => $wpp_count, 'log' => $log]);
 } else {
     echo $output;
 }

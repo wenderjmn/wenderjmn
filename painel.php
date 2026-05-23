@@ -291,6 +291,11 @@ $wpp_fail      = count(sb_get("whatsapp_queue?status=eq.failed&select=id"));
 $email_stuck   = count(sb_get("email_queue?status=eq.processing&select=id"));
 $wpp_stuck     = count(sb_get("whatsapp_queue?status=eq.processing&select=id"));
 
+// "Atrasados" = status pending + scheduled_at já passou + attempts=0 (nunca tentou — cron parado)
+$now_iso       = gmdate('Y-m-d\TH:i:s\Z');
+$email_overdue = count(sb_get("email_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=eq.0&select=id"));
+$wpp_overdue   = count(sb_get("whatsapp_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=eq.0&select=id"));
+
 $recent_sent   = sb_get("email_log?select=to_email,template_slug,sent_at,smtp_response&order=sent_at.desc&limit=20");
 $recent_fail   = sb_get("email_queue?status=eq.failed&select=id,to_email,to_name,template_slug,error_msg,attempts,created_at&order=created_at.desc&limit=20");
 $wpp_fail_list = sb_get("whatsapp_queue?status=eq.failed&select=id,to_phone,message,error_msg,attempts,created_at&order=created_at.desc&limit=20");
@@ -454,6 +459,7 @@ tr:last-child td{border-bottom:none}
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
           <span style="font-size:12px">Travados: <strong style="color:<?= $email_stuck>0?'#d97706':'#059669' ?>"><?= $email_stuck ?></strong></span>
           <span style="font-size:12px">Com falha: <strong style="color:<?= $email_fail>0?'#dc2626':'#059669' ?>"><?= $email_fail ?></strong></span>
+          <?php if($email_overdue>0): ?><span style="font-size:12px;background:#fef3c7;color:#92400e;padding:1px 7px;border-radius:10px;font-weight:700">⚠️ <?= $email_overdue ?> atrasados (cron parado?)</span><?php endif ?>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
           <form method="post" style="margin:0"><input type="hidden" name="action" value="reset_stuck_email"><button type="submit" class="btn btn-amber btn-sm" <?= $email_stuck==0?'disabled style="opacity:.45"':'' ?>>↺ Resetar travados</button></form>
@@ -466,6 +472,7 @@ tr:last-child td{border-bottom:none}
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
           <span style="font-size:12px">Travados: <strong style="color:<?= $wpp_stuck>0?'#d97706':'#059669' ?>"><?= $wpp_stuck ?></strong></span>
           <span style="font-size:12px">Com falha: <strong style="color:<?= $wpp_fail>0?'#dc2626':'#059669' ?>"><?= $wpp_fail ?></strong></span>
+          <?php if($wpp_overdue>0): ?><span style="font-size:12px;background:#fef3c7;color:#92400e;padding:1px 7px;border-radius:10px;font-weight:700">⚠️ <?= $wpp_overdue ?> atrasados (cron parado?)</span><?php endif ?>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
           <form method="post" style="margin:0"><input type="hidden" name="action" value="reset_stuck_wpp"><button type="submit" class="btn btn-amber btn-sm" <?= $wpp_stuck==0?'disabled style="opacity:.45"':'' ?>>↺ Resetar travados</button></form>
