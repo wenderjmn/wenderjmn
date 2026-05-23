@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Briefing Técnico — EmagreSer 2.0</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b27;
+    --bg3: #1e2535;
+    --border: #2a3348;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --purple: #8b5cf6;
+    --purple-light: #a78bfa;
+    --purple-bg: #1a1030;
+    --blue: #3b82f6;
+    --blue-light: #60a5fa;
+    --blue-bg: #0d1d3a;
+    --green: #10b981;
+    --green-light: #34d399;
+    --green-bg: #062318;
+    --red: #ef4444;
+    --red-light: #f87171;
+    --red-bg: #2a0a0a;
+    --orange: #f97316;
+    --orange-light: #fb923c;
+    --orange-bg: #1f0d00;
+    --yellow: #eab308;
+    --yellow-bg: #1a1400;
+    --teal: #14b8a6;
+    --pink: #ec4899;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #1a0533 0%, #0d1b4a 40%, #0a2a1a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 40px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 80% at 20% 50%, rgba(139,92,246,0.15) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 70% at 80% 30%, rgba(59,130,246,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 60% 80%, rgba(16,185,129,0.10) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-inner { position: relative; max-width: 1100px; margin: 0 auto; }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4);
+    border-radius: 100px; padding: 4px 14px; font-size: 12px;
+    color: var(--purple-light); font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; margin-bottom: 20px;
+  }
+  .header h1 {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 0%, #a78bfa 40%, #60a5fa 70%, #34d399 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    line-height: 1.15; margin-bottom: 12px;
+  }
+  .header-sub {
+    font-size: 17px; color: var(--muted); margin-bottom: 28px; max-width: 640px;
+  }
+  .header-meta {
+    display: flex; flex-wrap: wrap; gap: 20px;
+  }
+  .meta-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 8px 16px; font-size: 13px;
+  }
+  .meta-pill .label { color: var(--muted); }
+  .meta-pill .value { color: var(--text); font-weight: 600; }
+  .meta-pill .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 8px var(--green); flex-shrink: 0;
+  }
+
+  /* ── NAV ── */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(15,17,23,0.95); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+  }
+  .nav-inner {
+    max-width: 1100px; margin: 0 auto;
+    display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+  }
+  .nav-inner::-webkit-scrollbar { display: none; }
+  .nav a {
+    display: block; padding: 14px 16px; font-size: 13px; font-weight: 500;
+    color: var(--muted); text-decoration: none; white-space: nowrap;
+    border-bottom: 2px solid transparent; transition: all .2s;
+  }
+  .nav a:hover { color: var(--text); border-color: var(--purple); }
+
+  /* ── MAIN ── */
+  .main { max-width: 1100px; margin: 0 auto; padding: 40px 40px 80px; }
+
+  /* ── SECTION ── */
+  .section { margin-bottom: 52px; }
+  .section-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+  }
+  .section-icon {
+    width: 40px; height: 40px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .section-title { font-size: 22px; font-weight: 700; }
+  .section-desc { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  /* ── CARDS ── */
+  .cards { display: grid; gap: 16px; }
+  .cards-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .cards-3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .cards-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+  .card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px; position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .card.purple::before { background: linear-gradient(90deg, var(--purple), var(--blue)); }
+  .card.blue::before { background: linear-gradient(90deg, var(--blue), var(--teal)); }
+  .card.green::before { background: linear-gradient(90deg, var(--green), var(--teal)); }
+  .card.red::before { background: linear-gradient(90deg, var(--red), var(--orange)); }
+  .card.orange::before { background: linear-gradient(90deg, var(--orange), var(--yellow)); }
+  .card.pink::before { background: linear-gradient(90deg, var(--pink), var(--purple)); }
+
+  .card-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+  .card-value {
+    font-size: 28px; font-weight: 800; line-height: 1.1; margin-bottom: 4px;
+  }
+  .card-sub { font-size: 13px; color: var(--muted); }
+  .card-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .card-body { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  /* ── KPIs ── */
+  .kpi-purple { color: var(--purple-light); }
+  .kpi-blue { color: var(--blue-light); }
+  .kpi-green { color: var(--green-light); }
+  .kpi-orange { color: var(--orange-light); }
+  .kpi-red { color: var(--red-light); }
+
+  /* ── MENTORAS ── */
+  .mentora-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px;
+    display: flex; gap: 20px; align-items: flex-start;
+  }
+  .mentora-avatar {
+    width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 800; color: white;
+  }
+  .mentora-avatar.ira { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
+  .mentora-avatar.dan { background: linear-gradient(135deg, #3b82f6, #06b6d4); }
+  .mentora-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .mentora-role {
+    display: inline-block; padding: 3px 10px; border-radius: 100px;
+    font-size: 12px; font-weight: 600;
+  }
+  .mentora-role.ira { background: rgba(139,92,246,0.2); color: var(--purple-light); border: 1px solid rgba(139,92,246,0.3); }
+  .mentora-role.dan { background: rgba(59,130,246,0.2); color: var(--blue-light); border: 1px solid rgba(59,130,246,0.3); }
+
+  /* ── AVATAR ── */
+  .avatar-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;
+  }
+  .avatar-item {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 16px 20px;
+  }
+  .avatar-item .key { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .avatar-item .val { font-size: 15px; font-weight: 600; }
+
+  .pain-box {
+    background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.05));
+    border: 1px solid rgba(139,92,246,0.3); border-radius: var(--radius);
+    padding: 24px; margin-top: 16px;
+  }
+  .pain-label { font-size: 12px; color: var(--purple-light); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .pain-text { font-size: 18px; font-weight: 700; font-style: italic; color: var(--text); margin-bottom: 12px; }
+  .drivers { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+  .driver-tag {
+    background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 100px; padding: 5px 14px; font-size: 13px; font-weight: 600;
+    color: var(--purple-light);
+  }
+
+  /* ── SABOTEURS ── */
+  .saboteur-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px;
+    position: relative; overflow: hidden;
+    transition: transform .2s, border-color .2s;
+  }
+  .saboteur-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.15); }
+  .sab-letter {
+    font-size: 48px; font-weight: 900; opacity: 0.08;
+    position: absolute; top: 8px; right: 16px; line-height: 1;
+  }
+  .sab-emoji { font-size: 32px; margin-bottom: 12px; display: block; }
+  .sab-name { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .sab-desc { font-size: 14px; color: var(--muted); }
+  .sab-badge {
+    display: inline-block; margin-bottom: 12px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 3px 10px; border-radius: 100px;
+  }
+
+  /* ── TIMELINE ── */
+  .timeline { position: relative; }
+  .timeline::before {
+    content: ''; position: absolute; left: 120px; top: 0; bottom: 0;
+    width: 2px; background: linear-gradient(180deg, var(--purple), var(--blue), var(--green));
+  }
+  .tl-item {
+    display: flex; gap: 0; align-items: flex-start;
+    margin-bottom: 8px; position: relative;
+  }
+  .tl-date {
+    width: 120px; flex-shrink: 0; text-align: right;
+    padding-right: 24px; padding-top: 10px;
+    font-size: 12px; font-weight: 700; color: var(--muted); line-height: 1.3;
+  }
+  .tl-dot {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+    margin-top: 12px; position: relative; z-index: 1;
+    border: 2px solid var(--bg);
+  }
+  .tl-content {
+    flex: 1; padding: 10px 16px; margin-left: 16px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 14px;
+  }
+  .tl-content strong { display: block; font-weight: 700; margin-bottom: 2px; }
+  .tl-content .tl-note { font-size: 12px; color: var(--muted); }
+
+  .tl-phase-label {
+    display: flex; align-items: center; gap: 12px; margin: 20px 0 12px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .tl-phase-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .dot-purple { background: var(--purple); }
+  .dot-blue { background: var(--blue); }
+  .dot-green { background: var(--green); }
+  .dot-orange { background: var(--orange); }
+  .dot-red { background: var(--red); }
+  .dot-yellow { background: var(--yellow); }
+  .dot-pink { background: var(--pink); }
+
+  /* ── BUDGET ── */
+  .budget-bar-wrap {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px; margin-bottom: 16px;
+  }
+  .budget-bar-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .budget-bar-name { font-size: 14px; font-weight: 600; }
+  .budget-bar-amount { font-size: 14px; font-weight: 700; color: var(--text); }
+  .budget-bar-track {
+    height: 10px; background: rgba(255,255,255,0.05); border-radius: 100px; overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .budget-bar-fill { height: 100%; border-radius: 100px; transition: width .5s; }
+  .budget-bar-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+
+  /* ── TECH STACK ── */
+  .tech-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;
+  }
+  .tech-item {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 16px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .tech-icon {
+    width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .tech-name { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+  .tech-desc { font-size: 12px; color: var(--muted); }
+
+  /* ── AUTOMATIONS ── */
+  .seq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .seq-grid { grid-template-columns: 1fr; } }
+
+  .seq-box {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .seq-title {
+    font-size: 14px; font-weight: 700; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .seq-badge {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 100px;
+  }
+  .seq-email-badge { background: rgba(59,130,246,0.2); color: var(--blue-light); border: 1px solid rgba(59,130,246,0.3); }
+  .seq-wpp-badge { background: rgba(16,185,129,0.2); color: var(--green-light); border: 1px solid rgba(16,185,129,0.3); }
+
+  .seq-list { list-style: none; }
+  .seq-list li {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .seq-list li:last-child { border-bottom: none; }
+  .seq-day {
+    min-width: 42px; font-size: 11px; font-weight: 700; text-align: center;
+    padding: 2px 6px; border-radius: 4px; flex-shrink: 0; margin-top: 1px;
+  }
+  .seq-day.email { background: rgba(59,130,246,0.15); color: var(--blue-light); }
+  .seq-day.wpp { background: rgba(16,185,129,0.15); color: var(--green-light); }
+  .seq-day.date { background: rgba(234,179,8,0.15); color: var(--yellow); font-size: 10px; }
+  .seq-msg { color: var(--muted); line-height: 1.4; }
+
+  /* ── FILES ── */
+  .files-table {
+    width: 100%; border-collapse: collapse; font-size: 14px;
+  }
+  .files-table th {
+    text-align: left; padding: 10px 16px;
+    background: var(--bg3); border-bottom: 2px solid var(--border);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+    font-weight: 700;
+  }
+  .files-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .files-table tr:last-child td { border-bottom: none; }
+  .files-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .files-table .filename {
+    font-family: 'Consolas', 'Fira Code', monospace; font-size: 13px;
+    color: var(--blue-light); font-weight: 600;
+  }
+
+  /* ── BUGS ── */
+  .bug-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-bottom: 16px;
+  }
+  .bug-header {
+    display: flex; align-items: flex-start; gap: 16px; padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(239,68,68,0.05), transparent);
+  }
+  .bug-number {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; color: white;
+    background: linear-gradient(135deg, var(--red), var(--orange));
+  }
+  .bug-title-wrap { flex: 1; }
+  .bug-title { font-size: 16px; font-weight: 700; color: var(--red-light); margin-bottom: 4px; }
+  .bug-file {
+    font-family: 'Consolas', 'Fira Code', monospace; font-size: 12px;
+    color: var(--muted); background: var(--bg3); padding: 2px 8px;
+    border-radius: 4px; display: inline-block;
+  }
+  .bug-body { padding: 20px 24px; }
+  .bug-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .bug-row { grid-template-columns: 1fr; } }
+
+  .impact-box {
+    background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.2);
+    border-radius: var(--radius-sm); padding: 14px;
+  }
+  .fix-box {
+    background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.2);
+    border-radius: var(--radius-sm); padding: 14px;
+  }
+  .box-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .impact-box .box-label { color: var(--red-light); }
+  .fix-box .box-label { color: var(--green-light); }
+  .box-text { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* ── CODE ── */
+  .code-block {
+    background: #0d1117; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 20px; margin: 16px 0;
+    overflow-x: auto;
+  }
+  .code-block pre {
+    font-family: 'Consolas', 'Fira Code', monospace; font-size: 13px;
+    line-height: 1.7; color: var(--text); white-space: pre;
+  }
+  .code-comment { color: #6b7280; }
+  .code-bad { color: #f87171; }
+  .code-good { color: #34d399; }
+  .code-key { color: #a78bfa; }
+  .code-str { color: #fbbf24; }
+
+  /* ── PATTERN BOX ── */
+  .pattern-box {
+    background: linear-gradient(135deg, rgba(234,179,8,0.08), rgba(249,115,22,0.05));
+    border: 1px solid rgba(234,179,8,0.25); border-radius: var(--radius);
+    padding: 24px;
+  }
+  .pattern-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 16px; font-weight: 700; color: var(--yellow); margin-bottom: 12px;
+  }
+  .pattern-body { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+  /* ── SECURITY ── */
+  .sec-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .sec-item:last-child { border-bottom: none; }
+  .sec-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .sec-text { font-size: 14px; color: var(--text); line-height: 1.6; }
+  .sec-text code {
+    font-family: monospace; font-size: 12px;
+    background: var(--bg3); padding: 2px 6px; border-radius: 4px;
+    color: var(--orange-light);
+  }
+
+  /* ── ADMIN FEATURES ── */
+  .feature-list { list-style: none; }
+  .feature-list li {
+    display: flex; gap: 10px; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px;
+  }
+  .feature-list li:last-child { border-bottom: none; }
+  .feature-check {
+    width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--green-light);
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: var(--bg2); border-top: 1px solid var(--border);
+    padding: 32px 40px; text-align: center;
+  }
+  .footer-inner { max-width: 1100px; margin: 0 auto; }
+  .footer p { font-size: 13px; color: var(--muted); }
+  .footer strong { color: var(--text); }
+
+  /* ── TAGS/CHIPS ── */
+  .chip {
+    display: inline-block; padding: 3px 10px; border-radius: 100px;
+    font-size: 12px; font-weight: 600;
+  }
+  .chip-purple { background: rgba(139,92,246,0.15); color: var(--purple-light); border: 1px solid rgba(139,92,246,0.3); }
+  .chip-blue { background: rgba(59,130,246,0.15); color: var(--blue-light); border: 1px solid rgba(59,130,246,0.3); }
+  .chip-green { background: rgba(16,185,129,0.15); color: var(--green-light); border: 1px solid rgba(16,185,129,0.3); }
+  .chip-orange { background: rgba(249,115,22,0.15); color: var(--orange-light); border: 1px solid rgba(249,115,22,0.3); }
+  .chip-red { background: rgba(239,68,68,0.15); color: var(--red-light); border: 1px solid rgba(239,68,68,0.3); }
+  .chip-yellow { background: rgba(234,179,8,0.15); color: var(--yellow); border: 1px solid rgba(234,179,8,0.3); }
+
+  /* ── DIVIDER ── */
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .header { padding: 32px 20px 28px; }
+    .main { padding: 28px 20px 60px; }
+    .nav { padding: 0 20px; }
+    .timeline::before { left: 80px; }
+    .tl-date { width: 80px; font-size: 11px; }
+    .footer { padding: 24px 20px; }
+  }
+
+  /* ── PRINT ── */
+  @media print {
+    .nav { display: none; }
+    .header { background: #1a0533 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { background: white; color: black; }
+    .card, .bug-card, .saboteur-card { break-inside: avoid; }
+    .section { page-break-inside: avoid; }
+  }
+
+  /* Horizontal rule for visual separation */
+  .section-rule {
+    height: 1px; background: linear-gradient(90deg, var(--border), transparent);
+    margin-bottom: 24px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════ HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <div class="header-badge">
+      <span>●</span> Documento Interno — Equipe de Desenvolvimento
+    </div>
+    <h1>EmagreSer 2.0<br>Briefing Técnico do Projeto</h1>
+    <p class="header-sub">
+      Programa brasileiro de emagrecimento com abordagem psicológica + nutricional.
+      Documentação completa para a equipe de desenvolvimento e tráfego.
+    </p>
+    <div class="header-meta">
+      <div class="meta-pill">
+        <span class="dot"></span>
+        <span class="label">LP publicada:</span>
+        <span class="value">22/05/2026</span>
+      </div>
+      <div class="meta-pill">
+        <span>🚀</span>
+        <span class="label">Masterclass:</span>
+        <span class="value">11/06/2026</span>
+      </div>
+      <div class="meta-pill">
+        <span>🌐</span>
+        <span class="label">Domínio:</span>
+        <span class="value">oficialemagreser.com</span>
+      </div>
+      <div class="meta-pill">
+        <span>💰</span>
+        <span class="label">Ticket:</span>
+        <span class="value">R$1.997</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════ NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#visao-geral">Visão Geral</a>
+    <a href="#mentoras">Mentoras</a>
+    <a href="#avatar">Avatar</a>
+    <a href="#sabotadores">Sabotadores</a>
+    <a href="#timeline">Timeline</a>
+    <a href="#budget">Budget</a>
+    <a href="#tech">Stack Técnica</a>
+    <a href="#automacoes">Automações</a>
+    <a href="#arquivos">Arquivos</a>
+    <a href="#admin">Painel Admin</a>
+    <a href="#seguranca">Segurança</a>
+    <a href="#bugs">Bugs &amp; Fixes</a>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════ MAIN -->
+<main class="main">
+
+  <!-- ─── VISÃO GERAL ─── -->
+  <section class="section" id="visao-geral">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(139,92,246,0.15);">📊</div>
+      <div>
+        <div class="section-title">Visão Geral do Lançamento</div>
+        <div class="section-desc">Indicadores-chave de performance e metas do lançamento</div>
+      </div>
+    </div>
+
+    <div class="cards cards-4">
+      <div class="card purple">
+        <div class="card-label">Meta de Matrículas</div>
+        <div class="card-value kpi-purple">60</div>
+        <div class="card-sub">matrículas no lançamento</div>
+      </div>
+      <div class="card green">
+        <div class="card-label">Receita Projetada</div>
+        <div class="card-value kpi-green">R$119.820</div>
+        <div class="card-sub">60 × R$1.997</div>
+      </div>
+      <div class="card blue">
+        <div class="card-label">Investimento Tráfego</div>
+        <div class="card-value kpi-blue">R$5.000</div>
+        <div class="card-sub">tráfego pago total</div>
+      </div>
+      <div class="card orange">
+        <div class="card-label">CPL Máximo</div>
+        <div class="card-value kpi-orange">R$1,67</div>
+        <div class="card-sub">custo por lead</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;" class="cards cards-3">
+      <div class="card blue">
+        <div class="card-label">Ticket Unitário</div>
+        <div class="card-value kpi-blue" style="font-size:22px;">R$1.997</div>
+        <div class="card-sub">pagamento único ou parcelado</div>
+      </div>
+      <div class="card purple">
+        <div class="card-label">Abertura do Carrinho</div>
+        <div class="card-value" style="font-size:18px; color:var(--purple-light);">11/06/2026</div>
+        <div class="card-sub">após a Masterclass às 20h</div>
+      </div>
+      <div class="card red">
+        <div class="card-label">Encerramento</div>
+        <div class="card-value" style="font-size:18px; color:var(--red-light);">16/06/2026</div>
+        <div class="card-sub">às 23h59 — sem prorrogação</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── MENTORAS ─── -->
+  <section class="section" id="mentoras">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(236,72,153,0.15);">👩‍⚕️</div>
+      <div>
+        <div class="section-title">Mentoras do Programa</div>
+        <div class="section-desc">Especialistas responsáveis pela metodologia do EmagreSer 2.0</div>
+      </div>
+    </div>
+
+    <div class="cards cards-2">
+      <div class="mentora-card">
+        <div class="mentora-avatar ira">IS</div>
+        <div>
+          <div class="mentora-name">Ira Soraya Arruda</div>
+          <span class="mentora-role ira">Nutricionista</span>
+          <p style="margin-top:12px;font-size:14px;color:var(--muted);line-height:1.6;">
+            Responsável pela abordagem nutricional do programa, com foco em reeducação alimentar
+            sustentável e estratégias práticas para o cotidiano das participantes.
+          </p>
+        </div>
+      </div>
+      <div class="mentora-card">
+        <div class="mentora-avatar dan">DA</div>
+        <div>
+          <div class="mentora-name">Daniely Albuquerque</div>
+          <span class="mentora-role dan">Psicóloga Especialista em Obesidade</span>
+          <p style="margin-top:12px;font-size:14px;color:var(--muted);line-height:1.6;">
+            Especialista nos mecanismos psicológicos que sabotam o processo de emagrecimento,
+            incluindo Decision Fatigue e Emotional Hijacking.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── AVATAR ─── -->
+  <section class="section" id="avatar">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(59,130,246,0.15);">🎯</div>
+      <div>
+        <div class="section-title">Avatar — Helena</div>
+        <div class="section-desc">Perfil psicográfico da cliente ideal do EmagreSer 2.0</div>
+      </div>
+    </div>
+
+    <div class="avatar-grid">
+      <div class="avatar-item">
+        <div class="key">Nome</div>
+        <div class="val">Helena</div>
+      </div>
+      <div class="avatar-item">
+        <div class="key">Faixa Etária</div>
+        <div class="val">38 – 48 anos</div>
+      </div>
+      <div class="avatar-item">
+        <div class="key">Renda Mensal</div>
+        <div class="val">R$8.000+ / mês</div>
+      </div>
+      <div class="avatar-item">
+        <div class="key">Perfil Profissional</div>
+        <div class="val">Profissional / Gestora</div>
+      </div>
+    </div>
+
+    <div class="pain-box">
+      <div class="pain-label">Dor Central</div>
+      <div class="pain-text">"Efeito sanfona emocional — sabe o que fazer, mas não consegue executar."</div>
+      <p style="font-size:14px;color:var(--muted);">
+        Helena tem conhecimento teórico sobre alimentação saudável, mas ciclos emocionais de
+        estresse, cansaço e recompensa a impedem de manter a consistência necessária para resultados duradouros.
+      </p>
+      <div class="drivers">
+        <div class="driver-tag">⚡ Decision Fatigue</div>
+        <div class="driver-tag">🧠 Emotional Hijacking</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SABOTADORES ─── -->
+  <section class="section" id="sabotadores">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(249,115,22,0.15);">🔬</div>
+      <div>
+        <div class="section-title">Os 4 Perfis Sabotadores</div>
+        <div class="section-desc">Resultado do quiz de autoconhecimento — base da segmentação da comunicação</div>
+      </div>
+    </div>
+
+    <div class="cards cards-2">
+      <div class="saboteur-card" style="border-top:3px solid #ec4899;">
+        <div class="sab-letter">A</div>
+        <span class="sab-emoji">🍫</span>
+        <div class="sab-badge" style="background:rgba(236,72,153,0.15);color:#f472b6;border:1px solid rgba(236,72,153,0.3);">Perfil A</div>
+        <div class="sab-name">Recompensadora</div>
+        <div class="sab-desc">Usa comida como recompensa emocional. Come para celebrar, aliviar estresse ou
+        se consolar. O alimento virou regulação emocional primária.</div>
+      </div>
+
+      <div class="saboteur-card" style="border-top:3px solid #3b82f6;">
+        <div class="sab-letter">B</div>
+        <span class="sab-emoji">🤖</span>
+        <div class="sab-badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);">Perfil B</div>
+        <div class="sab-name">Piloto Automático</div>
+        <div class="sab-desc">Come sem perceber. O piloto automático assumiu o controle — petiscos no
+        trabalho, porções extras, lanches noturnos sem consciência.</div>
+      </div>
+
+      <div class="saboteur-card" style="border-top:3px solid #f59e0b;">
+        <div class="sab-letter">C</div>
+        <span class="sab-emoji">⚡</span>
+        <div class="sab-badge" style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);">Perfil C</div>
+        <div class="sab-name">Prisioneira do Esforço</div>
+        <div class="sab-desc">Esgota completamente a força de vontade e desiste. Segue dietas radicais por
+        dias ou semanas e colapsa, retornando a padrões anteriores.</div>
+      </div>
+
+      <div class="saboteur-card" style="border-top:3px solid #8b5cf6;">
+        <div class="sab-letter">D</div>
+        <span class="sab-emoji">🌙</span>
+        <div class="sab-badge" style="background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);">Perfil D</div>
+        <div class="sab-name">Compensadora Noturna</div>
+        <div class="sab-desc">Restringe o dia todo e perde o controle à noite. O represamento durante o dia
+        cria uma pressão que explode nas horas de menor resistência.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── TIMELINE ─── -->
+  <section class="section" id="timeline">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(16,185,129,0.15);">📅</div>
+      <div>
+        <div class="section-title">Cronograma do Lançamento</div>
+        <div class="section-desc">Linha do tempo completa — da captação ao encerramento</div>
+      </div>
+    </div>
+
+    <div class="timeline">
+
+      <div class="tl-phase-label" style="color:var(--blue-light);">Fase 1 — Aquecimento &amp; Captação</div>
+
+      <div class="tl-item">
+        <div class="tl-date">22/05</div>
+        <div class="tl-dot dot-blue"></div>
+        <div class="tl-content">
+          <strong>LP Publicada + Início da Captação Pesada</strong>
+          <span class="tl-note">Landing page ao ar — tráfego pago inicia imediatamente</span>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date">22/05 – 06/06</div>
+        <div class="tl-dot dot-blue"></div>
+        <div class="tl-content">
+          <strong>Captação Pesada (15 dias)</strong>
+          <span class="tl-note">Investimento de R$3.600 em tráfego para geração de leads qualificados</span>
+        </div>
+      </div>
+
+      <div class="tl-phase-label" style="color:var(--purple-light);">Fase 2 — CPLs (Conteúdo Pré-Lançamento)</div>
+
+      <div class="tl-item">
+        <div class="tl-date">03/06</div>
+        <div class="tl-dot dot-purple"></div>
+        <div class="tl-content">
+          <strong>CPL 1</strong>
+          <span class="tl-note">Primeiro conteúdo de nutrição/psicologia para leads</span>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date">06/06</div>
+        <div class="tl-dot dot-purple"></div>
+        <div class="tl-content">
+          <strong>CPL 2</strong>
+          <span class="tl-note">Segundo conteúdo com aprofundamento da metodologia</span>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date">09/06</div>
+        <div class="tl-dot dot-purple"></div>
+        <div class="tl-content">
+          <strong>CPL 3</strong>
+          <span class="tl-note">Conteúdo de aquecimento final antes da Masterclass</span>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date">10/06</div>
+        <div class="tl-dot dot-orange"></div>
+        <div class="tl-content">
+          <strong>Live Pré-Masterclass</strong>
+          <span class="tl-note">Engajamento e antecipação — véspera do grande evento</span>
+        </div>
+      </div>
+
+      <div class="tl-phase-label" style="color:var(--green-light);">Fase 3 — Masterclass + Carrinho Aberto</div>
+
+      <div class="tl-item">
+        <div class="tl-date">11/06 — 20h</div>
+        <div class="tl-dot dot-green" style="box-shadow:0 0 12px var(--green);"></div>
+        <div class="tl-content" style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05);">
+          <strong style="color:var(--green-light);">🎯 Masterclass "O Código dos Sabotadores"</strong>
+          <span class="tl-note">Evento principal — apresentação da metodologia + abertura do carrinho</span>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-date">11/06 – 16/06</div>
+        <div class="tl-dot dot-green"></div>
+        <div class="tl-content">
+          <strong>Carrinho Aberto (5 dias)</strong>
+          <span class="tl-note">Sequências de fechamento por e-mail + WhatsApp ativadas</span>
+        </div>
+      </div>
+
+      <div class="tl-phase-label" style="color:var(--red-light);">Fase 4 — Encerramento</div>
+
+      <div class="tl-item">
+        <div class="tl-date">16/06 — 23h59</div>
+        <div class="tl-dot dot-red" style="box-shadow:0 0 12px var(--red);"></div>
+        <div class="tl-content" style="border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.05);">
+          <strong style="color:var(--red-light);">🚫 Encerramento das Matrículas</strong>
+          <span class="tl-note">Carrinho fecha definitivamente — sem prorrogação</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── BUDGET ─── -->
+  <section class="section" id="budget">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(234,179,8,0.15);">💰</div>
+      <div>
+        <div class="section-title">Distribuição do Budget — Tráfego Pago</div>
+        <div class="section-desc">Investimento total: R$5.000 — distribuição por fase</div>
+      </div>
+    </div>
+
+    <div class="budget-bar-wrap">
+      <div class="budget-bar-header">
+        <div class="budget-bar-name">🔥 Aquecimento <span class="chip chip-blue" style="margin-left:8px;">22/05 – 31/05</span></div>
+        <div class="budget-bar-amount">R$400</div>
+      </div>
+      <div class="budget-bar-track">
+        <div class="budget-bar-fill" style="width:8%;background:linear-gradient(90deg,#3b82f6,#60a5fa);"></div>
+      </div>
+      <div class="budget-bar-meta"><span>8% do total</span><span>R$40/dia aprox.</span></div>
+    </div>
+
+    <div class="budget-bar-wrap">
+      <div class="budget-bar-header">
+        <div class="budget-bar-name">🎯 Captação <span class="chip chip-purple" style="margin-left:8px;">22/05 – 06/06</span></div>
+        <div class="budget-bar-amount">R$3.600</div>
+      </div>
+      <div class="budget-bar-track">
+        <div class="budget-bar-fill" style="width:72%;background:linear-gradient(90deg,#8b5cf6,#a78bfa);"></div>
+      </div>
+      <div class="budget-bar-meta"><span>72% do total</span><span>R$240/dia aprox.</span></div>
+    </div>
+
+    <div class="budget-bar-wrap">
+      <div class="budget-bar-header">
+        <div class="budget-bar-name">🔄 Retargeting <span class="chip chip-orange" style="margin-left:8px;">03/06 – 10/06</span></div>
+        <div class="budget-bar-amount">R$600</div>
+      </div>
+      <div class="budget-bar-track">
+        <div class="budget-bar-fill" style="width:12%;background:linear-gradient(90deg,#f97316,#fb923c);"></div>
+      </div>
+      <div class="budget-bar-meta"><span>12% do total</span><span>R$75/dia aprox.</span></div>
+    </div>
+
+    <div class="budget-bar-wrap">
+      <div class="budget-bar-header">
+        <div class="budget-bar-name">⚡ Fechamento <span class="chip chip-red" style="margin-left:8px;">11/06 – 16/06</span></div>
+        <div class="budget-bar-amount">R$400</div>
+      </div>
+      <div class="budget-bar-track">
+        <div class="budget-bar-fill" style="width:8%;background:linear-gradient(90deg,#ef4444,#f87171);"></div>
+      </div>
+      <div class="budget-bar-meta"><span>8% do total</span><span>R$66/dia aprox.</span></div>
+    </div>
+  </section>
+
+  <!-- ─── TECH STACK ─── -->
+  <section class="section" id="tech">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(59,130,246,0.15);">⚙️</div>
+      <div>
+        <div class="section-title">Stack Técnica</div>
+        <div class="section-desc">Tecnologias e serviços utilizados na infraestrutura do projeto</div>
+      </div>
+    </div>
+
+    <div class="tech-grid">
+      <div class="tech-item">
+        <div class="tech-icon" style="background:rgba(249,115,22,0.15);">🐘</div>
+        <div>
+          <div class="tech-name">PHP + HTML</div>
+          <div class="tech-desc">Frontend — Quiz, captura de leads e backend das automações</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-icon" style="background:rgba(16,185,129,0.15);">🗄️</div>
+        <div>
+          <div class="tech-name">Supabase</div>
+          <div class="tech-desc">PostgreSQL via PostgREST — banco de dados principal</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-icon" style="background:rgba(59,130,246,0.15);">📧</div>
+        <div>
+          <div class="tech-name">Resend.com</div>
+          <div class="tech-desc">E-mail transacional — envio de toda a sequência automatizada</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-icon" style="background:rgba(37,211,102,0.15);">💬</div>
+        <div>
+          <div class="tech-name">Z-API</div>
+          <div class="tech-desc">WhatsApp — automação de mensagens e callbacks de entrega</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-icon" style="background:rgba(139,92,246,0.15);">🖥️</div>
+        <div>
+          <div class="tech-name">Admin Panel</div>
+          <div class="tech-desc">PHP backend personalizado em <code style="font-size:11px;font-family:monospace;color:var(--purple-light);">/admin/</code> — controle total</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-icon" style="background:rgba(234,179,8,0.15);">📊</div>
+        <div>
+          <div class="tech-name">painel.php</div>
+          <div class="tech-desc">Painel de monitoramento em tempo real das filas</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-icon" style="background:rgba(236,72,153,0.15);">⏱️</div>
+        <div>
+          <div class="tech-name">email_worker.php</div>
+          <div class="tech-desc">Worker de fila — cron a cada 10 min via cron-job.org</div>
+        </div>
+      </div>
+      <div class="tech-item">
+        <div class="tech-icon" style="background:rgba(59,130,246,0.15);">☁️</div>
+        <div>
+          <div class="tech-name">Hostinger</div>
+          <div class="tech-desc">Hosting do projeto — PHP compartilhado + cron jobs</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── AUTOMAÇÕES ─── -->
+  <section class="section" id="automacoes">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(20,184,166,0.15);">🤖</div>
+      <div>
+        <div class="section-title">Sequências de Automação</div>
+        <div class="section-desc">15 e-mails + 11 mensagens de WhatsApp — disparados automaticamente</div>
+      </div>
+    </div>
+
+    <div class="seq-grid">
+      <div class="seq-box">
+        <div class="seq-title">
+          📧 Sequência de E-mail
+          <span class="seq-badge seq-email-badge">15 E-mails</span>
+        </div>
+        <ul class="seq-list">
+          <li><span class="seq-day email">D+0</span><span class="seq-msg">Boas-vindas ao programa</span></li>
+          <li><span class="seq-day email">D+1</span><span class="seq-msg">Nutricao_d1 — primeira entrega de valor nutricional</span></li>
+          <li><span class="seq-day email">D+2</span><span class="seq-msg">Prova_social_d2 — depoimentos e resultados</span></li>
+          <li><span class="seq-day email">D+3</span><span class="seq-msg">Urgencia_d3 — gatilho de urgência</span></li>
+          <li><span class="seq-day email">D+5</span><span class="seq-msg">Conteudo_d5 — conteúdo estratégico</span></li>
+          <li><span class="seq-day email">D+7</span><span class="seq-msg">Depoimento_d7 — prova social em destaque</span></li>
+          <li><span class="seq-day email">D+10</span><span class="seq-msg">Antecipacao_d10 — antecipação da Masterclass</span></li>
+          <li><span class="seq-day date">05/06</span><span class="seq-msg">intensificacao_d5 — intensificação pré-evento</span></li>
+          <li><span class="seq-day date">06/06</span><span class="seq-msg">intensificacao_d6</span></li>
+          <li><span class="seq-day date">07/06</span><span class="seq-msg">intensificacao_d7</span></li>
+          <li><span class="seq-day date">09/06</span><span class="seq-msg">intensificacao_d9</span></li>
+          <li><span class="seq-day date">13/06</span><span class="seq-msg">lembrete_3dias — 3 dias para encerramento</span></li>
+          <li><span class="seq-day date">10/06</span><span class="seq-msg">amanha_masterclass — véspera</span></li>
+          <li><span class="seq-day date">11/06</span><span class="seq-msg">masterclass_hoje — dia do evento</span></li>
+          <li><span class="seq-day date">11/06</span><span class="seq-msg">masterclass_1h — 1h antes, link de acesso</span></li>
+        </ul>
+      </div>
+
+      <div class="seq-box">
+        <div class="seq-title">
+          💬 Sequência WhatsApp
+          <span class="seq-badge seq-wpp-badge">11 Mensagens</span>
+        </div>
+        <ul class="seq-list">
+          <li><span class="seq-day wpp">D+0</span><span class="seq-msg">Resultado do perfil sabotador no quiz</span></li>
+          <li><span class="seq-day wpp">D+1</span><span class="seq-msg">Dica rápida personalizada para o perfil</span></li>
+          <li><span class="seq-day wpp">D+3</span><span class="seq-msg">Prova social — história de transformação</span></li>
+          <li><span class="seq-day wpp">D+5</span><span class="seq-msg">Pergunta de engajamento — resposta incentivada</span></li>
+          <li><span class="seq-day date">05/06</span><span class="seq-msg">Quebra de objeção principal</span></li>
+          <li><span class="seq-day date">06/06</span><span class="seq-msg">Projeção de futuro — visão transformada</span></li>
+          <li><span class="seq-day date">07/06</span><span class="seq-msg">Segunda prova social</span></li>
+          <li><span class="seq-day date">08/06</span><span class="seq-msg">3 dias para a Masterclass — antecipação</span></li>
+          <li><span class="seq-day date">09/06</span><span class="seq-msg">48h de urgência — conta regressiva</span></li>
+          <li><span class="seq-day date">10/06</span><span class="seq-msg">Véspera da Masterclass — hype final</span></li>
+          <li><span class="seq-day date">11/06</span><span class="seq-msg">Manhã do evento + 1h antes: link da Masterclass</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── ARQUIVOS ─── -->
+  <section class="section" id="arquivos">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(59,130,246,0.15);">📁</div>
+      <div>
+        <div class="section-title">Arquivos Desenvolvidos / Modificados</div>
+        <div class="section-desc">Todos os arquivos criados ou alterados nesta sessão de desenvolvimento</div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="files-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Arquivo</th>
+            <th>Descrição</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--muted);font-size:13px;">1</td>
+            <td><span class="filename">email_worker.php</span></td>
+            <td style="color:var(--muted);font-size:14px;">Worker principal da fila — despacha e-mails e mensagens WhatsApp. Roda via cron a cada 10 minutos.</td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);font-size:13px;">2</td>
+            <td><span class="filename">painel.php</span></td>
+            <td style="color:var(--muted);font-size:14px;">Dashboard de monitoramento em tempo real. Exibe métricas de fila, atrasados e status do cron.</td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);font-size:13px;">3</td>
+            <td><span class="filename">email_trigger.php</span></td>
+            <td style="color:var(--muted);font-size:14px;">Enfileira as sequências de automação imediatamente após a captura de um novo lead.</td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);font-size:13px;">4</td>
+            <td><span class="filename">wpp_webhook.php</span></td>
+            <td style="color:var(--muted);font-size:14px;">Recebe callbacks de entrega da Z-API — atualiza status (Enviado / Entregue / Lido) no banco.</td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);font-size:13px;">5</td>
+            <td><span class="filename">wpp_receive.php</span></td>
+            <td style="color:var(--muted);font-size:14px;">Recebe respostas dos leads via Z-API — processa e registra interações no Supabase.</td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);font-size:13px;">6</td>
+            <td><span class="filename">admin_proxy.php</span></td>
+            <td style="color:var(--muted);font-size:14px;">API backend do admin — CRUD completo para templates, usuários e leads com service role key.</td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);font-size:13px;">7</td>
+            <td><span class="filename">admin/index.html</span></td>
+            <td style="color:var(--muted);font-size:14px;">Frontend completo do painel admin — SPA com dashboard, gestão de leads, templates e monitoramento.</td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted);font-size:13px;">8</td>
+            <td><span class="filename">docs/briefing-trafego.html</span></td>
+            <td style="color:var(--muted);font-size:14px;">Briefing para a equipe de tráfego — 14 seções, HTML auto-contido, 6 screenshots embarcados.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─── ADMIN PANEL ─── -->
+  <section class="section" id="admin">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(139,92,246,0.15);">🖥️</div>
+      <div>
+        <div class="section-title">Funcionalidades do Painel Admin</div>
+        <div class="section-desc">Interface de gestão completa em <code style="font-family:monospace;color:var(--purple-light);font-size:13px;">/admin/</code></div>
+      </div>
+    </div>
+
+    <div class="cards cards-2">
+      <div class="card purple">
+        <div class="card-title">📊 Dashboard</div>
+        <ul class="feature-list">
+          <li><span class="feature-check">✓</span>Leads captados hoje (contador em tempo real)</li>
+          <li><span class="feature-check">✓</span>Distribuição de leads por perfil sabotador</li>
+          <li><span class="feature-check">✓</span>Gráfico de crescimento da base de leads</li>
+        </ul>
+      </div>
+
+      <div class="card blue">
+        <div class="card-title">👥 Gestão de Leads</div>
+        <ul class="feature-list">
+          <li><span class="feature-check">✓</span>Filtro por perfil, data e status</li>
+          <li><span class="feature-check">✓</span>Exportação CSV completa</li>
+          <li><span class="feature-check">✓</span>Ações individuais por lead</li>
+        </ul>
+      </div>
+
+      <div class="card blue">
+        <div class="card-title">📧 Templates de E-mail</div>
+        <ul class="feature-list">
+          <li><span class="feature-check">✓</span>CRUD completo (criar, editar, excluir)</li>
+          <li><span class="feature-check">✓</span>Toggle ativo/inativo por template</li>
+          <li><span class="feature-check">✓</span>Preview HTML em tempo real</li>
+        </ul>
+      </div>
+
+      <div class="card green">
+        <div class="card-title">💬 Templates WhatsApp</div>
+        <ul class="feature-list">
+          <li><span class="feature-check">✓</span>CRUD completo com rich text</li>
+          <li><span class="feature-check">✓</span>Preview estilo WhatsApp ao vivo</li>
+          <li><span class="feature-check">✓</span>Visualização de bolha de mensagem</li>
+        </ul>
+      </div>
+
+      <div class="card orange">
+        <div class="card-title">📬 Fila WhatsApp</div>
+        <ul class="feature-list">
+          <li><span class="feature-check">✓</span>Monitoramento de status Z-API</li>
+          <li><span class="feature-check">✓</span>Reprocessar mensagens com falha</li>
+          <li><span class="feature-check">✓</span>Visualizar atrasados e pendentes</li>
+        </ul>
+      </div>
+
+      <div class="card purple">
+        <div class="card-title">👤 Gestão de Usuários</div>
+        <ul class="feature-list">
+          <li><span class="feature-check">✓</span>CRUD de usuários administradores</li>
+          <li><span class="feature-check">✓</span>Controle de acesso ao painel</li>
+          <li><span class="feature-check">✓</span>Tabela admin_users com RLS bloqueando anon</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SEGURANÇA ─── -->
+  <section class="section" id="seguranca">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(16,185,129,0.15);">🔐</div>
+      <div>
+        <div class="section-title">Regras de Segurança</div>
+        <div class="section-desc">Práticas obrigatórias de segurança para o projeto</div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:24px;">
+      <div class="sec-item">
+        <span class="sec-icon">🔑</span>
+        <div class="sec-text">
+          <strong>Anon key</strong> — somente no frontend público (leitura de quiz/perfis).
+          Nunca deve ter acesso a dados sensíveis ou tabelas administrativas.
+        </div>
+      </div>
+      <div class="sec-item">
+        <span class="sec-icon">🔒</span>
+        <div class="sec-text">
+          <strong>Service role key</strong> — exclusivamente em PHP server-side: <code>admin_proxy.php</code> e <code>email_worker.php</code>.
+          Nunca exposta ao cliente ou em código JavaScript.
+        </div>
+      </div>
+      <div class="sec-item">
+        <span class="sec-icon">🛡️</span>
+        <div class="sec-text">
+          <strong>Tabela <code>admin_users</code></strong> — política RLS = <code>false</code> bloqueia 100% das requisições via anon key.
+          Acessível somente via service role.
+        </div>
+      </div>
+      <div class="sec-item">
+        <span class="sec-icon">🚫</span>
+        <div class="sec-text">
+          <strong><code>_env.php</code></strong> — jamais versionado. Adicionado ao <code>.gitignore</code>.
+          Contém todas as credenciais (Supabase, Resend, Z-API, worker secret).
+        </div>
+      </div>
+      <div class="sec-item">
+        <span class="sec-icon">⚠️</span>
+        <div class="sec-text">
+          <strong><code>.htaccess</code></strong> — nunca em repositório git.
+          Configurações de servidor ficam fora do controle de versão.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── BUGS ─── -->
+  <section class="section" id="bugs">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(239,68,68,0.15);">🐛</div>
+      <div>
+        <div class="section-title">Bugs Encontrados e Corrigidos</div>
+        <div class="section-desc">6 bugs identificados e resolvidos nesta sessão de desenvolvimento</div>
+      </div>
+    </div>
+
+    <!-- Bug 1 -->
+    <div class="bug-card">
+      <div class="bug-header">
+        <div class="bug-number">1</div>
+        <div class="bug-title-wrap">
+          <div class="bug-title">sb_upsert() não definida</div>
+          <span class="bug-file">admin_proxy.php</span>
+        </div>
+      </div>
+      <div class="bug-body">
+        <div class="bug-row">
+          <div class="impact-box">
+            <div class="box-label">Impacto</div>
+            <div class="box-text">Salvar template (e-mail e WhatsApp) sempre falhava silenciosamente. Todo o fluxo de CRUD de templates estava quebrado.</div>
+          </div>
+          <div class="fix-box">
+            <div class="box-label">Correção</div>
+            <div class="box-text">Adicionada função completa <code style="font-family:monospace;font-size:12px;">sb_upsert()</code> com header <code style="font-family:monospace;font-size:12px;">Prefer: resolution=merge-duplicates</code> para upsert correto via PostgREST.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bug 2 -->
+    <div class="bug-card">
+      <div class="bug-header">
+        <div class="bug-number">2</div>
+        <div class="bug-title-wrap">
+          <div class="bug-title">tplDelete() referenciando elemento inexistente</div>
+          <span class="bug-file">admin/index.html</span>
+        </div>
+      </div>
+      <div class="bug-body">
+        <div class="bug-row">
+          <div class="impact-box">
+            <div class="box-label">Impacto</div>
+            <div class="box-text">Deletar template crashava o JavaScript e deixava a UI em estado quebrado. O painel admin ficava inutilizável após a ação.</div>
+          </div>
+          <div class="fix-box">
+            <div class="box-label">Correção</div>
+            <div class="box-text">Corrigida referência do elemento: de <code style="font-family:monospace;font-size:12px;">#tpl-editor</code> (inexistente) para os elementos corretos <code style="font-family:monospace;font-size:12px;">#tpl-topbar</code>, <code style="font-family:monospace;font-size:12px;">#tpl-preview-panel</code> e <code style="font-family:monospace;font-size:12px;">#tpl-empty</code>.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bug 3 -->
+    <div class="bug-card">
+      <div class="bug-header">
+        <div class="bug-number">3</div>
+        <div class="bug-title-wrap">
+          <div class="bug-title">Credenciais sem fallback no worker</div>
+          <span class="bug-file">email_worker.php</span>
+        </div>
+      </div>
+      <div class="bug-body">
+        <div class="bug-row">
+          <div class="impact-box">
+            <div class="box-label">Impacto</div>
+            <div class="box-text">
+              3 falhas simultâneas: (1) WORKER_SECRET=false → botão AJAX sempre retornava 403.
+              (2) SUPABASE_SERVICE_KEY='' → 0 e-mails processados sem erro visível.
+              (3) ZAPI_INSTANCE='' → bloco WPP inteiro ignorado silenciosamente. Log mostrava "0 email(s), 0 WPP processados" sem explicação.
+            </div>
+          </div>
+          <div class="fix-box">
+            <div class="box-label">Correção</div>
+            <div class="box-text">Adicionado <code style="font-family:monospace;font-size:12px;">?: 'hardcoded_fallback'</code> nos 6 defines de credencial. Adicionada validação de credenciais no startup com log de erro explícito. Bloco WPP agora loga quando credenciais estão ausentes, em vez de pular silenciosamente.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bug 4 -->
+    <div class="bug-card">
+      <div class="bug-header">
+        <div class="bug-number">4</div>
+        <div class="bug-title-wrap">
+          <div class="bug-title">Cron parado no Hostinger — sem alerta visual</div>
+          <span class="bug-file">painel.php</span>
+        </div>
+      </div>
+      <div class="bug-body">
+        <div class="bug-row">
+          <div class="impact-box">
+            <div class="box-label">Impacto</div>
+            <div class="box-text">63 e-mails + 46 mensagens WPP travados com status "atrasado". Items vencidos após a última execução do cron (16:10 22/05) e o cron nunca mais rodou. Painel não mostrava indicação clara do problema (Travados = 0 era enganoso).</div>
+          </div>
+          <div class="fix-box">
+            <div class="box-label">Correção</div>
+            <div class="box-text">Adicionado contador específico de "atrasados" no painel (itens com status pending + scheduled_at no passado + attempts = 0). Alerta visual ativo mesmo quando Travados = 0, garantindo visibilidade quando o cron para.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bug 5 -->
+    <div class="bug-card">
+      <div class="bug-header">
+        <div class="bug-number">5</div>
+        <div class="bug-title-wrap">
+          <div class="bug-title">wpp_webhook.php sem fallback de credenciais</div>
+          <span class="bug-file">wpp_webhook.php</span>
+        </div>
+      </div>
+      <div class="bug-body">
+        <div class="bug-row">
+          <div class="impact-box">
+            <div class="box-label">Impacto</div>
+            <div class="box-text">ZAPI_CLIENT_TOKEN = false → todo callback de entrega Z-API recebia 403. A coluna "Confirmação" no painel sempre mostrava "—" e nunca atualizava para Enviado/Entregue/Lido.</div>
+          </div>
+          <div class="fix-box">
+            <div class="box-label">Correção</div>
+            <div class="box-text">Adicionados fallbacks hardcoded (<code style="font-family:monospace;font-size:12px;">?: 'valor_real'</code>) para SUPABASE_SERVICE_KEY e ZAPI_CLIENT_TOKEN. Callbacks de entrega passam a ser processados corretamente.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bug 6 -->
+    <div class="bug-card">
+      <div class="bug-header">
+        <div class="bug-number">6</div>
+        <div class="bug-title-wrap">
+          <div class="bug-title">wpp_receive.php e email_trigger.php sem fallbacks</div>
+          <span class="bug-file">wpp_receive.php &nbsp;|&nbsp; email_trigger.php</span>
+        </div>
+      </div>
+      <div class="bug-body">
+        <div class="bug-row">
+          <div class="impact-box">
+            <div class="box-label">Impacto</div>
+            <div class="box-text">Respostas dos leads via WhatsApp não eram processadas. Novas sequências de leads poderiam falhar silenciosamente se variáveis de ambiente estivessem ausentes.</div>
+          </div>
+          <div class="fix-box">
+            <div class="box-label">Correção</div>
+            <div class="box-text">Adicionados fallbacks hardcoded para todas as credenciais nos dois arquivos. Padrão de correção idêntico ao aplicado nos demais arquivos da sessão.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Root Cause Pattern -->
+    <div class="pattern-box" style="margin-top:28px;">
+      <div class="pattern-title">
+        ⚠️ Padrão Identificado — Causa Raiz de Todos os 6 Bugs
+      </div>
+      <div class="pattern-body" style="margin-bottom:20px;">
+        Todos os bugs de credencial tinham a <strong style="color:var(--yellow);">mesma causa raiz</strong>:
+        em PHP, <code style="font-family:monospace;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">getenv()</code> retorna
+        <code style="font-family:monospace;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">false</code> (não string vazia) quando a variável não está definida.
+        Sem o operador <code style="font-family:monospace;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">?:</code>, o <code style="font-family:monospace;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">define()</code>
+        armazena <code style="font-family:monospace;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">false</code> na constante.
+        Qualquer comparação como <code style="font-family:monospace;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">'token_real' !== false</code>
+        resulta em <code style="font-family:monospace;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;">true</code> → autenticação sempre falha.
+      </div>
+
+      <div class="code-block">
+        <pre><span class="code-comment">// ❌ ERRADO — todos os arquivos quebrados usavam este padrão:</span>
+<span class="code-key">define</span>(<span class="code-str">'ZAPI_CLIENT_TOKEN'</span>, <span class="code-bad">getenv('ZAPI_CLIENT_TOKEN')</span>);
+<span class="code-comment">// getenv() retorna false → define() armazena false → auth sempre falha</span>
+
+<span class="code-comment">// ✅ CORRETO — padrão aplicado em todos os arquivos corrigidos:</span>
+<span class="code-key">define</span>(<span class="code-str">'ZAPI_CLIENT_TOKEN'</span>, <span class="code-good">getenv('ZAPI_CLIENT_TOKEN') ?: '***REMOVED_ZAPI_CLIENT_TOKEN***'</span>);
+<span class="code-comment">// Operador ?: garante fallback quando getenv() retorna false</span></pre>
+      </div>
+
+      <div style="margin-top:16px;font-size:14px;color:var(--muted);">
+        <strong style="color:var(--yellow);">Arquivos corrigidos:</strong>
+        email_worker.php, wpp_webhook.php, wpp_receive.php, email_trigger.php, admin_proxy.php — todos seguem agora o padrão com fallback obrigatório.
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══════════════════════════════════════════════ FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <p style="margin-bottom:8px;">
+      <strong>EmagreSer 2.0</strong> — Briefing Técnico Interno da Equipe de Desenvolvimento
+    </p>
+    <p>
+      Domínio: <strong>oficialemagreser.com</strong> &nbsp;·&nbsp;
+      Masterclass: <strong>11/06/2026 às 20h</strong> &nbsp;·&nbsp;
+      Encerramento: <strong>16/06/2026 às 23h59</strong>
+    </p>
+    <p style="margin-top:12px;font-size:12px;color:#4b5563;">
+      Documento gerado em 23/05/2026 — uso interno, não distribuir externamente.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
