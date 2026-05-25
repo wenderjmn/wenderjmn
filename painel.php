@@ -23,13 +23,13 @@ function fmtBr(?string $iso, bool $full = false): string {
 }
 
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
-define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
-define('RESEND_API_KEY',       getenv('RESEND_API_KEY')       ?: '***REMOVED_RESEND_KEY***');
+define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '');
+define('RESEND_API_KEY',       getenv('RESEND_API_KEY')       ?: '');
 define('SMTP_FROM',            'emagreser@oficialemagreser.com');
 define('SMTP_FROM_NAME',       'Programa EmagreSer');
-define('ZAPI_INSTANCE',        getenv('ZAPI_INSTANCE')        ?: '***REMOVED_ZAPI_INSTANCE***');
-define('ZAPI_TOKEN',           getenv('ZAPI_TOKEN')           ?: '***REMOVED_ZAPI_TOKEN***');
-define('ZAPI_CLIENT_TOKEN',    getenv('ZAPI_CLIENT_TOKEN')    ?: '***REMOVED_ZAPI_CLIENT_TOKEN***');
+define('ZAPI_INSTANCE',        getenv('ZAPI_INSTANCE')        ?: '');
+define('ZAPI_TOKEN',           getenv('ZAPI_TOKEN')           ?: '');
+define('ZAPI_CLIENT_TOKEN',    getenv('ZAPI_CLIENT_TOKEN')    ?: '');
 define('ZAPI_URL',             'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
 
 // ── SESSÃO: usa o mesmo cookie do admin ──────────────────────────────

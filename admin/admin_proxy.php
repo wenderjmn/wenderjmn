@@ -15,7 +15,7 @@
 
 // ── CONFIGURAÇÃO ──────────────────────────────────────────────────────────────
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
-define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyZ3J3cG1obXJyaHh1d3hhYm93Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzQ3ODQ5NywiZXhwIjoyMDkzMDU0NDk3fQ.YeZFa-JaHU5muxktAmYr-B0wtov3Qw3h03P-HrJ_pMU');
+define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '');
 
 // Tempo de expiração da sessão em segundos (4 horas)
 define('SESSION_LIFETIME', 14400);

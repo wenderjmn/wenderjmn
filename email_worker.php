@@ -7,19 +7,19 @@ if (file_exists(__DIR__ . '/_env.php')) require_once __DIR__ . '/_env.php';
 
 // ── CONFIGURAÇÕES ────────────────────────────────────────────────
 // Fallbacks hardcoded garantem que o worker funciona mesmo sem _env.php ou sem env vars no cron
-define('WORKER_SECRET',        getenv('WORKER_SECRET')        ?: '***REMOVED_WORKER_SECRET***');
+define('WORKER_SECRET',        getenv('WORKER_SECRET')        ?: '');
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
-define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
+define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '');
 
 // Resend.com — API de e-mail transacional
-define('RESEND_API_KEY',  getenv('RESEND_API_KEY')  ?: '***REMOVED_RESEND_KEY***');
+define('RESEND_API_KEY',  getenv('RESEND_API_KEY')  ?: '');
 define('SMTP_FROM',       'emagreser@oficialemagreser.com');
 define('SMTP_FROM_NAME',  'Programa EmagreSer');
 
 // Z-API WhatsApp
-define('ZAPI_INSTANCE',     getenv('ZAPI_INSTANCE')     ?: '***REMOVED_ZAPI_INSTANCE***');
-define('ZAPI_TOKEN',        getenv('ZAPI_TOKEN')        ?: '***REMOVED_ZAPI_TOKEN***');
-define('ZAPI_CLIENT_TOKEN', getenv('ZAPI_CLIENT_TOKEN') ?: '***REMOVED_ZAPI_CLIENT_TOKEN***');
+define('ZAPI_INSTANCE',     getenv('ZAPI_INSTANCE')     ?: '');
+define('ZAPI_TOKEN',        getenv('ZAPI_TOKEN')        ?: '');
+define('ZAPI_CLIENT_TOKEN', getenv('ZAPI_CLIENT_TOKEN') ?: '');
 define('ZAPI_URL',          'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
 
 define('BATCH_SIZE', 20);

@@ -13,11 +13,9 @@
  * - Coloque um .htaccess impedindo acesso direto a este arquivo de fora.
  */
 
-if (file_exists(__DIR__ . '/_env.php')) require_once __DIR__ . '/_env.php';
-
 // ── CONFIGURAÇÃO ──────────────────────────────────────────────────────────────
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
-define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '***REMOVED_SUPABASE_KEY***');
+define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '');
 
 // Tempo de expiração da sessão em segundos (4 horas)
 define('SESSION_LIFETIME', 14400);
@@ -65,37 +63,39 @@ switch ($action) {
     case 'update_quiz_question':  require_auth(); update_quiz_question();  break;
     case 'update_testimonial':    require_auth(); update_testimonial();    break;
     case 'update_mentor':         require_auth(); update_mentor();         break;
+    case 'upload_file':           require_auth(); upload_file();           break;
+    case 'list_email_templates':  require_auth(); list_email_templates();  break;
+    case 'get_email_template':    require_auth(); get_email_template();    break;
+    case 'save_email_template':   require_auth(); save_email_template();   break;
+    case 'delete_email_template': require_auth(); delete_email_template(); break;
 
-    // WhatsApp fila
-    case 'wpp_stats':       require_auth(); wpp_stats();       break;
-    case 'wpp_reset_stuck': require_auth(); wpp_reset_stuck(); break;
-    case 'wpp_retry_failed':require_auth(); wpp_retry_failed();break;
-    case 'wpp_cancel_msg':  require_auth(); wpp_cancel_msg();  break;
+    // WPP Templates
+    case 'list_wpp_templates':  require_auth(); list_wpp_templates();  break;
+    case 'get_wpp_template':    require_auth(); get_wpp_template();    break;
+    case 'save_wpp_template':   require_auth(); save_wpp_template();   break;
+    case 'delete_wpp_template': require_auth(); delete_wpp_template(); break;
+    case 'toggle_wpp_template': require_auth(); toggle_wpp_template(); break;
 
-    // Templates de e-mail
-    case 'list_email_templates':   require_auth(); list_email_templates();   break;
-    case 'get_email_template':     require_auth(); get_email_template();     break;
-    case 'save_email_template':    require_auth(); save_email_template();    break;
-    case 'delete_email_template':  require_auth(); delete_email_template();  break;
-    case 'toggle_email_template':  require_auth(); toggle_email_template();  break;
+    // Sequências de envio
+    case 'list_sequences':   require_auth(); list_sequences();   break;
+    case 'get_sequence':     require_auth(); get_sequence();     break;
+    case 'save_sequence':    require_auth(); save_sequence();    break;
+    case 'delete_sequence':  require_auth(); delete_sequence();  break;
+    case 'toggle_sequence':  require_auth(); toggle_sequence();  break;
 
-    // Templates de WhatsApp
-    case 'list_wpp_templates':     require_auth(); list_wpp_templates();     break;
-    case 'get_wpp_template':       require_auth(); get_wpp_template();       break;
-    case 'save_wpp_template':      require_auth(); save_wpp_template();      break;
-    case 'delete_wpp_template':    require_auth(); delete_wpp_template();    break;
-    case 'toggle_wpp_template':    require_auth(); toggle_wpp_template();    break;
+    // WhatsApp queue
+    case 'wpp_stats':         require_auth(); wpp_stats();         break;
+    case 'wpp_reset_stuck':   require_auth(); wpp_reset_stuck();   break;
+    case 'wpp_retry_failed':  require_auth(); wpp_retry_failed();  break;
+    case 'wpp_cancel_msg':    require_auth(); wpp_cancel_msg();    break;
 
-    // Usuários do painel
+    // Gestão de usuários (apenas super_admin ou perm_usuarios)
     case 'list_users':    require_auth(); list_users();    break;
     case 'create_user':   require_auth(); create_user();   break;
     case 'update_user':   require_auth(); update_user();   break;
     case 'reset_password':require_auth(); reset_password();break;
     case 'toggle_user':   require_auth(); toggle_user();   break;
     case 'delete_user':   require_auth(); delete_user();   break;
-
-    // Upload de arquivo para Supabase Storage
-    case 'upload_file':   require_auth(); upload_file();   break;
 
     default:
         http_response_code(400);
@@ -206,15 +206,10 @@ function update_config() {
         ['value' => $value, 'updated_at' => date('c')]
     );
 
-    if ($res['status'] === 503) {
-        http_response_code(503);
-        echo json_encode(['ok'=>false,'error'=>'Chave de serviço não configurada no servidor (SUPABASE_SERVICE_KEY). Edite admin_proxy.php e substitua COLE_AQUI_SUA_SERVICE_ROLE_KEY pela sua chave.']);
-        return;
-    }
     if ($res['status'] >= 200 && $res['status'] < 300) {
         echo json_encode(['ok'=>true]);
     } else {
-        echo json_encode(['ok'=>false,'error'=>'Supabase retornou HTTP '.$res['status'].($res['body']?' — '.json_encode($res['body']):'')]);
+        echo json_encode(['ok'=>false,'error'=>'Supabase retornou HTTP '.$res['status']]);
     }
 }
 
@@ -233,22 +228,14 @@ function update_quiz_question() {
         'option_b'      => trim($_POST['option_b'] ?? ''),
         'option_c'      => trim($_POST['option_c'] ?? ''),
         'option_d'      => trim($_POST['option_d'] ?? ''),
-        'weight_a'      => trim($_POST['weight_a'] ?? 'A'),
-        'weight_b'      => trim($_POST['weight_b'] ?? 'B'),
-        'weight_c'      => trim($_POST['weight_c'] ?? 'C'),
-        'weight_d'      => trim($_POST['weight_d'] ?? 'D'),
     ];
 
-    foreach (['question_text','option_a','option_b','option_c','option_d'] as $k) {
-        if (!$data[$k]) { echo json_encode(['ok'=>false,'error'=>"Campo {$k} não pode ser vazio"]); return; }
+    foreach ($data as $k => $v) {
+        if (!$v) { echo json_encode(['ok'=>false,'error'=>"Campo {$k} não pode ser vazio"]); return; }
     }
 
     $res = sb_request('PATCH', 'quiz_questions?id=eq.' . rawurlencode($id), $data);
-    if ($res['status'] === 503) {
-        http_response_code(503);
-        echo json_encode(['ok'=>false,'error'=>'Chave de serviço não configurada no servidor.']); return;
-    }
-    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300), 'status' => $res['status']]);
+    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
 }
 
 function update_testimonial() {
@@ -289,340 +276,438 @@ function update_mentor() {
         http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Sem permissão para editar mentoras']); return;
     }
 
+    $pos = trim($_POST['photo_position'] ?? 'top');
+    if (!in_array($pos, ['top','center','bottom'])) $pos = 'top';
+
     $data = [
-        'name'          => trim($_POST['name']          ?? ''),
-        'role'          => trim($_POST['role']          ?? ''),
-        'bio'           => trim($_POST['bio']           ?? ''),
-        'photo_url'     => trim($_POST['photo_url']     ?? ''),
-        'video_url'     => trim($_POST['video_url']     ?? ''),
-        'instagram_url' => trim($_POST['instagram_url'] ?? ''),
-        'facebook_url'  => trim($_POST['facebook_url']  ?? '') ?: null,
+        'name'           => trim($_POST['name']          ?? ''),
+        'role'           => trim($_POST['role']          ?? ''),
+        'bio'            => trim($_POST['bio']           ?? ''),
+        'photo_url'      => trim($_POST['photo_url']     ?? ''),
+        'photo_position' => $pos,
+        'video_url'      => trim($_POST['video_url']     ?? ''),
+        'instagram_url'  => trim($_POST['instagram_url'] ?? ''),
     ];
 
     $res = sb_request('PATCH', 'mentors?id=eq.' . rawurlencode($id), $data);
     echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
 }
 
-// ── WPP HANDLERS ─────────────────────────────────────────────────────────────
-function wpp_stats() {
-    // Contagens por status
-    $statuses = ['pending', 'processing', 'sent', 'failed'];
-    $counts   = ['pending'=>0,'processing'=>0,'sent'=>0,'failed'=>0,'read'=>0,'delivered'=>0];
+function upload_file() {
+    $user = $_SESSION['admin'];
 
-    foreach ($statuses as $s) {
-        $res = sb_request('GET', 'whatsapp_queue', null, 'status=eq.' . rawurlencode($s) . '&select=id&limit=1');
-        // Supabase não retorna count sem Prefer:count=exact — usamos query separada
+    $bucket = trim($_POST['bucket'] ?? '');
+    $allowed_buckets = ['mentoras', 'assets', 'depoimentos'];
+    if (!in_array($bucket, $allowed_buckets)) {
+        echo json_encode(['ok'=>false,'error'=>'Bucket inválido']); return;
     }
 
-    // Abordagem mais simples: buscar todos com limit alto e contar no PHP
-    $all = sb_request('GET', 'whatsapp_queue', null, 'select=id,status,delivery_status,delivered_at,read_at&limit=5000');
-    if (isset($all['body']) && is_array($all['body'])) {
-        foreach ($all['body'] as $row) {
-            $s = $row['status'] ?? '';
-            if (isset($counts[$s])) $counts[$s]++;
-            if ($s === 'sent') {
-                $ds = strtolower($row['delivery_status'] ?? '');
-                if ($row['read_at'] || in_array($ds, ['read','played'])) $counts['read']++;
-                elseif ($row['delivered_at'] || $ds === 'received') $counts['delivered']++;
-            }
+    // Permissão por bucket
+    if ($bucket === 'mentoras' && !$user['perms']['mentoras'] && $user['role'] !== 'super_admin') {
+        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Sem permissão para upload de fotos']); return;
+    }
+    if ($bucket === 'depoimentos' && !$user['perms']['videos'] && !$user['perms']['textos'] && $user['role'] !== 'super_admin') {
+        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Sem permissão para upload de depoimentos']); return;
+    }
+    if ($bucket === 'assets' && !$user['perms']['config'] && $user['role'] !== 'super_admin') {
+        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Sem permissão para upload de assets']); return;
+    }
+
+    if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+        $code = $_FILES['file']['error'] ?? 'sem arquivo';
+        echo json_encode(['ok'=>false,'error'=>'Erro no upload (código '.$code.')']); return;
+    }
+
+    $file = $_FILES['file'];
+    $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $allowed_exts = ['jpg','jpeg','png','webp','gif','svg'];
+    if (!in_array($ext, $allowed_exts)) {
+        echo json_encode(['ok'=>false,'error'=>'Extensão não permitida: '.$ext]); return;
+    }
+
+    // Valida MIME real (não só extensão)
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime  = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+    $allowed_mimes = ['image/jpeg','image/jpg','image/png','image/webp','image/gif','image/svg+xml'];
+    if (!in_array($mime, $allowed_mimes)) {
+        echo json_encode(['ok'=>false,'error'=>'Tipo de arquivo não permitido: '.$mime]); return;
+    }
+
+    // Sanitiza path e garante unicidade
+    $path = trim($_POST['path'] ?? '');
+    if (!$path) {
+        $path = uniqid('img_', true) . '.' . $ext;
+    } else {
+        $path = preg_replace('/[^a-zA-Z0-9._\-\/]/', '_', $path);
+        $path = ltrim($path, '/');
+    }
+
+    $upload_url = SUPABASE_URL . '/storage/v1/object/' . $bucket . '/' . $path;
+
+    $fp = fopen($file['tmp_name'], 'r');
+    $ch = curl_init($upload_url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_PUT            => true,
+        CURLOPT_INFILE         => $fp,
+        CURLOPT_INFILESIZE     => $file['size'],
+        CURLOPT_HTTPHEADER     => [
+            'apikey: '               . SUPABASE_SERVICE_KEY,
+            'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
+            'Content-Type: '         . $mime,
+            'x-upsert: true',
+        ],
+        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_SSL_VERIFYPEER => true,
+    ]);
+
+    $response = curl_exec($ch);
+    $status   = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr  = curl_error($ch);
+    curl_close($ch);
+    fclose($fp);
+
+    if ($curlErr) {
+        echo json_encode(['ok'=>false,'error'=>'cURL: '.$curlErr]); return;
+    }
+
+    if ($status === 200 || $status === 201) {
+        $public_url = SUPABASE_URL . '/storage/v1/object/public/' . $bucket . '/' . $path;
+        echo json_encode(['ok'=>true, 'url'=>$public_url, 'path'=>$path]);
+    } else {
+        $body = json_decode($response, true);
+        $msg  = $body['message'] ?? ($body['error'] ?? ('HTTP '.$status));
+        echo json_encode(['ok'=>false,'error'=>$msg]);
+    }
+}
+
+// ── EMAIL TEMPLATES ──────────────────────────────────────────────────────────
+function list_email_templates() {
+    $r = sb_request('GET', 'email_templates', null, 'select=slug,subject,created_at&order=created_at.asc');
+    echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
+}
+
+function get_email_template() {
+    $slug = trim($_POST['slug'] ?? '');
+    if (!$slug) { echo json_encode(['ok'=>false,'error'=>'slug required']); return; }
+    $r = sb_request('GET', 'email_templates', null, 'slug=eq.' . urlencode($slug) . '&limit=1');
+    $data = $r['body'][0] ?? null;
+    echo json_encode(['ok' => !!$data, 'data' => $data]);
+}
+
+function save_email_template() {
+    $slug      = trim($_POST['slug'] ?? '');
+    $subject   = trim($_POST['subject'] ?? '');
+    $body_html = $_POST['body_html'] ?? '';
+    if (!$slug || !$subject || !$body_html) {
+        echo json_encode(['ok'=>false,'error'=>'slug, subject e body_html são obrigatórios']); return;
+    }
+    // Upsert: tenta atualizar; se não existir, cria
+    $r = sb_request('PATCH', 'email_templates', ['subject'=>$subject,'body_html'=>$body_html], 'slug=eq.' . urlencode($slug));
+    if ($r['status'] === 200 || $r['status'] === 204) {
+        echo json_encode(['ok'=>true,'action'=>'updated']); return;
+    }
+    $r2 = sb_request('POST', 'email_templates', [['slug'=>$slug,'subject'=>$subject,'body_html'=>$body_html]]);
+    echo json_encode(['ok' => $r2['status'] < 300, 'action' => 'created', 'error' => $r2['error'] ?? null]);
+}
+
+function delete_email_template() {
+    $slug = trim($_POST['slug'] ?? '');
+    if (!$slug) { echo json_encode(['ok'=>false,'error'=>'slug required']); return; }
+    $r = sb_request('DELETE', 'email_templates', null, 'slug=eq.' . urlencode($slug));
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+// ── GESTÃO DE USUÁRIOS ────────────────────────────────────────────────────────
+function require_user_admin() {
+    $user = $_SESSION['admin'];
+    if ($user['role'] !== 'super_admin' && !$user['perms']['usuarios']) {
+        http_response_code(403);
+        echo json_encode(['ok'=>false,'error'=>'Sem permissão para gerenciar usuários']);
+        exit;
+    }
+}
+
+function list_users() {
+    require_user_admin();
+    $r = sb_request('GET', 'admin_users', null,
+        'select=id,username,role,active,perm_dashboard,perm_leads,perm_videos,perm_textos,perm_quiz,perm_mentoras,perm_config,perm_usuarios,last_login,created_at&order=created_at.asc'
+    );
+    echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
+}
+
+function create_user() {
+    require_user_admin();
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $role     = $_POST['role'] ?? 'editor';
+
+    if (!$username || !$password) {
+        echo json_encode(['ok'=>false,'error'=>'Usuário e senha são obrigatórios']); return;
+    }
+    if (!preg_match('/^[a-zA-Z0-9_\.]{3,40}$/', $username)) {
+        echo json_encode(['ok'=>false,'error'=>'Usuário inválido (3-40 chars, letras/números/_ apenas)']); return;
+    }
+    if (strlen($password) < 8) {
+        echo json_encode(['ok'=>false,'error'=>'Senha deve ter ao menos 8 caracteres']); return;
+    }
+    if (!in_array($role, ['super_admin','editor_videos','editor_textos','viewer'])) $role = 'viewer';
+
+    // Só super_admin pode criar outro super_admin
+    $current = $_SESSION['admin'];
+    if ($role === 'super_admin' && $current['role'] !== 'super_admin') {
+        echo json_encode(['ok'=>false,'error'=>'Apenas super_admin pode criar outro super_admin']); return;
+    }
+
+    $perms = collect_perms();
+
+    $data = array_merge([
+        'username'      => $username,
+        'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+        'role'          => $role,
+        'active'        => true,
+        'created_at'    => date('c'),
+        'updated_at'    => date('c'),
+    ], $perms);
+
+    $r = sb_request('POST', 'admin_users', [$data]);
+    if ($r['status'] === 201 || $r['status'] === 200) {
+        echo json_encode(['ok'=>true]);
+    } else {
+        $msg = $r['body'][0]['message'] ?? $r['body']['message'] ?? ('HTTP '.$r['status']);
+        // Username duplicado
+        if (strpos($msg, 'duplicate') !== false || strpos($msg, 'unique') !== false) {
+            $msg = 'Nome de usuário já existe';
         }
+        echo json_encode(['ok'=>false,'error'=>$msg]);
+    }
+}
+
+function update_user() {
+    require_user_admin();
+    $id   = trim($_POST['id'] ?? '');
+    $role = $_POST['role'] ?? 'editor';
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+
+    // Não pode rebaixar a si mesmo
+    if ($id === $_SESSION['admin']['id'] && $role !== $_SESSION['admin']['role']) {
+        echo json_encode(['ok'=>false,'error'=>'Você não pode alterar o próprio cargo']); return;
     }
 
-    // Fila ativa (pending, processing, failed) — até 200 registros
-    $qRes = sb_request('GET', 'whatsapp_queue', null,
-        'status=in.(pending,processing,failed)&select=id,to_name,to_phone,message,status,error_msg,scheduled_at,attempts&order=scheduled_at.asc&limit=200');
+    if (!in_array($role, ['super_admin','editor_videos','editor_textos','viewer'])) $role = 'viewer';
+    $current = $_SESSION['admin'];
+    if ($role === 'super_admin' && $current['role'] !== 'super_admin') {
+        echo json_encode(['ok'=>false,'error'=>'Apenas super_admin pode promover para super_admin']); return;
+    }
 
-    // Enviadas recentes com confirmação de entrega — 100 últimas
-    $sRes = sb_request('GET', 'whatsapp_queue', null,
-        'status=eq.sent&select=id,to_name,to_phone,message,sent_at,delivery_status,delivered_at,read_at,zapi_message_id&order=sent_at.desc&limit=100');
+    $data = array_merge(['role' => $role, 'updated_at' => date('c')], collect_perms());
+    $r = sb_request('PATCH', 'admin_users?id=eq.' . rawurlencode($id), $data);
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+function reset_password() {
+    require_user_admin();
+    $id       = trim($_POST['id'] ?? '');
+    $password = $_POST['password'] ?? '';
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    if (strlen($password) < 8) {
+        echo json_encode(['ok'=>false,'error'=>'Senha deve ter ao menos 8 caracteres']); return;
+    }
+    $r = sb_request('PATCH', 'admin_users?id=eq.' . rawurlencode($id),
+        ['password_hash' => password_hash($password, PASSWORD_DEFAULT), 'updated_at' => date('c')]
+    );
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+function toggle_user() {
+    require_user_admin();
+    $id     = trim($_POST['id'] ?? '');
+    $active = $_POST['active'] === '1';
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    // Não pode desativar a si mesmo
+    if ($id === $_SESSION['admin']['id']) {
+        echo json_encode(['ok'=>false,'error'=>'Você não pode desativar sua própria conta']); return;
+    }
+    $r = sb_request('PATCH', 'admin_users?id=eq.' . rawurlencode($id),
+        ['active' => $active, 'updated_at' => date('c')]
+    );
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+function delete_user() {
+    require_user_admin();
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    if ($id === $_SESSION['admin']['id']) {
+        echo json_encode(['ok'=>false,'error'=>'Você não pode excluir sua própria conta']); return;
+    }
+    $r = sb_request('DELETE', 'admin_users?id=eq.' . rawurlencode($id));
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+function collect_perms(): array {
+    return [
+        'perm_dashboard' => isset($_POST['perm_dashboard']),
+        'perm_leads'     => isset($_POST['perm_leads']),
+        'perm_videos'    => isset($_POST['perm_videos']),
+        'perm_textos'    => isset($_POST['perm_textos']),
+        'perm_quiz'      => isset($_POST['perm_quiz']),
+        'perm_mentoras'  => isset($_POST['perm_mentoras']),
+        'perm_config'    => isset($_POST['perm_config']),
+        'perm_usuarios'  => isset($_POST['perm_usuarios']),
+    ];
+}
+
+// ── WHATSAPP QUEUE ────────────────────────────────────────────────────────────
+function wpp_stats() {
+    // Counts por status via Prefer: count=exact
+    $statuses = ['pending','processing','sent','failed'];
+    $counts = [];
+    foreach ($statuses as $s) {
+        $r = sb_request('GET', 'whatsapp_queue', null,
+            'status=eq.' . $s . '&select=id&limit=1',
+            ['Prefer: count=exact']
+        );
+        $counts[$s] = $r['count'] ?? 0;
+    }
+    // Counts de confirmação de entrega
+    $r = sb_request('GET', 'whatsapp_queue', null,
+        'read_at=not.is.null&select=id&limit=1',
+        ['Prefer: count=exact']
+    );
+    $counts['read'] = $r['count'] ?? 0;
+    $r = sb_request('GET', 'whatsapp_queue', null,
+        'delivered_at=not.is.null&read_at=is.null&select=id&limit=1',
+        ['Prefer: count=exact']
+    );
+    $counts['delivered'] = $r['count'] ?? 0;
+
+    // Últimas 100 msgs enviadas
+    $sent = sb_request('GET', 'whatsapp_queue', null,
+        'status=eq.sent&select=id,to_name,to_phone,message,sent_at,scheduled_at,delivery_status,delivered_at,read_at,zapi_message_id&order=sent_at.desc&limit=100'
+    );
+
+    // Fila pendente/falha (próximas a processar)
+    $queue = sb_request('GET', 'whatsapp_queue', null,
+        'status=in.(pending,failed,processing)&select=id,to_name,to_phone,message,status,scheduled_at,attempts,error_msg&order=scheduled_at.asc&limit=200'
+    );
 
     echo json_encode([
         'ok'     => true,
         'counts' => $counts,
-        'queue'  => $qRes['body'] ?? [],
-        'sent'   => $sRes['body'] ?? [],
+        'sent'   => $sent['body']  ?? [],
+        'queue'  => $queue['body'] ?? [],
     ]);
 }
 
 function wpp_reset_stuck() {
-    // Mensagens em "processing" há mais de 5 minutos → volta para "pending"
-    $cutoff = gmdate('Y-m-d\TH:i:s\Z', time() - 300);
-    $res = sb_request('PATCH',
-        'whatsapp_queue?status=eq.processing&updated_at=lt.' . rawurlencode($cutoff),
-        ['status' => 'pending', 'updated_at' => gmdate('Y-m-d\TH:i:s\Z')]
+    // Desbloqueia mensagens travadas em 'processing' → 'pending'
+    $r = sb_request('PATCH', 'whatsapp_queue?status=eq.processing',
+        ['status' => 'pending']
     );
-    $affected = is_array($res['body']) ? count($res['body']) : 0;
-    echo json_encode(['ok' => true, 'affected' => $affected]);
+    $affected = is_array($r['body']) ? count($r['body']) : 0;
+    echo json_encode(['ok' => $r['status'] < 300, 'affected' => $affected]);
 }
 
 function wpp_retry_failed() {
-    $res = sb_request('PATCH',
-        'whatsapp_queue?status=eq.failed',
-        ['status' => 'pending', 'attempts' => 0, 'error_msg' => null, 'updated_at' => gmdate('Y-m-d\TH:i:s\Z')]
+    // Recoloca mensagens falhas na fila zerandoattempts
+    $r = sb_request('PATCH', 'whatsapp_queue?status=eq.failed',
+        ['status' => 'pending', 'attempts' => 0, 'error_msg' => null]
     );
-    $affected = is_array($res['body']) ? count($res['body']) : 0;
-    echo json_encode(['ok' => true, 'affected' => $affected]);
+    $affected = is_array($r['body']) ? count($r['body']) : 0;
+    echo json_encode(['ok' => $r['status'] < 300, 'affected' => $affected]);
 }
 
 function wpp_cancel_msg() {
     $id = trim($_POST['id'] ?? '');
     if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
-    $res = sb_request('DELETE', 'whatsapp_queue?id=eq.' . rawurlencode($id));
-    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
+    // Cancela apenas mensagens ainda não enviadas
+    $r = sb_request('DELETE', 'whatsapp_queue?id=eq.' . rawurlencode($id) . '&status=neq.sent');
+    echo json_encode(['ok' => $r['status'] < 300]);
 }
 
-// ── EMAIL TEMPLATES HANDLERS ──────────────────────────────────────────────────
-function list_email_templates() {
-    $res = sb_request('GET', 'email_templates', null, 'select=slug,subject,active,updated_at&order=slug.asc&limit=200');
-    echo json_encode(['ok' => true, 'data' => $res['body'] ?? []]);
-}
-
-function get_email_template() {
-    $slug = trim($_POST['slug'] ?? '');
-    if (!$slug || !preg_match('/^[a-z0-9_\-]+$/', $slug)) {
-        echo json_encode(['ok'=>false,'error'=>'Slug inválido']); return;
-    }
-    $res = sb_request('GET', 'email_templates', null, 'slug=eq.' . rawurlencode($slug) . '&select=slug,subject,body_html,active&limit=1');
-    $row = $res['body'][0] ?? null;
-    echo json_encode(['ok' => (bool)$row, 'data' => $row]);
-}
-
-function save_email_template() {
-    $slug      = trim($_POST['slug']      ?? '');
-    $subject   = trim($_POST['subject']   ?? '');
-    $body_html = $_POST['body_html']      ?? '';
-    if (!$slug || !preg_match('/^[a-z0-9_\-]+$/', $slug)) {
-        echo json_encode(['ok'=>false,'error'=>'Slug inválido']); return;
-    }
-    if (!$subject) { echo json_encode(['ok'=>false,'error'=>'Assunto obrigatório']); return; }
-    $data = ['slug'=>$slug,'subject'=>$subject,'body_html'=>$body_html,'updated_at'=>date('c')];
-    $res = sb_upsert('email_templates', $data, 'slug');
-    echo json_encode(['ok' => $res]);
-}
-
-function toggle_email_template() {
-    $slug   = trim($_POST['slug']   ?? '');
-    $active = ($_POST['active'] ?? '1') === '1';
-    if (!$slug) { echo json_encode(['ok'=>false,'error'=>'Slug obrigatório']); return; }
-    $res = sb_request('PATCH', 'email_templates?slug=eq.' . rawurlencode($slug), ['active'=>$active,'updated_at'=>date('c')]);
-    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
-}
-
-function delete_email_template() {
-    $slug = trim($_POST['slug'] ?? '');
-    if (!$slug || !preg_match('/^[a-z0-9_\-]+$/', $slug)) {
-        echo json_encode(['ok'=>false,'error'=>'Slug inválido']); return;
-    }
-    $res = sb_request('DELETE', 'email_templates?slug=eq.' . rawurlencode($slug));
-    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
-}
-
-// ── WPP TEMPLATES HANDLERS ────────────────────────────────────────────────────
+// ── WPP TEMPLATES ────────────────────────────────────────────────────────────
 function list_wpp_templates() {
-    $res = sb_request('GET', 'wpp_templates', null, 'select=id,slug,name,message,active,updated_at&order=name.asc&limit=200');
-    echo json_encode(['ok' => true, 'data' => $res['body'] ?? []]);
+    $r = sb_request('GET', 'wpp_templates', null, 'select=id,name,slug,message,is_active,created_at&order=created_at.asc');
+    echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
 }
-
 function get_wpp_template() {
-    $id = (int)($_POST['id'] ?? 0);
-    if (!$id) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
-    $res = sb_request('GET', 'wpp_templates', null, 'id=eq.' . $id . '&select=id,slug,name,message,active&limit=1');
-    $row = $res['body'][0] ?? null;
-    echo json_encode(['ok' => (bool)$row, 'data' => $row]);
-}
-
-function save_wpp_template() {
-    $id      = (int)($_POST['id']      ?? 0);
-    $slug    = trim($_POST['slug']    ?? '');
-    $name    = trim($_POST['name']    ?? '');
-    $message = $_POST['message']      ?? '';
-    if (!$name)    { echo json_encode(['ok'=>false,'error'=>'Nome obrigatório']); return; }
-    if (!$message) { echo json_encode(['ok'=>false,'error'=>'Mensagem obrigatória']); return; }
-    if (!$slug)    $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '_', $name));
-
-    $data = ['slug'=>$slug,'name'=>$name,'message'=>$message,'updated_at'=>date('c')];
-    if ($id) {
-        $res = sb_request('PATCH', 'wpp_templates?id=eq.' . $id, $data);
-        echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
-    } else {
-        $res = sb_upsert('wpp_templates', $data, 'slug');
-        echo json_encode(['ok' => $res]);
-    }
-}
-
-function toggle_wpp_template() {
-    $id     = (int)($_POST['id']     ?? 0);
-    $active = ($_POST['active'] ?? '1') === '1';
-    if (!$id) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
-    $res = sb_request('PATCH', 'wpp_templates?id=eq.' . $id, ['active'=>$active,'updated_at'=>date('c')]);
-    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
-}
-
-function delete_wpp_template() {
-    $id = (int)($_POST['id'] ?? 0);
-    if (!$id) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
-    $res = sb_request('DELETE', 'wpp_templates?id=eq.' . $id);
-    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
-}
-
-// ── USERS HANDLERS ────────────────────────────────────────────────────────────
-function list_users() {
-    $user = $_SESSION['admin'];
-    if ($user['role'] !== 'super_admin') {
-        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Apenas super_admin pode gerenciar usuários']); return;
-    }
-    $res = sb_request('GET', 'admin_users', null,
-        'select=id,username,role,active,last_login,perm_dashboard,perm_leads,perm_videos,perm_textos,perm_quiz,perm_mentoras,perm_config,perm_usuarios&order=username.asc&limit=200');
-    echo json_encode(['ok' => true, 'data' => $res['body'] ?? []]);
-}
-
-function create_user() {
-    $user = $_SESSION['admin'];
-    if ($user['role'] !== 'super_admin') {
-        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Apenas super_admin pode criar usuários']); return;
-    }
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $role     = $_POST['role'] ?? 'viewer';
-
-    if (!$username || strlen($username) < 3) { echo json_encode(['ok'=>false,'error'=>'Usuário deve ter ao menos 3 caracteres']); return; }
-    if (strlen($password) < 8) { echo json_encode(['ok'=>false,'error'=>'Senha deve ter ao menos 8 caracteres']); return; }
-    if (!in_array($role, ['super_admin','editor_videos','editor_textos','viewer'])) {
-        echo json_encode(['ok'=>false,'error'=>'Cargo inválido']); return;
-    }
-
-    $data = [
-        'username'        => $username,
-        'password_hash'   => password_hash($password, PASSWORD_BCRYPT),
-        'role'            => $role,
-        'active'          => true,
-        'perm_dashboard'  => ($_POST['perm_dashboard']  ?? '0') === '1',
-        'perm_leads'      => ($_POST['perm_leads']      ?? '0') === '1',
-        'perm_videos'     => ($_POST['perm_videos']     ?? '0') === '1',
-        'perm_textos'     => ($_POST['perm_textos']     ?? '0') === '1',
-        'perm_quiz'       => ($_POST['perm_quiz']       ?? '0') === '1',
-        'perm_mentoras'   => ($_POST['perm_mentoras']   ?? '0') === '1',
-        'perm_config'     => ($_POST['perm_config']     ?? '0') === '1',
-        'perm_usuarios'   => ($_POST['perm_usuarios']   ?? '0') === '1',
-    ];
-
-    $res = sb_request('POST', 'admin_users', $data);
-    echo json_encode(['ok' => ($res['status'] === 201 || $res['status'] === 200),'error'=>$res['body']['message']??null]);
-}
-
-function update_user() {
-    $user = $_SESSION['admin'];
-    if ($user['role'] !== 'super_admin') {
-        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Apenas super_admin pode editar usuários']); return;
-    }
-    $id   = trim($_POST['id']   ?? '');
-    $role = trim($_POST['role'] ?? '');
-    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
-    if (!in_array($role, ['super_admin','editor_videos','editor_textos','viewer'])) {
-        echo json_encode(['ok'=>false,'error'=>'Cargo inválido']); return;
-    }
-
-    $data = [
-        'role'           => $role,
-        'perm_dashboard' => ($_POST['perm_dashboard']  ?? '0') === '1',
-        'perm_leads'     => ($_POST['perm_leads']      ?? '0') === '1',
-        'perm_videos'    => ($_POST['perm_videos']     ?? '0') === '1',
-        'perm_textos'    => ($_POST['perm_textos']     ?? '0') === '1',
-        'perm_quiz'      => ($_POST['perm_quiz']       ?? '0') === '1',
-        'perm_mentoras'  => ($_POST['perm_mentoras']   ?? '0') === '1',
-        'perm_config'    => ($_POST['perm_config']     ?? '0') === '1',
-        'perm_usuarios'  => ($_POST['perm_usuarios']   ?? '0') === '1',
-        'updated_at'     => date('c'),
-    ];
-
-    $res = sb_request('PATCH', 'admin_users?id=eq.' . rawurlencode($id), $data);
-    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
-}
-
-function reset_password() {
-    $user = $_SESSION['admin'];
-    if ($user['role'] !== 'super_admin') {
-        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Apenas super_admin pode redefinir senhas']); return;
-    }
-    $id       = trim($_POST['id']       ?? '');
-    $password = trim($_POST['password'] ?? '');
-    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
-    if (strlen($password) < 8) { echo json_encode(['ok'=>false,'error'=>'Senha deve ter ao menos 8 caracteres']); return; }
-
-    $res = sb_request('PATCH', 'admin_users?id=eq.' . rawurlencode($id), [
-        'password_hash' => password_hash($password, PASSWORD_BCRYPT),
-        'updated_at'    => date('c'),
-    ]);
-    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
-}
-
-function toggle_user() {
-    $user = $_SESSION['admin'];
-    if ($user['role'] !== 'super_admin') {
-        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Apenas super_admin pode ativar/desativar usuários']); return;
-    }
-    $id     = trim($_POST['id']     ?? '');
-    $active = ($_POST['active'] ?? '0') === '1';
-    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
-
-    $res = sb_request('PATCH', 'admin_users?id=eq.' . rawurlencode($id), ['active'=>$active,'updated_at'=>date('c')]);
-    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
-}
-
-function delete_user() {
-    $user = $_SESSION['admin'];
-    if ($user['role'] !== 'super_admin') {
-        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Apenas super_admin pode excluir usuários']); return;
-    }
     $id = trim($_POST['id'] ?? '');
     if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
-    // Não permitir excluir a si mesmo
-    if ($id === $user['id']) { echo json_encode(['ok'=>false,'error'=>'Você não pode excluir sua própria conta']); return; }
-
-    $res = sb_request('DELETE', 'admin_users?id=eq.' . rawurlencode($id));
-    echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
+    $r  = sb_request('GET', 'wpp_templates', null, 'id=eq.' . rawurlencode($id) . '&limit=1');
+    echo json_encode(['ok' => !empty($r['body'][0]), 'data' => $r['body'][0] ?? null]);
+}
+function save_wpp_template() {
+    $id      = trim($_POST['id'] ?? '');
+    $name    = trim($_POST['name'] ?? '');
+    $slug    = trim($_POST['slug'] ?? '') ?: strtolower(preg_replace('/[\s\-]+/', '_', $name));
+    $message = $_POST['message'] ?? '';
+    if (!$name || !$message) { echo json_encode(['ok'=>false,'error'=>'Nome e mensagem obrigatórios']); return; }
+    $data = ['name'=>$name,'slug'=>$slug,'message'=>$message,'updated_at'=>date('c')];
+    if ($id && is_valid_uuid($id)) {
+        $r = sb_request('PATCH', 'wpp_templates?id=eq.' . rawurlencode($id), $data);
+        echo json_encode(['ok' => $r['status'] < 300, 'action'=>'updated']);
+    } else {
+        $data['is_active'] = true; $data['created_at'] = date('c');
+        $r = sb_request('POST', 'wpp_templates', [$data]);
+        echo json_encode(['ok' => $r['status'] < 300, 'action'=>'created']);
+    }
+}
+function toggle_wpp_template() {
+    $id = trim($_POST['id'] ?? ''); $active = ($_POST['active'] ?? '0') === '1';
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r = sb_request('PATCH', 'wpp_templates?id=eq.' . rawurlencode($id), ['is_active'=>$active,'updated_at'=>date('c')]);
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+function delete_wpp_template() {
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r = sb_request('DELETE', 'wpp_templates?id=eq.' . rawurlencode($id));
+    echo json_encode(['ok' => $r['status'] < 300]);
 }
 
-// ── UPLOAD DE ARQUIVO ─────────────────────────────────────────────────────────
-function upload_file() {
-    if (empty($_FILES['file']['tmp_name'])) {
-        echo json_encode(['ok'=>false,'error'=>'Nenhum arquivo enviado']); return;
-    }
-    $bucket  = preg_replace('/[^a-z0-9\-_]/', '', $_POST['bucket'] ?? 'uploads');
-    $ext     = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
-    $allowed = ['jpg','jpeg','png','gif','webp','svg','mp4','pdf'];
-    if (!in_array($ext, $allowed)) {
-        echo json_encode(['ok'=>false,'error'=>'Tipo de arquivo não permitido']); return;
-    }
-
-    $path = trim($_POST['path'] ?? '');
-    if (!$path) $path = date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-    $path = ltrim($path, '/');
-
-    $url = SUPABASE_URL . '/storage/v1/object/' . $bucket . '/' . $path;
-    $ch  = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CUSTOMREQUEST  => 'POST',
-        CURLOPT_HTTPHEADER     => [
-            'apikey: '        . SUPABASE_SERVICE_KEY,
-            'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
-            'Content-Type: ' . ($_FILES['file']['type'] ?: 'application/octet-stream'),
-            'x-upsert: true',
-        ],
-        CURLOPT_POSTFIELDS     => file_get_contents($_FILES['file']['tmp_name']),
-        CURLOPT_TIMEOUT        => 60,
-    ]);
-    $res  = curl_exec($ch);
-    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    if ($code >= 200 && $code < 300) {
-        $pub_url = SUPABASE_URL . '/storage/v1/object/public/' . $bucket . '/' . $path;
-        echo json_encode(['ok'=>true,'url'=>$pub_url,'path'=>$path]);
+// ── SEQUÊNCIAS ────────────────────────────────────────────────────────────────
+function list_sequences() {
+    $r = sb_request('GET', 'sequences', null, 'select=id,name,description,is_active,items,created_at&order=created_at.asc');
+    echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
+}
+function get_sequence() {
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r  = sb_request('GET', 'sequences', null, 'id=eq.' . rawurlencode($id) . '&limit=1');
+    echo json_encode(['ok' => !empty($r['body'][0]), 'data' => $r['body'][0] ?? null]);
+}
+function save_sequence() {
+    $id          = trim($_POST['id'] ?? '');
+    $name        = trim($_POST['name'] ?? '');
+    $description = trim($_POST['description'] ?? '');
+    $items_raw   = $_POST['items'] ?? '[]';
+    if (!$name) { echo json_encode(['ok'=>false,'error'=>'Nome obrigatório']); return; }
+    $items = json_decode($items_raw, true);
+    if (!is_array($items)) { echo json_encode(['ok'=>false,'error'=>'items JSON inválido']); return; }
+    $data = ['name'=>$name, 'description'=>$description ?: null, 'items'=>$items, 'updated_at'=>date('c')];
+    if ($id && is_valid_uuid($id)) {
+        $r = sb_request('PATCH', 'sequences?id=eq.' . rawurlencode($id), $data);
+        echo json_encode(['ok' => $r['status'] < 300, 'action'=>'updated', 'id'=>$id]);
     } else {
-        echo json_encode(['ok'=>false,'error'=>'Upload falhou (HTTP '.$code.')', 'detail'=>json_decode($res,true)]);
+        $data['is_active'] = true; $data['created_at'] = date('c');
+        $r = sb_request('POST', 'sequences', [$data], '', ['Prefer: return=representation']);
+        $new_id = $r['body'][0]['id'] ?? null;
+        echo json_encode(['ok' => $r['status'] < 300, 'action'=>'created', 'id'=>$new_id]);
     }
+}
+function delete_sequence() {
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r = sb_request('DELETE', 'sequences?id=eq.' . rawurlencode($id));
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+function toggle_sequence() {
+    $id = trim($_POST['id'] ?? ''); $active = ($_POST['active'] ?? '0') === '1';
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r = sb_request('PATCH', 'sequences?id=eq.' . rawurlencode($id), ['is_active'=>$active,'updated_at'=>date('c')]);
+    echo json_encode(['ok' => $r['status'] < 300]);
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -638,43 +723,21 @@ function is_valid_uuid($str) {
     return (bool)preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $str);
 }
 
-function sb_upsert(string $table, array $data, string $conflict_col): bool {
-    $url  = SUPABASE_URL . '/rest/v1/' . $table;
-    $hdrs = [
-        'apikey: '        . SUPABASE_SERVICE_KEY,
-        'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
-        'Content-Type: application/json',
-        'Prefer: resolution=merge-duplicates,return=minimal',
-    ];
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CUSTOMREQUEST  => 'POST',
-        CURLOPT_HTTPHEADER     => $hdrs,
-        CURLOPT_POSTFIELDS     => json_encode($data),
-        CURLOPT_TIMEOUT        => 15,
-        CURLOPT_SSL_VERIFYPEER => true,
-    ]);
-    curl_exec($ch);
-    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    return $code >= 200 && $code < 300;
-}
-
-function sb_request(string $method, string $path, ?array $body = null, string $query = ''): array {
-    if (strlen(SUPABASE_SERVICE_KEY) < 20) {
+function sb_request(string $method, string $path, ?array $body = null, string $query = '', array $extra_headers = []): array {
+    if (SUPABASE_SERVICE_KEY === 'COLE_AQUI_SUA_SERVICE_ROLE_KEY') {
         return ['status' => 503, 'body' => null, 'error' => 'Service key não configurada'];
     }
 
     $url = SUPABASE_URL . '/rest/v1/' . $path . ($query ? '?' . $query : '');
 
-    $headers = [
+    $headers = array_merge([
         'apikey: '        . SUPABASE_SERVICE_KEY,
         'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
         'Content-Type: application/json',
         'Prefer: return=representation',
-    ];
+    ], $extra_headers);
 
+    $respHeaders = [];
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -682,6 +745,13 @@ function sb_request(string $method, string $path, ?array $body = null, string $q
         CURLOPT_HTTPHEADER     => $headers,
         CURLOPT_TIMEOUT        => 15,
         CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_HEADERFUNCTION => function($ch, $line) use (&$respHeaders) {
+            $parts = explode(':', $line, 2);
+            if (count($parts) === 2) {
+                $respHeaders[strtolower(trim($parts[0]))] = trim($parts[1]);
+            }
+            return strlen($line);
+        },
     ]);
 
     if ($body !== null) {
@@ -697,5 +767,14 @@ function sb_request(string $method, string $path, ?array $body = null, string $q
         return ['status' => 0, 'body' => null, 'error' => $curlErr];
     }
 
-    return ['status' => $status, 'body' => json_decode($response, true)];
+    // Parse Content-Range header for count=exact: e.g. "0-9/42" → 42
+    $count = null;
+    if (isset($respHeaders['content-range'])) {
+        $parts = explode('/', $respHeaders['content-range']);
+        if (isset($parts[1]) && is_numeric($parts[1])) {
+            $count = (int)$parts[1];
+        }
+    }
+
+    return ['status' => $status, 'body' => json_decode($response, true), 'count' => $count];
 }
