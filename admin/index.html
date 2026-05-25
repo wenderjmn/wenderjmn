@@ -212,6 +212,44 @@ let currentUser = null;
 let currentPage = 'dashboard';
 let allConfig = {};
 
+/* ── PERMISSÕES ───────────────────────────────────────────────── */
+const PAGE_PERMS = {
+  dashboard:        'dashboard',
+  textos:           'textos',
+  quiz:             'quiz',
+  resultados:       'quiz',
+  depoimentos:      'videos',
+  mentoras:         'mentoras',
+  config:           'config',
+  leads:            'leads',
+  templates:        'leads',
+  whatsapp:         'leads',
+  wpp_templates:    'leads',
+  leads_importados: 'leads',
+  sequencias:       'leads',
+  usuarios:         'usuarios',
+};
+
+function hasPerm(page) {
+  if (!currentUser) return false;
+  if (currentUser.role === 'super_admin') return true;
+  const key = PAGE_PERMS[page];
+  if (!key) return true;
+  return !!(currentUser.perms?.[key]);
+}
+
+function applyPermissions() {
+  // Filtra itens do nav
+  document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+    el.style.display = hasPerm(el.dataset.page) ? '' : 'none';
+  });
+  // Redireciona para o primeiro módulo permitido se dashboard bloqueado
+  if (!hasPerm('dashboard')) {
+    const firstAllowed = Object.keys(PAGE_PERMS).find(p => hasPerm(p));
+    if (firstAllowed) goPage(firstAllowed);
+  }
+}
+
 /* ── AUTH ─────────────────────────── */
 async function doLogin() {
   const user = document.getElementById('login-user').value.trim();
@@ -233,7 +271,8 @@ async function doLogin() {
       document.getElementById('login-page').classList.add('hidden');
       document.getElementById('app').classList.remove('hidden');
       document.getElementById('sidebar-user').textContent = currentUser.username;
-      goPage('dashboard');
+      applyPermissions();
+      goPage(hasPerm('dashboard') ? 'dashboard' : (Object.keys(PAGE_PERMS).find(p => hasPerm(p)) || 'dashboard'));
     } else {
       err.textContent = data.error || 'Credenciais inválidas';
       err.classList.remove('hidden');
@@ -264,13 +303,23 @@ async function checkSession() {
       document.getElementById('login-page').classList.add('hidden');
       document.getElementById('app').classList.remove('hidden');
       document.getElementById('sidebar-user').textContent = currentUser.username;
-      goPage('dashboard');
+      applyPermissions();
+      goPage(hasPerm('dashboard') ? 'dashboard' : (Object.keys(PAGE_PERMS).find(p => hasPerm(p)) || 'dashboard'));
     }
   } catch(e) { /* proxy not available, show login */ }
 }
 
 /* ── NAVIGATION ───────────────────── */
 function goPage(name) {
+  if (!hasPerm(name)) {
+    document.getElementById('main-content').innerHTML = `
+      <div style="text-align:center;padding:80px 20px">
+        <div style="font-size:3.5rem">🔒</div>
+        <h2 style="color:var(--text2);margin:16px 0 8px">Acesso restrito</h2>
+        <p style="color:var(--text3)">Você não tem permissão para acessar esta área.<br>Fale com o administrador para solicitar acesso.</p>
+      </div>`;
+    return;
+  }
   currentPage = name;
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === name);
