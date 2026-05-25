@@ -57,7 +57,7 @@ $base = new DateTime('now', $tz);
 
 $wpp_messages = [
     [0, null,
-        "Oi, {{nome}}! 👋\n\nVocê estava na nossa lista há um tempo e resolvi te chamar pessoalmente.\n\nTemos algo especial acontecendo: a Masterclass *\"O Código dos Sabotadores\"* com a Psicóloga Daniely e a Nutri Ira Soraya.\n\n📅 *11 de junho, 20h* — ao vivo e gratuita.\n\nVocê ainda tem o objetivo de emagrecer de forma definitiva? 😊"],
+        "Oi, {{nome}}! 👋\n\nSou do *Programa EmagreSer*. Você se inscreveu em nossa lista e quero te enviar dicas e conteúdos exclusivos sobre emagrecimento de verdade — sem dietas restritivas.\n\nPosso continuar te enviando mensagens aqui no WhatsApp?\n\nResponda *SIM* para continuar ou *NÃO* para não receber mais. 🙏"],
 
     [26, null,
         "{{nome}}, uma coisa rápida 💡\n\nA maioria das pessoas que não consegue manter o peso não tem problema de falta de força de vontade.\n\nTem um *padrão neurológico* que repete em loop sem que a pessoa perceba.\n\nNa Masterclass do dia 11/06 a Daniely vai mostrar como identificar e quebrar esse padrão.\n\nEntra no grupo VIP para receber o link 👇\n" . WPP_LINK],

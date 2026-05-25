@@ -72,6 +72,32 @@ $leads = sb_get("leads?phone=eq." . urlencode($phone) . "&select=id,name&limit=1
 $lead  = is_array($leads) && !empty($leads[0]) ? $leads[0] : null;
 $nome  = $lead ? (explode(' ', $lead['name'])[0]) : 'você';
 
+// ── OPT-IN / OPT-OUT ──────────────────────────────────────────────────
+// Resposta SIM ao pedido de consentimento de WPP importados
+if ($text === 'SIM') {
+    $lead_exists = $lead !== null;
+    if ($lead_exists) {
+        sb_patch("leads?id=eq.{$lead['id']}", ['wpp_optout' => false]);
+    }
+    $msg_sim = "Ótimo, {$nome}! 🎉 Você confirmou o recebimento das nossas mensagens.\n\nEm breve enviaremos conteúdos exclusivos sobre emagrecimento para você. Fique ligada! 💚";
+    zapi_send($phone, $msg_sim);
+    echo json_encode(['ok' => true, 'replied' => true, 'action' => 'optin_confirmed']);
+    exit;
+}
+
+// Resposta NÃO ao pedido de consentimento
+if ($text === 'NÃO' || $text === 'NAO' || $text === 'N') {
+    if ($lead !== null) {
+        sb_patch("leads?id=eq.{$lead['id']}", ['wpp_optout' => true]);
+        // Cancela todos os WPP pendentes deste lead
+        sb_patch("whatsapp_queue?lead_id=eq.{$lead['id']}&status=eq.pending", ['status' => 'cancelled', 'error_msg' => 'opt-out via WPP']);
+    }
+    $msg_nao = "Entendido, {$nome}. Não enviaremos mais mensagens para este número. 🙏\n\nSe mudar de ideia, pode acessar nosso site a qualquer momento:\n👉 " . $site_url;
+    zapi_send($phone, $msg_nao);
+    echo json_encode(['ok' => true, 'replied' => true, 'action' => 'optout_confirmed']);
+    exit;
+}
+
 // ── RESPOSTAS INTERATIVAS ──────────────────────────────────────────────
 // Detecta se é resposta ao quiz de perfil sabotador (A/B/C/D)
 $respostas_quiz = [
@@ -165,6 +191,21 @@ function sb_get(string $path): array {
     ]]);
     $res = curl_exec($ch); curl_close($ch);
     return json_decode($res, true) ?: [];
+}
+
+function sb_patch(string $path, array $data): void {
+    $ch = curl_init(SUPABASE_URL . '/rest/v1/' . $path);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST  => 'PATCH',
+        CURLOPT_POSTFIELDS     => json_encode($data),
+        CURLOPT_HTTPHEADER     => [
+            'apikey: '               . SUPABASE_SERVICE_KEY,
+            'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
+            'Content-Type: application/json', 'Prefer: return=minimal',
+        ],
+    ]);
+    curl_exec($ch); curl_close($ch);
 }
 
 function sb_post(string $table, array $data): void {

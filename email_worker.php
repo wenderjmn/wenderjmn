@@ -124,6 +124,16 @@ if (!ZAPI_INSTANCE || !ZAPI_TOKEN) {
     $wpp_pending = sb_get("whatsapp_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=lt.3&order=scheduled_at.asc&limit=10");
 
     foreach ($wpp_pending as $item) {
+        // Verifica opt-out do lead antes de enviar
+        if (!empty($item['lead_id'])) {
+            $lcheck = sb_get("leads?id=eq.{$item['lead_id']}&select=wpp_optout&limit=1");
+            if (!empty($lcheck[0]['wpp_optout'])) {
+                sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['status'=>'cancelled','error_msg'=>'wpp_optout']);
+                $log[] = "⛔ WA cancelado (opt-out) para {$item['to_phone']}";
+                continue;
+            }
+        }
+
         // Trava atômica: impede reenvio duplicado se status=sent falhar
         sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['status'=>'processing', 'attempts' => ($item['attempts'] + 1)]);
 
