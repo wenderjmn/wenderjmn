@@ -14,6 +14,9 @@
  */
 
 // ── CONFIGURAÇÃO ──────────────────────────────────────────────────────────────
+// Carrega credenciais do servidor (arquivo fora do git)
+if (file_exists(__DIR__ . '/../_env.php')) require_once __DIR__ . '/../_env.php';
+
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '');
 

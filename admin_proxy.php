@@ -14,6 +14,9 @@
  */
 
 // ── CONFIGURAÇÃO ──────────────────────────────────────────────────────────────
+// Carrega credenciais do servidor (arquivo fora do git)
+if (file_exists(__DIR__ . '/../_env.php')) require_once __DIR__ . '/../_env.php';
+
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '');
 
@@ -382,13 +385,26 @@ function upload_file() {
     }
 }
 
+// ── HELPER DE PERMISSÃO ──────────────────────────────────────────────────────
+function require_perm(string $perm): void {
+    $user = $_SESSION['admin'];
+    if ($user['role'] === 'super_admin') return;
+    if (!($user['perms'][$perm] ?? false)) {
+        http_response_code(403);
+        echo json_encode(['ok'=>false,'error'=>'Sem permissão: '.$perm]);
+        exit;
+    }
+}
+
 // ── EMAIL TEMPLATES ──────────────────────────────────────────────────────────
 function list_email_templates() {
+    require_perm('leads');
     $r = sb_request('GET', 'email_templates', null, 'select=slug,subject,created_at&order=created_at.asc');
     echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
 }
 
 function get_email_template() {
+    require_perm('leads');
     $slug = trim($_POST['slug'] ?? '');
     if (!$slug) { echo json_encode(['ok'=>false,'error'=>'slug required']); return; }
     $r = sb_request('GET', 'email_templates', null, 'slug=eq.' . urlencode($slug) . '&limit=1');
@@ -397,6 +413,7 @@ function get_email_template() {
 }
 
 function save_email_template() {
+    require_perm('leads');
     $slug      = trim($_POST['slug'] ?? '');
     $subject   = trim($_POST['subject'] ?? '');
     $body_html = $_POST['body_html'] ?? '';
@@ -413,6 +430,7 @@ function save_email_template() {
 }
 
 function delete_email_template() {
+    require_perm('leads');
     $slug = trim($_POST['slug'] ?? '');
     if (!$slug) { echo json_encode(['ok'=>false,'error'=>'slug required']); return; }
     $r = sb_request('DELETE', 'email_templates', null, 'slug=eq.' . urlencode($slug));
@@ -561,6 +579,7 @@ function collect_perms(): array {
 
 // ── WHATSAPP QUEUE ────────────────────────────────────────────────────────────
 function wpp_stats() {
+    require_perm('leads');
     // Counts por status via Prefer: count=exact
     $statuses = ['pending','processing','sent','failed'];
     $counts = [];
@@ -629,16 +648,19 @@ function wpp_cancel_msg() {
 
 // ── WPP TEMPLATES ────────────────────────────────────────────────────────────
 function list_wpp_templates() {
+    require_perm('leads');
     $r = sb_request('GET', 'wpp_templates', null, 'select=id,name,slug,message,is_active,created_at&order=created_at.asc');
     echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
 }
 function get_wpp_template() {
+    require_perm('leads');
     $id = trim($_POST['id'] ?? '');
     if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
     $r  = sb_request('GET', 'wpp_templates', null, 'id=eq.' . rawurlencode($id) . '&limit=1');
     echo json_encode(['ok' => !empty($r['body'][0]), 'data' => $r['body'][0] ?? null]);
 }
 function save_wpp_template() {
+    require_perm('leads');
     $id      = trim($_POST['id'] ?? '');
     $name    = trim($_POST['name'] ?? '');
     $slug    = trim($_POST['slug'] ?? '') ?: strtolower(preg_replace('/[\s\-]+/', '_', $name));
@@ -655,12 +677,14 @@ function save_wpp_template() {
     }
 }
 function toggle_wpp_template() {
+    require_perm('leads');
     $id = trim($_POST['id'] ?? ''); $active = ($_POST['active'] ?? '0') === '1';
     if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
     $r = sb_request('PATCH', 'wpp_templates?id=eq.' . rawurlencode($id), ['is_active'=>$active,'updated_at'=>date('c')]);
     echo json_encode(['ok' => $r['status'] < 300]);
 }
 function delete_wpp_template() {
+    require_perm('leads');
     $id = trim($_POST['id'] ?? '');
     if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
     $r = sb_request('DELETE', 'wpp_templates?id=eq.' . rawurlencode($id));
@@ -669,16 +693,19 @@ function delete_wpp_template() {
 
 // ── SEQUÊNCIAS ────────────────────────────────────────────────────────────────
 function list_sequences() {
+    require_perm('leads');
     $r = sb_request('GET', 'sequences', null, 'select=id,name,description,is_active,items,created_at&order=created_at.asc');
     echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
 }
 function get_sequence() {
+    require_perm('leads');
     $id = trim($_POST['id'] ?? '');
     if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
     $r  = sb_request('GET', 'sequences', null, 'id=eq.' . rawurlencode($id) . '&limit=1');
     echo json_encode(['ok' => !empty($r['body'][0]), 'data' => $r['body'][0] ?? null]);
 }
 function save_sequence() {
+    require_perm('leads');
     $id          = trim($_POST['id'] ?? '');
     $name        = trim($_POST['name'] ?? '');
     $description = trim($_POST['description'] ?? '');
@@ -698,12 +725,14 @@ function save_sequence() {
     }
 }
 function delete_sequence() {
+    require_perm('leads');
     $id = trim($_POST['id'] ?? '');
     if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
     $r = sb_request('DELETE', 'sequences?id=eq.' . rawurlencode($id));
     echo json_encode(['ok' => $r['status'] < 300]);
 }
 function toggle_sequence() {
+    require_perm('leads');
     $id = trim($_POST['id'] ?? ''); $active = ($_POST['active'] ?? '0') === '1';
     if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
     $r = sb_request('PATCH', 'sequences?id=eq.' . rawurlencode($id), ['is_active'=>$active,'updated_at'=>date('c')]);
