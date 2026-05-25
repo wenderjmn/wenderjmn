@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Briefing Completo — EmagreSer 2.0</title>
+<style>
+:root{
+  --brand:#e8773a;--brand-d:#c4591e;--dark:#111827;--text:#1f2937;--text2:#374151;
+  --text3:#6b7280;--bg:#f3f4f6;--white:#fff;--border:#e5e7eb;
+  --green:#10b981;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--purple:#8b5cf6;
+  --teal:#0d9488;--r:10px;
+  --font:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6}
+
+/* ── HEADER ── */
+.header{background:linear-gradient(135deg,var(--dark) 0%,#1e3a5f 100%);color:#fff;padding:60px 40px 50px;text-align:center;position:relative;overflow:hidden}
+.header::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+.header-tag{display:inline-block;background:rgba(232,119,58,.2);border:1px solid rgba(232,119,58,.4);color:var(--brand);font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 14px;border-radius:20px;margin-bottom:18px}
+.header h1{font-size:2.6rem;font-weight:800;letter-spacing:-.02em;margin-bottom:10px}
+.header h1 span{color:var(--brand)}
+.header-sub{font-size:1rem;color:rgba(255,255,255,.65);max-width:600px;margin:0 auto 28px}
+.header-meta{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
+.header-meta-item{display:flex;align-items:center;gap:7px;font-size:.82rem;color:rgba(255,255,255,.55)}
+.header-meta-item strong{color:rgba(255,255,255,.9);font-weight:600}
+
+/* ── LAYOUT ── */
+.container{max-width:1100px;margin:0 auto;padding:0 24px}
+.section{padding:48px 0}
+.section-title{font-size:1.5rem;font-weight:800;color:var(--dark);margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.section-title::before{content:'';display:block;width:4px;height:28px;background:var(--brand);border-radius:2px;flex-shrink:0}
+.section-sub{font-size:.88rem;color:var(--text3);margin-bottom:28px;margin-left:14px}
+.divider{border:none;border-top:2px solid var(--border);margin:0}
+
+/* ── CARDS ── */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.card-icon{font-size:1.4rem;width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-title{font-size:.95rem;font-weight:700;color:var(--dark)}
+.card-desc{font-size:.82rem;color:var(--text3)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:700px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
+.kpi{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:20px;text-align:center}
+.kpi-num{font-size:2rem;font-weight:800;color:var(--brand)}
+.kpi-label{font-size:.78rem;color:var(--text3);margin-top:4px;font-weight:500}
+
+/* ── BADGES ── */
+.badge{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.02em}
+.badge-green{background:#d1fae5;color:#065f46}
+.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-orange{background:#ffedd5;color:#9a3412}
+.badge-purple{background:#ede9fe;color:#5b21b6}
+.badge-red{background:#fee2e2;color:#991b1b}
+.badge-yellow{background:#fef9c3;color:#78350f}
+.badge-gray{background:#f3f4f6;color:#374151}
+.badge-teal{background:#ccfbf1;color:#134e4a}
+
+/* ── TABLES ── */
+.table-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+thead th{background:#f9fafb;padding:10px 14px;text-align:left;font-size:.72rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid var(--border);white-space:nowrap}
+tbody td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fafaf9}
+code{background:#f3f4f6;border:1px solid var(--border);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:.8em;color:var(--brand-d)}
+
+/* ── TIMELINE ── */
+.timeline{border-left:3px solid var(--border);margin-left:16px;padding-left:28px}
+.tl-item{position:relative;margin-bottom:28px}
+.tl-item::before{content:'';position:absolute;left:-36px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--brand);border:3px solid var(--white);box-shadow:0 0 0 2px var(--brand)}
+.tl-date{font-size:.72rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.tl-title{font-size:.95rem;font-weight:700;color:var(--dark);margin-bottom:4px}
+.tl-desc{font-size:.83rem;color:var(--text2)}
+
+/* ── FLOW CHART ── */
+.flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:16px 0}
+.flow-box{background:var(--white);border:2px solid var(--border);border-radius:10px;padding:12px 16px;font-size:.82rem;font-weight:600;color:var(--dark);text-align:center;min-width:110px}
+.flow-box.active{border-color:var(--brand);background:#fff7ed;color:var(--brand-d)}
+.flow-box.green{border-color:var(--green);background:#f0fdf4;color:#065f46}
+.flow-box.blue{border-color:var(--blue);background:#eff6ff;color:#1e40af}
+.flow-box.purple{border-color:var(--purple);background:#faf5ff;color:#5b21b6}
+.flow-arrow{color:var(--text3);font-size:1.2rem;padding:0 6px;flex-shrink:0}
+
+/* ── WPP BUBBLE ── */
+.wpp-schedule{background:#e5ddd5;border-radius:14px;padding:16px;max-width:480px}
+.wpp-day{font-size:.72rem;color:#667781;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px;text-align:center}
+.wpp-day:first-child{margin-top:0}
+.wpp-msg{background:#dcf8c6;border-radius:12px 12px 12px 4px;padding:10px 14px;font-size:.8rem;line-height:1.6;color:#1c1917;margin-bottom:6px;position:relative}
+.wpp-msg-time{font-size:.65rem;color:#8696a0;margin-top:4px;text-align:right}
+.wpp-msg-new{border-left:3px solid var(--green)}
+.wpp-msg-existing{border-left:3px solid var(--blue)}
+
+/* ── SECURITY ── */
+.security-item{display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.security-item:last-child{border-bottom:none}
+.security-icon{font-size:1.2rem;flex-shrink:0;margin-top:1px}
+.security-title{font-size:.88rem;font-weight:700;color:var(--dark);margin-bottom:2px}
+.security-desc{font-size:.8rem;color:var(--text3)}
+
+/* ── BUG CARD ── */
+.bug-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px;border-left:4px solid var(--red)}
+.bug-card.fixed{border-left-color:var(--green)}
+.bug-title{font-size:.9rem;font-weight:700;color:var(--dark);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.bug-desc{font-size:.8rem;color:var(--text2);margin-bottom:8px}
+.bug-fix{font-size:.78rem;color:#065f46;background:#d1fae5;padding:6px 10px;border-radius:6px;font-family:monospace}
+
+/* ── PRINT ── */
+@media print{
+  body{background:#fff}
+  .header{background:#111827!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .section{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-tag">Briefing Técnico Completo</div>
+  <h1>EmagreSer <span>2.0</span></h1>
+  <p class="header-sub">Documentação integral do sistema de captação, comunicação automática e gestão de leads para a Masterclass "O Código dos Sabotadores"</p>
+  <div class="header-meta">
+    <div class="header-meta-item">📅 <strong>Masterclass:</strong> 11/06/2026 às 20h</div>
+    <div class="header-meta-item">🌐 <strong>Domínio:</strong> www.oficialemagreser.com</div>
+    <div class="header-meta-item">⚙️ <strong>Stack:</strong> PHP · Supabase · Z-API · Resend</div>
+    <div class="header-meta-item">📋 <strong>Data:</strong> 25/05/2026</div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ── 1. VISÃO GERAL ── -->
+<div class="section">
+  <div class="section-title">1. Visão Geral do Projeto</div>
+  <div class="section-sub">O que é o EmagreSer 2.0 e qual o objetivo da campanha</div>
+
+  <div class="card">
+    <p style="font-size:.95rem;color:var(--text2);line-height:1.8;margin-bottom:16px">
+      O <strong>Programa EmagreSer</strong> é um programa digital de emagrecimento baseado em psicologia comportamental, conduzido pela <strong>Psicóloga Daniely</strong> e pela <strong>Nutricionista Ira Soraya</strong>. A metodologia identifica os 4 <em>perfis de sabotagem alimentar</em> e entrega estratégias personalizadas para cada perfil.
+    </p>
+    <p style="font-size:.95rem;color:var(--text2);line-height:1.8;margin-bottom:16px">
+      A campanha <strong>EmagreSer 2.0</strong> tem como objetivo central a <strong>Masterclass gratuita "O Código dos Sabotadores"</strong> — ao vivo, em 11/06/2026 às 20h — como mecanismo de captação e conversão para o Programa completo.
+    </p>
+    <div class="grid3" style="margin-top:20px">
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:var(--r);padding:16px;text-align:center">
+        <div style="font-size:1.8rem;margin-bottom:6px">🎯</div>
+        <div style="font-weight:700;font-size:.9rem;color:var(--brand-d)">Objetivo Principal</div>
+        <div style="font-size:.8rem;color:var(--text3);margin-top:4px">Converter leads em inscritos na Masterclass e, depois, em compradores do Programa</div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--r);padding:16px;text-align:center">
+        <div style="font-size:1.8rem;margin-bottom:6px">📱</div>
+        <div style="font-weight:700;font-size:.9rem;color:#065f46">Canal Principal</div>
+        <div style="font-size:.8rem;color:var(--text3);margin-top:4px">WhatsApp (Z-API) como canal de aquecimento + E-mail (Resend) como reforço</div>
+      </div>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--r);padding:16px;text-align:center">
+        <div style="font-size:1.8rem;margin-bottom:6px">👥</div>
+        <div style="font-weight:700;font-size:.9rem;color:#1e40af">Públicos</div>
+        <div style="font-size:.8rem;color:var(--text3);margin-top:4px">Leads orgânicos (quiz no site) + Leads importados (base CSV de reengajamento)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="kpi-grid" style="margin-top:20px">
+    <div class="kpi"><div class="kpi-num">15</div><div class="kpi-label">E-mails sequência orgânicos</div></div>
+    <div class="kpi"><div class="kpi-num">20</div><div class="kpi-label">WPP sequência orgânicos</div></div>
+    <div class="kpi"><div class="kpi-num">7</div><div class="kpi-label">E-mails sequência importados</div></div>
+    <div class="kpi"><div class="kpi-num">25</div><div class="kpi-label">WPP sequência importados</div></div>
+    <div class="kpi"><div class="kpi-num">3×</div><div class="kpi-label">WPP/dia nos 4 dias pré-masterclass</div></div>
+    <div class="kpi"><div class="kpi-num">100%</div><div class="kpi-label">Opt-out respeitado automaticamente</div></div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── 2. ARQUITETURA ── -->
+<div class="section">
+  <div class="section-title">2. Arquitetura do Sistema</div>
+  <div class="section-sub">Stack tecnológico e fluxo de dados</div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#fff7ed">🏗️</div>
+        <div><div class="card-title">Stack Tecnológico</div></div>
+      </div>
+      <table style="font-size:.82rem">
+        <tbody>
+          <tr><td style="padding:7px 0;font-weight:600;color:var(--dark);width:130px">Frontend</td><td>HTML + CSS + JS vanilla (sem framework)</td></tr>
+          <tr><td style="padding:7px 0;font-weight:600">Backend</td><td>PHP 8.x (Hostinger)</td></tr>
+          <tr><td style="padding:7px 0;font-weight:600">Banco de dados</td><td>Supabase (PostgreSQL) via API REST</td></tr>
+          <tr><td style="padding:7px 0;font-weight:600">E-mail</td><td>Resend.com API</td></tr>
+          <tr><td style="padding:7px 0;font-weight:600">WhatsApp</td><td>Z-API (instância própria)</td></tr>
+          <tr><td style="padding:7px 0;font-weight:600">Cron</td><td>cron-job.org (a cada 10 min)</td></tr>
+          <tr><td style="padding:7px 0;font-weight:600">Domínio</td><td>www.oficialemagreser.com</td></tr>
+          <tr><td style="padding:7px 0;font-weight:600">Admin</td><td>SPA estática em <code>admin/index.html</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#f0fdf4">🔄</div>
+        <div><div class="card-title">Fluxo Principal</div></div>
+      </div>
+      <div style="font-size:.82rem;color:var(--text2);line-height:1.9">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:#fff7ed;color:var(--brand);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;flex-shrink:0">1</span> Lead faz o quiz na landing page (<code>index.html</code>)</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:#fff7ed;color:var(--brand);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;flex-shrink:0">2</span> Lead salvo no Supabase (<code>leads</code>)</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:#fff7ed;color:var(--brand);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;flex-shrink:0">3</span> <code>email_trigger.php</code> enfileira 15 e-mails + 20 WPP</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:#fff7ed;color:var(--brand);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;flex-shrink:0">4</span> Cron dispara <code>email_worker.php</code> a cada 10 min</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:#fff7ed;color:var(--brand);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;flex-shrink:0">5</span> Worker envia e-mails via Resend + WPP via Z-API</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:#fff7ed;color:var(--brand);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;flex-shrink:0">6</span> Z-API callback → <code>wpp_webhook.php</code> atualiza status</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="background:#fff7ed;color:var(--brand);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;flex-shrink:0">7</span> Resposta do lead → <code>wpp_receive.php</code> responde automaticamente</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── 3. ARQUIVOS DO SISTEMA ── -->
+<div class="section">
+  <div class="section-title">3. Mapa de Arquivos</div>
+  <div class="section-sub">Todos os arquivos do projeto e suas funções</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Arquivo</th><th>Tipo</th><th>Função</th><th>URL de acesso</th></tr></thead>
+      <tbody>
+        <tr><td><code>index.html</code></td><td><span class="badge badge-blue">Frontend</span></td><td>Landing page principal com quiz de perfil sabotador, captação de leads, Meta Pixel, SEO</td><td>/</td></tr>
+        <tr><td><code>email_trigger.php</code></td><td><span class="badge badge-orange">Backend</span></td><td>Enfileira sequência completa (15 e-mails + 20 WPP) após lead orgânico ser capturado</td><td>POST /email_trigger.php</td></tr>
+        <tr><td><code>email_worker.php</code></td><td><span class="badge badge-orange">Backend</span></td><td>Worker disparado pelo cron: processa email_queue e whatsapp_queue, envia via Resend e Z-API</td><td>/email_worker.php?secret=...</td></tr>
+        <tr><td><code>wpp_receive.php</code></td><td><span class="badge badge-orange">Backend</span></td><td>Webhook Z-API para mensagens recebidas dos leads: responde opt-in/out (SIM/NÃO) + quiz A/B/C/D</td><td>POST /wpp_receive.php</td></tr>
+        <tr><td><code>wpp_webhook.php</code></td><td><span class="badge badge-orange">Backend</span></td><td>Webhook de entrega Z-API: atualiza delivery_status (SENT/RECEIVED/READ) na whatsapp_queue</td><td>POST /wpp_webhook.php</td></tr>
+        <tr><td><code>import_leads.php</code></td><td><span class="badge badge-orange">Backend</span></td><td>Interface de importação de CSV com seleção de canal (Email/WPP/Ambos). Enfileira 7 e-mails + 25 WPP por lead</td><td>/import_leads.php (Basic Auth)</td></tr>
+        <tr><td><code>painel.php</code></td><td><span class="badge badge-orange">Backend</span></td><td>Painel operacional: fila de e-mails, fila WPP, status de entregas, controles de manutenção</td><td>/painel.php</td></tr>
+        <tr><td><code>admin/index.html</code></td><td><span class="badge badge-purple">Admin SPA</span></td><td>Painel administrativo completo com 12 seções: textos, quiz, templates, leads, WPP, usuários</td><td>/admin/</td></tr>
+        <tr><td><code>admin/admin_proxy.php</code></td><td><span class="badge badge-red">Segurança</span></td><td>Proxy servidor-lado para operações de escrita. Única peça com service_role key. Gerencia sessão admin</td><td>POST /admin/admin_proxy.php</td></tr>
+        <tr><td><code>_env.php</code></td><td><span class="badge badge-gray">Config</span></td><td>Variáveis de ambiente (credenciais). Não vai ao git (.gitignore)</td><td>—</td></tr>
+        <tr><td><code>docs/briefing-trafego.html</code></td><td><span class="badge badge-teal">Docs</span></td><td>Briefing para equipe de tráfego pago com dados de funil, screenshots e instruções de campanha</td><td>/docs/briefing-trafego.html</td></tr>
+        <tr><td><code>docs/briefing-projeto.html</code></td><td><span class="badge badge-teal">Docs</span></td><td>Briefing técnico completo anterior (maio/2026)</td><td>/docs/briefing-projeto.html</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── 4. BANCO DE DADOS ── -->
+<div class="section">
+  <div class="section-title">4. Banco de Dados (Supabase)</div>
+  <div class="section-sub">Projeto: <code>drgrwpmhmrrhxuwxabow</code> — Tabelas e campos relevantes</div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#fff7ed">👥</div>
+        <div><div class="card-title">Tabela: <code>leads</code></div></div>
+      </div>
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>uuid</td><td>PK</td></tr>
+          <tr><td><code>name</code></td><td>text</td><td>Nome completo</td></tr>
+          <tr><td><code>email</code></td><td>text</td><td>E-mail</td></tr>
+          <tr><td><code>phone</code></td><td>text</td><td>Telefone (+55...)</td></tr>
+          <tr><td><code>sabotador</code></td><td>text</td><td>Perfil A/B/C/D do quiz</td></tr>
+          <tr><td><code>source</code></td><td>text</td><td>'organic' ou 'import'</td></tr>
+          <tr><td><code>source_campaign</code></td><td>text</td><td>Slug da campanha</td></tr>
+          <tr><td><code>sequence_queued_at</code></td><td>timestamptz</td><td>Quando a sequência foi enfileirada</td></tr>
+          <tr><td><code>wpp_optout</code></td><td>boolean</td><td>true = respondeu NÃO ao opt-in</td></tr>
+          <tr><td><code>email_optout</code></td><td>boolean</td><td>true = clicou descadastro</td></tr>
+          <tr><td><code>created_at</code></td><td>timestamptz</td><td>Data de cadastro</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#f0fdf4">📧</div>
+        <div><div class="card-title">Tabela: <code>email_queue</code></div></div>
+      </div>
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>uuid</td><td>PK</td></tr>
+          <tr><td><code>lead_id</code></td><td>uuid</td><td>FK → leads</td></tr>
+          <tr><td><code>template_slug</code></td><td>text</td><td>Slug do template</td></tr>
+          <tr><td><code>to_email / to_name</code></td><td>text</td><td>Destinatário</td></tr>
+          <tr><td><code>extra_vars</code></td><td>jsonb</td><td>Variáveis de substituição</td></tr>
+          <tr><td><code>scheduled_at</code></td><td>timestamptz</td><td>Data/hora programada</td></tr>
+          <tr><td><code>status</code></td><td>text</td><td>pending → processing → sent/failed/cancelled</td></tr>
+          <tr><td><code>attempts</code></td><td>int</td><td>Tentativas de envio (máx. 3)</td></tr>
+          <tr><td><code>sent_at</code></td><td>timestamptz</td><td>Quando foi enviado</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#f0fdf4">💬</div>
+        <div><div class="card-title">Tabela: <code>whatsapp_queue</code></div></div>
+      </div>
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Descrição</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>uuid</td><td>PK</td></tr>
+          <tr><td><code>lead_id</code></td><td>uuid</td><td>FK → leads</td></tr>
+          <tr><td><code>to_phone / to_name</code></td><td>text</td><td>Destinatário</td></tr>
+          <tr><td><code>message</code></td><td>text</td><td>Texto da mensagem</td></tr>
+          <tr><td><code>scheduled_at</code></td><td>timestamptz</td><td>Data/hora programada</td></tr>
+          <tr><td><code>status</code></td><td>text</td><td>pending → sent/failed/cancelled</td></tr>
+          <tr><td><code>delivery_status</code></td><td>text</td><td>sent → received → read (Z-API callback)</td></tr>
+          <tr><td><code>zapi_message_id</code></td><td>text</td><td>ID retornado pela Z-API</td></tr>
+          <tr><td><code>delivered_at / read_at</code></td><td>timestamptz</td><td>Timestamps de entrega/leitura</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:#ede9fe">📋</div>
+        <div><div class="card-title">Outras Tabelas</div></div>
+      </div>
+      <table>
+        <thead><tr><th>Tabela</th><th>Uso</th></tr></thead>
+        <tbody>
+          <tr><td><code>email_templates</code></td><td>Templates HTML de e-mail com slug e variáveis</td></tr>
+          <tr><td><code>wpp_templates</code></td><td>Templates de WPP editáveis pelo admin</td></tr>
+          <tr><td><code>site_config</code></td><td>Textos da landing page (key/value)</td></tr>
+          <tr><td><code>quiz_questions</code></td><td>Perguntas e opções do quiz sabotador</td></tr>
+          <tr><td><code>quiz_results</code></td><td>Perfis/resultados A/B/C/D com textos</td></tr>
+          <tr><td><code>testimonials</code></td><td>Depoimentos exibidos na landing page</td></tr>
+          <tr><td><code>mentors</code></td><td>Perfis das mentoras (Daniely e Ira)</td></tr>
+          <tr><td><code>admin_users</code></td><td>Usuários do painel admin (RLS: policy false)</td></tr>
+          <tr><td><code>wpp_interactions</code></td><td>Log de respostas recebidas dos leads via WPP</td></tr>
+          <tr><td><code>email_log</code></td><td>Log de envios confirmados pelo Resend</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── 5. SEQUÊNCIAS DE COMUNICAÇÃO ── -->
+<div class="section">
+  <div class="section-title">5. Sequências de Comunicação</div>
+  <div class="section-sub">Calendário completo de e-mails e WPP para cada tipo de lead</div>
+
+  <!-- 5.1 E-mails Orgânicos -->
+  <div class="card" style="margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <span style="font-size:1.1rem">📧</span>
+      <div>
+        <div style="font-weight:700;font-size:.95rem">E-mails — Leads Orgânicos</div>
+        <div style="font-size:.78rem;color:var(--text3)">15 e-mails via <code>email_trigger.php</code> após quiz no site</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Slug</th><th>Quando</th><th>Conteúdo</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>boas_vindas</code></td><td>D+0h</td><td>Resultado do perfil sabotador + boas-vindas</td></tr>
+          <tr><td>2</td><td><code>nutricao_d1</code></td><td>D+24h</td><td>Dica nutricional personalizada ao perfil</td></tr>
+          <tr><td>3</td><td><code>prova_social_d2</code></td><td>D+48h</td><td>Depoimento de transformação</td></tr>
+          <tr><td>4</td><td><code>urgencia_d3</code></td><td>D+72h</td><td>Urgência: vagas limitadas na Masterclass</td></tr>
+          <tr><td>5</td><td><code>conteudo_d5</code></td><td>D+120h</td><td>Conteúdo educativo sobre o perfil</td></tr>
+          <tr><td>6</td><td><code>depoimento_d7</code></td><td>D+168h</td><td>Depoimento em vídeo</td></tr>
+          <tr><td>7</td><td><code>antecipacao_d10</code></td><td>D+240h</td><td>Antecipação do que será entregue na Masterclass</td></tr>
+          <tr><td>8</td><td><code>intensificacao_d5</code></td><td>05/06 10h</td><td>Quebra de objeção — força de vontade</td></tr>
+          <tr><td>9</td><td><code>intensificacao_d6</code></td><td>06/06 10h</td><td>Projeção futura — daqui a 1 ano</td></tr>
+          <tr><td>10</td><td><code>intensificacao_d7</code></td><td>07/06 10h</td><td>Prova social intensificada</td></tr>
+          <tr><td>11</td><td><code>lembrete_3dias</code></td><td>08/06 09h</td><td>⚠️ Faltam 3 dias — link do grupo VIP</td></tr>
+          <tr><td>12</td><td><code>intensificacao_d9</code></td><td>09/06 10h</td><td>🔴 48h de escassez</td></tr>
+          <tr><td>13</td><td><code>amanha_masterclass</code></td><td>10/06 09h</td><td>Amanhã é o dia — preparação</td></tr>
+          <tr><td>14</td><td><code>masterclass_hoje</code></td><td>11/06 08h</td><td>🔴 Hoje às 20h — instruções finais</td></tr>
+          <tr><td>15</td><td><code>masterclass_1h</code></td><td>11/06 19h</td><td>⏰ Em 1h começa — link no grupo VIP</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5.2 WPP Orgânicos -->
+  <div class="card" style="margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <span style="font-size:1.1rem">💬</span>
+      <div>
+        <div style="font-weight:700;font-size:.95rem">WhatsApp — Leads Orgânicos</div>
+        <div style="font-size:.78rem;color:var(--text3)">20 mensagens via <code>email_trigger.php</code> — +8 novas em relação ao original (tarde/noite nos 4 dias pré-masterclass)</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Quando</th><th>Conteúdo</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>D+0h</td><td>Resultado personalizado do perfil sabotador + link grupo VIP</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>2</td><td>D+26h</td><td>Dica rápida do perfil</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>3</td><td>D+74h</td><td>Prova social (depoimento personalizado ao perfil)</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>4</td><td>D+122h</td><td>Quiz interativo: qual situação te identifica? (A/B/C/D)</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>5</td><td>05/06 10h</td><td>Quebra de objeção + perfis do Instagram</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>6</td><td>06/06 10h</td><td>Projeção futura: daqui a 1 ano</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>7</td><td>07/06 10h</td><td>Prova social: Carolina com mesmo perfil</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>8</td><td>07/06 18h</td><td>O que te impediu de emagrecer? (tarde)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>9</td><td>07/06 21h</td><td>À noite é quando mais sabotamos (noite)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>10</td><td>08/06 09h</td><td>⚠️ Faltam 3 dias</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>11</td><td>08/06 14h</td><td>O cérebro usa comida como regulação emocional (tarde)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>12</td><td>08/06 19h</td><td>Há quanto tempo você tenta do mesmo jeito? (noite)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>13</td><td>09/06 10h</td><td>🔴 48h — escassez + entregáveis do grupo VIP</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>14</td><td>09/06 14h</td><td>O Confronto Gentil — técnica da Daniely (tarde)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>15</td><td>09/06 19h</td><td>O que acontece na transmissão — spoiler (noite)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>16</td><td>10/06 09h</td><td>Amanhã é o grande dia</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>17</td><td>10/06 14h</td><td>🔴 Amanhã 20h — esta noite pode mudar tudo (tarde)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>18</td><td>10/06 19h</td><td>A véspera tem um sabor especial (noite)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>19</td><td>11/06 08h</td><td>🔴 HOJE É O DIA</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>20</td><td>11/06 19h</td><td>⏰ Em 1h começa — link no grupo VIP</td><td><span class="badge badge-blue">Existente</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5.3 E-mails Importados -->
+  <div class="card" style="margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <span style="font-size:1.1rem">📧</span>
+      <div>
+        <div style="font-weight:700;font-size:.95rem">E-mails — Leads Importados</div>
+        <div style="font-size:.78rem;color:var(--text3)">7 e-mails via <code>import_leads.php</code></div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Slug</th><th>Quando</th><th>Conteúdo</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><code>reengajamento_1</code></td><td>D+0 dias</td><td>Primeiro contato de reengajamento</td></tr>
+          <tr><td>2</td><td><code>nutricao_d1</code></td><td>D+2 dias</td><td>Dica nutricional</td></tr>
+          <tr><td>3</td><td><code>prova_social_d2</code></td><td>D+4 dias</td><td>Depoimento</td></tr>
+          <tr><td>4</td><td><code>reengajamento_masterclass</code></td><td>D+8 dias</td><td>Convite para a Masterclass</td></tr>
+          <tr><td>5</td><td><code>reengajamento_masterclass</code></td><td>08/06 09h</td><td>Reforço — 3 dias para a Masterclass</td></tr>
+          <tr><td>6</td><td><code>masterclass_hoje</code></td><td>11/06 08h</td><td>🔴 Hoje é o dia</td></tr>
+          <tr><td>7</td><td><code>masterclass_1h</code></td><td>11/06 19h</td><td>⏰ Em 1h começa</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5.4 WPP Importados -->
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <span style="font-size:1.1rem">💬</span>
+      <div>
+        <div style="font-weight:700;font-size:.95rem">WhatsApp — Leads Importados</div>
+        <div style="font-size:.78rem;color:var(--text3)">25 mensagens via <code>import_leads.php</code> — de 8 originais para 25 com intensificação</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Quando</th><th>Conteúdo</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>D+0h</td><td>🔐 Opt-in: "Posso te enviar mensagens? Responda SIM ou NÃO"</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>2</td><td>D+26h</td><td>Padrão neurológico — por que a força de vontade falha</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>3</td><td>D+34h</td><td>Ainda dá tempo de garantir lugar — grupo VIP (tarde D+1)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>4</td><td>D+50h</td><td>8 em 10 mulheres falham não por falta de vontade (manhã D+2)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>5</td><td>D+58h</td><td>Depoimento da Fernanda — 7 dietas em 3 anos (tarde D+2)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>6</td><td>D+74h</td><td>Depoimento da Carol (manhã D+3)</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>7</td><td>D+82h</td><td>Técnica dos 10 segundos antes de comer (tarde D+3)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>8</td><td>D+98h</td><td>Faltam poucos dias — link grupo VIP (manhã D+4)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>9</td><td>D+106h</td><td>Qual momento do dia você mais perde o controle? (tarde D+4)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>10</td><td>D+122h</td><td>"Falta de força de vontade tem nome científico" (manhã D+5)</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>11</td><td>D+130h</td><td>Grupo VIP quase cheio — não fica de fora (tarde D+5)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>12</td><td>07/06 09h</td><td>Faltam 4 dias — separou no calendário?</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>13</td><td>07/06 14h</td><td>O que te impediu de emagrecer? (tarde D-4)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>14</td><td>07/06 19h</td><td>À noite é quando mais sabotamos — neurológico (noite D-4)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>15</td><td>08/06 09h</td><td>⚠️ Faltam 3 dias</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>16</td><td>08/06 14h</td><td>Cérebro usa comida como regulação emocional (tarde D-3)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>17</td><td>08/06 19h</td><td>Há quanto tempo você tenta do mesmo jeito? (noite D-3)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>18</td><td>09/06 09h</td><td>Faltam 2 dias — o que vai acontecer na transmissão</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>19</td><td>09/06 14h</td><td>O Confronto Gentil — técnica da Daniely (tarde D-2)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>20</td><td>09/06 19h</td><td>Como está sua noite? Recompensa e comida (noite D-2)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>21</td><td>10/06 09h</td><td>🔥 Amanhã é o grande dia</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>22</td><td>10/06 14h</td><td>🔴 Amanhã 20h — esta noite pode mudar tudo (tarde D-1)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>23</td><td>10/06 19h</td><td>A véspera tem um sabor especial (noite D-1)</td><td><span class="badge badge-green">Novo</span></td></tr>
+          <tr><td>24</td><td>11/06 08h</td><td>🔴 HOJE É O DIA</td><td><span class="badge badge-blue">Existente</span></td></tr>
+          <tr><td>25</td><td>11/06 19h</td><td>⏰ Em 1h começa</td><td><span class="badge badge-blue">Existente</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── 6. SISTEMA OPT-IN / OPT-OUT ── -->
+<div class="section">
+  <div class="section-title">6. Sistema de Opt-in / Opt-out WPP</div>
+  <div class="section-sub">Conformidade LGPD — fluxo de consentimento para leads importados</div>
+
+  <div class="card">
+    <div class="grid2">
+      <div>
+        <div style="font-weight:700;font-size:.88rem;color:var(--dark);margin-bottom:12px">Fluxo de Consentimento</div>
+        <div class="flow" style="flex-direction:column;align-items:flex-start;gap:10px">
+          <div class="flow-box active" style="width:100%;text-align:left">📤 D+0h: Mensagem de opt-in enviada<br><small style="font-weight:400;color:var(--text3)">"Posso te enviar mensagens? Responda SIM ou NÃO"</small></div>
+          <div style="display:flex;gap:16px;width:100%">
+            <div style="flex:1">
+              <div class="flow-arrow" style="display:block;text-align:center;margin-bottom:6px">✅ SIM</div>
+              <div class="flow-box green" style="width:100%;text-align:left;font-size:.78rem">wpp_optout = false<br>Confirmação enviada<br>Sequência continua</div>
+            </div>
+            <div style="flex:1">
+              <div class="flow-arrow" style="display:block;text-align:center;margin-bottom:6px">❌ NÃO</div>
+              <div class="flow-box" style="width:100%;border-color:var(--red);background:#fff1f2;color:#991b1b;text-align:left;font-size:.78rem">wpp_optout = true<br>Fila cancelada<br>Confirmação enviada</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:.88rem;color:var(--dark);margin-bottom:12px">Proteções no Worker</div>
+        <div style="font-size:.82rem;color:var(--text2);line-height:1.8">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <span>🛡️</span>
+            <span>Antes de cada envio WPP, o <code>email_worker.php</code> consulta <code>leads.wpp_optout</code></span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <span>🛡️</span>
+            <span>Se <code>wpp_optout = true</code>: item cancelado com <code>error_msg: 'wpp_optout'</code></span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <span>🛡️</span>
+            <span>NÃO cancela também todos os itens <code>pending</code> da <code>whatsapp_queue</code> daquele lead</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <span>🛡️</span>
+            <span>Resposta "N" ou "NAO" também aceita (além de "NÃO")</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <span>🛡️</span>
+            <span>Admin visualiza status WPP por lead na seção "Leads Importados"</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── 7. PAINEL ADMINISTRATIVO ── -->
+<div class="section">
+  <div class="section-title">7. Painel Administrativo</div>
+  <div class="section-sub">admin/index.html — SPA com autenticação e 13 seções</div>
+
+  <div class="grid3">
+    <div class="card"><div class="card-header"><div class="card-icon" style="background:#fff7ed">📊</div><div><div class="card-title">Dashboard</div><div class="card-desc">KPIs gerais, total de leads, leads do dia, gráfico de perfis</div></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-icon" style="background:#eff6ff">✏️</div><div><div class="card-title">Textos da LP</div><div class="card-desc">Edição inline de todos os textos da landing page via site_config</div></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-icon" style="background:#f0fdf4">❓</div><div><div class="card-title">Perguntas do Quiz</div><div class="card-desc">Edição das perguntas e opções A/B/C/D do quiz sabotador</div></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-icon" style="background:#faf5ff">🎯</div><div><div class="card-title">Resultados / Perfis</div><div class="card-desc">Textos e imagens dos 4 resultados exibidos após o quiz</div></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-icon" style="background:#fff7ed">🎬</div><div><div class="card-title">Depoimentos</div><div class="card-desc">CRUD de depoimentos em vídeo exibidos na landing page</div></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-icon" style="background:#f0fdf4">👩</div><div><div class="card-title">Mentoras</div><div class="card-desc">Perfis das mentoras com foto (upload), bio, Instagram, vídeo</div></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-icon" style="background:#f3f4f6">⚙️</div><div><div class="card-title">Configurações</div><div class="card-desc">Configurações gerais do site e do programa</div></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-icon" style="background:#eff6ff">👥</div><div><div class="card-title">Leads</div><div class="card-desc">Lista de todos os leads com busca, sabotador, data de captação</div></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-icon" style="background:#fef9c3">📥</div><div><div class="card-title">Leads Importados <span class="badge badge-green" style="font-size:.65rem">Novo</span></div><div class="card-desc">View separada: status WPP, fila pendente, filtro por opt-in/out</div></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-icon" style="background:#fff7ed">📧</div><div><div class="card-title">Templates E-mail</div><div class="card-desc">Editor visual HTML dos templates de e-mail com preview em tempo real</div></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-icon" style="background:#f0fdf4">📱</div><div><div class="card-title">WhatsApp</div><div class="card-desc">Fila WPP, status de entrega/leitura, reenvio de falhas, desbloqueio de travados</div></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-icon" style="background:#f0fdf4">💬</div><div><div class="card-title">Templates WPP <span class="badge badge-green" style="font-size:.65rem">Redesenhado</span></div><div class="card-desc">Editor contenteditable — usuário edita diretamente na bolha verde do WhatsApp. Botões de inserção de variáveis</div></div></div></div>
+    <div class="card"><div class="card-header"><div class="card-icon" style="background:#ede9fe">👤</div><div><div class="card-title">Usuários</div><div class="card-desc">Gestão de acesso ao admin: criar, editar permissões, resetar senha, ativar/desativar</div></div></div></div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── 8. BUGS CORRIGIDOS ── -->
+<div class="section">
+  <div class="section-title">8. Bugs Corrigidos</div>
+  <div class="section-sub">Todos os problemas identificados e resolvidos durante o projeto</div>
+
+  <div class="bug-card fixed">
+    <div class="bug-title">✅ Bug crítico: credenciais retornavam <code>false</code> em vez de string</div>
+    <div class="bug-desc">Todos os 6 arquivos PHP usavam <code>getenv('KEY')</code> sem fallback. Em ambiente sem variáveis definidas, <code>getenv()</code> retorna <code>false</code> (boolean), não string vazia. Toda comparação falha silenciosamente — worker parava, cron retornava 403, webhooks rejeitados.</div>
+    <div class="bug-fix">Correção: define('KEY', getenv('KEY') ?: 'hardcoded_fallback')  — aplicado em 6 arquivos</div>
+  </div>
+
+  <div class="bug-card fixed">
+    <div class="bug-title">✅ Cron retornando 403 — worker não disparava</div>
+    <div class="bug-desc">O <code>WORKER_SECRET</code> ficava <code>false</code> por ausência de fallback. A comparação <code>$secret !== WORKER_SECRET</code> era sempre <code>true</code> (qualquer string ≠ false), resultando em 403 para todas as chamadas do cron-job.org.</div>
+    <div class="bug-fix">Correção: adicionado ?: '***REMOVED_WORKER_SECRET***' na constante</div>
+  </div>
+
+  <div class="bug-card fixed">
+    <div class="bug-title">✅ Coluna "Confirmação" WPP nunca atualizava no painel</div>
+    <div class="bug-desc">O <code>wpp_webhook.php</code> recebia callbacks de entrega da Z-API mas retornava 403 porque <code>ZAPI_CLIENT_TOKEN</code> estava <code>false</code>. Os registros de delivery_status/read_at nunca eram gravados.</div>
+    <div class="bug-fix">Correção: fallback adicionado em wpp_webhook.php</div>
+  </div>
+
+  <div class="bug-card fixed">
+    <div class="bug-title">✅ Manutenção da fila mostrava "Travados: 0" mesmo com itens atrasados</div>
+    <div class="bug-desc">O painel contava apenas itens com <code>status='processing'</code> como "travados". Itens <code>pending</code> com <code>scheduled_at</code> no passado (cron parado) não eram contados, dando falsa sensação de normalidade.</div>
+    <div class="bug-fix">Correção: painel.php ganhou contadores separados de "atrasados" com badge ⚠️</div>
+  </div>
+
+  <div class="bug-card fixed">
+    <div class="bug-title">✅ Importação de leads quebrava em batch com item duplicado</div>
+    <div class="bug-desc">O UNIQUE INDEX <code>email_queue_unique_pending</code> rejeitava o batch inteiro se qualquer slug já estivesse pendente para aquele e-mail. Leads re-importados perdiam todos os itens novos.</div>
+    <div class="bug-fix">Correção: inserção individual por item + consulta prévia de slugs já pendentes</div>
+  </div>
+
+  <div class="bug-card fixed">
+    <div class="bug-title">✅ <code>$wpp_count</code> undefined — warning no log do worker</div>
+    <div class="bug-desc">Quando <code>ZAPI_INSTANCE</code> estava vazio, o bloco WPP era pulado e <code>$wpp_pending</code> não era declarada. O <code>count($wpp_pending)</code> gerava warning.</div>
+    <div class="bug-fix">Correção: $wpp_count = isset($wpp_pending) ? count($wpp_pending) : 0</div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── 9. SEGURANÇA ── -->
+<div class="section">
+  <div class="section-title">9. Segurança e Boas Práticas</div>
+  <div class="section-sub">Regras críticas que devem ser mantidas em qualquer alteração futura</div>
+
+  <div class="card">
+    <div class="security-item">
+      <div class="security-icon">🔐</div>
+      <div>
+        <div class="security-title">Service Role Key — NUNCA no frontend</div>
+        <div class="security-desc">A <code>SUPABASE_SERVICE_KEY</code> (prefixo <code>sb_secret_</code>) é usada exclusivamente em arquivos PHP no servidor. O <code>admin/index.html</code> usa apenas a <code>ANON_KEY</code> pública para leituras. Escritas passam pelo <code>admin_proxy.php</code>.</div>
+      </div>
+    </div>
+    <div class="security-item">
+      <div class="security-icon">🛡️</div>
+      <div>
+        <div class="security-title">RLS na tabela admin_users</div>
+        <div class="security-desc">A tabela <code>admin_users</code> tem Row Level Security com policy <code>false</code> — bloqueia 100% de acesso via anon key. Acesso só via service_role key no proxy PHP.</div>
+      </div>
+    </div>
+    <div class="security-item">
+      <div class="security-icon">🔑</div>
+      <div>
+        <div class="security-title">_env.php e .htaccess fora do git</div>
+        <div class="security-desc">Ambos os arquivos estão no <code>.gitignore</code>. Credenciais nunca sobem ao repositório. Em produção, o <code>.htaccess</code> bloqueia acesso direto ao <code>_env.php</code>.</div>
+      </div>
+    </div>
+    <div class="security-item">
+      <div class="security-icon">🔒</div>
+      <div>
+        <div class="security-title">Autenticação de Webhooks Z-API</div>
+        <div class="security-desc">Os endpoints <code>wpp_receive.php</code> e <code>wpp_webhook.php</code> validam o header <code>Client-Token</code> antes de qualquer processamento. Retornam 403 sem essa validação.</div>
+      </div>
+    </div>
+    <div class="security-item">
+      <div class="security-icon">🔄</div>
+      <div>
+        <div class="security-title">File lock no worker — sem runs paralelos</div>
+        <div class="security-desc">O <code>email_worker.php</code> usa <code>flock(LOCK_EX|LOCK_NB)</code> para garantir que apenas uma instância roda por vez, mesmo com cron a cada 10 minutos.</div>
+      </div>
+    </div>
+    <div class="security-item">
+      <div class="security-icon">⚡</div>
+      <div>
+        <div class="security-title">Trava atômica na fila</div>
+        <div class="security-desc">Antes de enviar, o worker muda o status para <code>'processing'</code> — impede que dois workers paralelos peguem o mesmo item (proteção extra além do file lock).</div>
+      </div>
+    </div>
+    <div class="security-item" style="border-bottom:none">
+      <div class="security-icon">📱</div>
+      <div>
+        <div class="security-title">Importação protegida por Basic Auth</div>
+        <div class="security-desc">O <code>import_leads.php</code> requer autenticação HTTP Basic com senha configurada em <code>IMPORT_PASS</code> (padrão: <code>import2026</code>). Acessível apenas para a equipe.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── 10. CONFIGURAÇÕES OPERACIONAIS ── -->
+<div class="section">
+  <div class="section-title">10. Configurações Operacionais</div>
+  <div class="section-sub">Senhas, URLs, integrações e como acessar cada sistema</div>
+
+  <div class="grid2">
+    <div class="card">
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:14px;color:var(--dark)">🔑 Acessos e Senhas</div>
+      <table>
+        <thead><tr><th>Sistema</th><th>Credencial</th></tr></thead>
+        <tbody>
+          <tr><td>Painel Admin</td><td>Usuário/senha na tabela <code>admin_users</code></td></tr>
+          <tr><td>Importação de Leads</td><td>HTTP Basic · Senha: <code>import2026</code></td></tr>
+          <tr><td>Worker Cron</td><td>URL + <code>?secret=***REMOVED_WORKER_SECRET***</code></td></tr>
+          <tr><td>Painel Operacional</td><td>painel.php (sem senha — acesso por servidor)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:14px;color:var(--dark)">🌐 URLs Principais</div>
+      <table>
+        <thead><tr><th>Serviço</th><th>URL</th></tr></thead>
+        <tbody>
+          <tr><td>Landing Page</td><td><code>www.oficialemagreser.com</code></td></tr>
+          <tr><td>Admin</td><td><code>/admin/</code></td></tr>
+          <tr><td>Painel Operacional</td><td><code>/painel.php</code></td></tr>
+          <tr><td>Importar Leads</td><td><code>/import_leads.php</code></td></tr>
+          <tr><td>Worker</td><td><code>/email_worker.php?secret=...</code></td></tr>
+          <tr><td>Webhook Receber</td><td><code>/wpp_receive.php</code></td></tr>
+          <tr><td>Webhook Entrega</td><td><code>/wpp_webhook.php</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:14px;color:var(--dark)">⚙️ Integrações Configuradas</div>
+      <table>
+        <thead><tr><th>Serviço</th><th>Status</th><th>Uso</th></tr></thead>
+        <tbody>
+          <tr><td>Supabase</td><td><span class="badge badge-green">Ativo</span></td><td>Banco de dados PostgreSQL</td></tr>
+          <tr><td>Resend.com</td><td><span class="badge badge-green">Ativo</span></td><td>Envio de e-mails transacionais</td></tr>
+          <tr><td>Z-API</td><td><span class="badge badge-green">Ativo</span></td><td>Envio e recebimento WPP</td></tr>
+          <tr><td>cron-job.org</td><td><span class="badge badge-green">Ativo</span></td><td>Disparo do worker a cada 10 min</td></tr>
+          <tr><td>Meta Pixel</td><td><span class="badge badge-green">Ativo</span></td><td>Rastreamento de conversões</td></tr>
+          <tr><td>Google Search Console</td><td><span class="badge badge-green">Ativo</span></td><td>SEO / indexação</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:14px;color:var(--dark)">📋 Como Importar Leads</div>
+      <div style="font-size:.82rem;color:var(--text2);line-height:1.9">
+        <div>1. Acesse <code>/import_leads.php</code></div>
+        <div>2. Usuário: qualquer · Senha: <code>import2026</code></div>
+        <div>3. Prepare CSV com colunas: <code>nome, email, telefone</code></div>
+        <div>4. Colunas opcionais: <code>cidade, estado, sabotador</code></div>
+        <div>5. Telefone formato: <code>85998765432</code> (sem +55)</div>
+        <div>6. Selecione canal: 📧 Só E-mail / 💬 Só WPP / 🚀 Ambos</div>
+        <div>7. Leads duplicados (já enfileirados) são ignorados automaticamente</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── 11. TIMELINE ── -->
+<div class="section">
+  <div class="section-title">11. Histórico de Desenvolvimento</div>
+  <div class="section-sub">Cronologia de funcionalidades entregues</div>
+
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-date">Fase 1 — Fundação</div>
+      <div class="tl-title">Landing Page + Quiz + Captação de Leads</div>
+      <div class="tl-desc">Landing page completa com quiz de 4 perfis sabotadores, captação de leads no Supabase, Meta Pixel, SEO completo com JSON-LD, sitemap, Google Search Console, cookie UTM 30 dias</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-date">Fase 2 — Comunicação Automática</div>
+      <div class="tl-title">E-mails + WhatsApp automáticos pós-quiz</div>
+      <div class="tl-desc">email_trigger.php enfileirando 15 e-mails + sequência WPP. email_worker.php com file lock e trava atômica. Resend.com API para e-mails. Z-API para WhatsApp com tracking de entrega</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-date">Fase 3 — Admin Completo</div>
+      <div class="tl-title">Painel administrativo SPA com 12 seções</div>
+      <div class="tl-desc">admin/index.html com autenticação, 12 seções (textos, quiz, resultados, depoimentos, mentoras, config, leads, templates, WhatsApp, templates WPP, usuários). admin_proxy.php como camada de segurança</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-date">Fase 4 — Hotfixes Críticos</div>
+      <div class="tl-title">6 bugs corrigidos — sistema voltou a funcionar</div>
+      <div class="tl-desc">Raiz: getenv() retornando false sem fallback. Corrigido em 6 arquivos. Cron voltou a funcionar, webhooks voltaram a responder, confirmações de WPP voltaram a atualizar</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-date">Fase 5 — Importação de Leads</div>
+      <div class="tl-title">import_leads.php com seleção de canal</div>
+      <div class="tl-desc">Interface web com Basic Auth, upload de CSV, seleção de canal (Email/WPP/Ambos), sequência de reengajamento com 7 e-mails e 8 WPP originais. Suporte à coluna sabotador</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-date">Fase 6 — Opt-in / Opt-out + Gestão de Importados</div>
+      <div class="tl-title">LGPD + seção "Leads Importados" no admin</div>
+      <div class="tl-desc">Primeira mensagem de importação vira pedido de consentimento. wpp_receive.php trata SIM/NÃO. Worker verifica wpp_optout antes de enviar. Colunas wpp_optout e email_optout adicionadas ao BD. Nova seção no admin com tabela de leads importados, status WPP e filtros</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-date">Fase 7 — Editor WPP Contenteditable</div>
+      <div class="tl-title">Templates WPP editados diretamente na bolha</div>
+      <div class="tl-desc">Redesign do editor de templates WPP no admin: usuário edita diretamente na bolha verde (contenteditable), botões de inserção de variáveis, textarea oculto sincronizado para salvar. Projetado para uso por contratante não-técnico</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-date">Fase 8 — Intensificação WPP</div>
+      <div class="tl-title">2/dia base + 3/dia nos 4 dias pré-masterclass</div>
+      <div class="tl-desc">Leads importados: de 8 → 25 mensagens WPP. Leads orgânicos: de 12 → 20 mensagens. Cadência: D+1 a D+5 = manhã + tarde. Jun 7-10 = 09h + 14h + 19h. Conteúdo novo criado para todas as novas mensagens</div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ── 12. CHECKLIST PRÉ-MASTERCLASS ── -->
+<div class="section">
+  <div class="section-title">12. Checklist Pré-Masterclass</div>
+  <div class="section-sub">O que verificar antes de 11/06/2026</div>
+
+  <div class="grid2">
+    <div class="card">
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:14px;color:var(--dark)">✅ Sistema / Técnico</div>
+      <div style="font-size:.83rem;color:var(--text2);line-height:2">
+        <div>☐ Cron-job.org rodando (verificar no painel.php — sem ⚠️)</div>
+        <div>☐ Z-API conectada e instância online</div>
+        <div>☐ Saldo Resend.com suficiente para o volume</div>
+        <div>☐ Supabase sem erros nos logs</div>
+        <div>☐ wpp_webhook.php configurado na Z-API (Delivery)</div>
+        <div>☐ wpp_receive.php configurado na Z-API (Recebidas)</div>
+        <div>☐ Testar envio manual de 1 e-mail e 1 WPP de teste</div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:14px;color:var(--dark)">✅ Conteúdo / Campanha</div>
+      <div style="font-size:.83rem;color:var(--text2);line-height:2">
+        <div>☐ Todos os 15 templates de e-mail criados no admin</div>
+        <div>☐ Link do grupo VIP WPP atualizado no código</div>
+        <div>☐ Link da transmissão ao vivo disponível antes de 11/06 19h</div>
+        <div>☐ CSV de leads importados subido em import_leads.php</div>
+        <div>☐ Fila de WPP do dia 11/06 verificada no painel.php</div>
+        <div>☐ Instagram das mentoras ativo e atualizado</div>
+        <div>☐ Página de vendas do Programa pronta para pós-masterclass</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<!-- FOOTER -->
+<div style="background:var(--dark);color:rgba(255,255,255,.5);text-align:center;padding:32px;font-size:.78rem;margin-top:48px">
+  <div style="color:rgba(255,255,255,.8);font-weight:700;margin-bottom:6px">EmagreSer 2.0 — Briefing Técnico Completo</div>
+  <div>Gerado em 25/05/2026 · Masterclass: 11/06/2026 às 20h · www.oficialemagreser.com</div>
+</div>
+
+</body>
+</html>
