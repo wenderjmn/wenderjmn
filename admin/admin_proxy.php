@@ -14,8 +14,10 @@
  */
 
 // ── CONFIGURAÇÃO ──────────────────────────────────────────────────────────────
-// Carrega credenciais do servidor (arquivo fora do git)
-if (file_exists(__DIR__ . '/../_env.php')) require_once __DIR__ . '/../_env.php';
+// Carrega _env.php: funciona na raiz (Hostinger) e em subpastas (dev)
+foreach ([__DIR__ . '/_env.php', __DIR__ . '/../_env.php'] as $_p) {
+    if (file_exists($_p)) { require_once $_p; break; }
+}
 
 define('SUPABASE_URL',         'https://drgrwpmhmrrhxuwxabow.supabase.co');
 define('SUPABASE_SERVICE_KEY', getenv('SUPABASE_SERVICE_KEY') ?: '');
