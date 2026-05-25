@@ -143,9 +143,15 @@ $wpp_messages = [
         "⏰ *Em 1 hora começa!*\n\n{{nome}}, corre que falta pouco!\n\nO link da live está no grupo VIP agora 👇\n" . WPP_LINK],
 ];
 
+define('HOTMART_LINK', getenv('HOTMART_LINK') ?: 'https://pay.hotmart.com/emagreser');
+
+// ── Busca sequências ativas ───────────────────────────────────────
+$sequences_for_form = sb_get("sequences?is_active=eq.true&select=id,name,description,items&order=created_at.asc");
+
 // ── Interface web ─────────────────────────────────────────────────
-$csv_file = $is_cli ? ($argv[1] ?? null) : ($_FILES['csv']['tmp_name'] ?? null);
-$canal    = $is_cli ? ($argv[2] ?? 'ambos') : ($_POST['canal'] ?? 'ambos');
+$csv_file    = $is_cli ? ($argv[1] ?? null) : ($_FILES['csv']['tmp_name'] ?? null);
+$canal       = $is_cli ? ($argv[2] ?? 'ambos') : ($_POST['canal'] ?? 'ambos');
+$sequence_id = $is_cli ? ($argv[3] ?? null)    : ($_POST['sequence_id'] ?? null);
 
 if (!$is_cli && (!$csv_file || !file_exists($csv_file))): ?>
 <!DOCTYPE html>
@@ -157,7 +163,7 @@ if (!$is_cli && (!$csv_file || !file_exists($csv_file))): ?>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{background:#fff;border-radius:16px;padding:36px;box-shadow:0 8px 32px rgba(0,0,0,.10);width:100%;max-width:560px}
+.card{background:#fff;border-radius:16px;padding:36px;box-shadow:0 8px 32px rgba(0,0,0,.10);width:100%;max-width:640px}
 .logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
 .logo-icon{width:44px;height:44px;background:linear-gradient(135deg,#0d9488,#6366f1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px}
 .logo h1{font-size:18px;font-weight:700;color:#1e293b}
@@ -168,6 +174,8 @@ code{background:#ccfbf1;padding:1px 6px;border-radius:4px;font-family:monospace;
 label.field-label{display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:8px}
 .file-wrap{border:2px dashed #0d9488;border-radius:10px;background:#f0fdfa;margin-bottom:22px;padding:14px;text-align:center;font-size:13px;color:#0f766e}
 .file-wrap input[type=file]{width:100%;cursor:pointer}
+.seq-select{width:100%;border:2px solid #0d9488;border-radius:10px;padding:12px;font-size:14px;background:#fff;margin-bottom:8px;color:#1e293b}
+.seq-preview{background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:10px 14px;font-size:12px;color:#0f766e;margin-bottom:22px;display:none}
 .canal-group{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:26px}
 .canal-opt{position:relative}
 .canal-opt input{position:absolute;opacity:0;width:0;height:0}
@@ -179,6 +187,7 @@ label.field-label{display:block;font-size:13px;font-weight:600;color:#374151;mar
 .btn:hover{opacity:.9}
 .cred{background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:12px;color:#78350f;margin-top:20px;line-height:1.7}
 .cred strong{display:block;margin-bottom:4px}
+.no-seq{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:14px 16px;font-size:13px;color:#92400e;margin-bottom:22px}
 </style>
 </head>
 <body>
@@ -187,7 +196,7 @@ label.field-label{display:block;font-size:13px;font-weight:600;color:#374151;mar
     <div class="logo-icon">📤</div>
     <div>
       <h1>Importar Leads</h1>
-      <p>EmagreSer 2.0 — Campanha de Reengajamento</p>
+      <p>EmagreSer 2.0 — Importação com sequência</p>
     </div>
   </div>
 
@@ -204,7 +213,33 @@ label.field-label{display:block;font-size:13px;font-weight:600;color:#374151;mar
       <input type="file" name="csv" accept=".csv,.txt" required>
     </div>
 
-    <label class="field-label">Canal de envio da campanha:</label>
+    <label class="field-label">Sequência de mensagens:</label>
+    <?php if (empty($sequences_for_form)): ?>
+    <div class="no-seq">
+      ⚠️ Nenhuma sequência ativa encontrada. Acesse o <strong>Painel Admin → Sequências</strong> para criar sequências antes de importar.
+    </div>
+    <input type="hidden" name="sequence_id" value="">
+    <?php else: ?>
+    <select name="sequence_id" id="seq-sel" class="seq-select" required onchange="showSeqPreview(this)">
+      <option value="">Selecione uma sequência…</option>
+      <?php foreach ($sequences_for_form as $s):
+        $cnt      = is_array($s['items']) ? count($s['items']) : 0;
+        $wpp_cnt  = is_array($s['items']) ? count(array_filter($s['items'], fn($i) => ($i['type']??'') === 'wpp')) : 0;
+        $email_cnt= $cnt - $wpp_cnt;
+      ?>
+      <option value="<?= htmlspecialchars($s['id']) ?>"
+              data-desc="<?= htmlspecialchars($s['description']??'') ?>"
+              data-wpp="<?= $wpp_cnt ?>"
+              data-email="<?= $email_cnt ?>"
+              data-total="<?= $cnt ?>">
+        <?= htmlspecialchars($s['name']) ?> (<?= $cnt ?> msgs: <?= $wpp_cnt ?> WPP + <?= $email_cnt ?> email)
+      </option>
+      <?php endforeach; ?>
+    </select>
+    <div id="seq-preview" class="seq-preview"></div>
+    <?php endif; ?>
+
+    <label class="field-label">Canal de envio (filtra mensagens da sequência):</label>
     <div class="canal-group">
       <div class="canal-opt">
         <input type="radio" name="canal" id="c-email" value="email">
@@ -220,7 +255,7 @@ label.field-label{display:block;font-size:13px;font-weight:600;color:#374151;mar
       </div>
     </div>
 
-    <button type="submit" class="btn">📤 IMPORTAR E ENFILEIRAR CAMPANHA</button>
+    <button type="submit" class="btn" <?= empty($sequences_for_form) ? 'disabled style="opacity:.5;cursor:not-allowed"' : '' ?>>📤 IMPORTAR E ENFILEIRAR CAMPANHA</button>
   </form>
 
   <div class="cred">
@@ -230,6 +265,16 @@ label.field-label{display:block;font-size:13px;font-weight:600;color:#374151;mar
     Senha padrão (sem _env.php): <code>import2026</code>
   </div>
 </div>
+<script>
+function showSeqPreview(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const box = document.getElementById('seq-preview');
+  if (!sel.value) { box.style.display='none'; return; }
+  box.style.display = '';
+  box.innerHTML = `<strong>${opt.dataset.wpp} WPP</strong> + <strong>${opt.dataset.email} e-mails</strong> enfileirados por lead.`
+    + (opt.dataset.desc ? `<br>${opt.dataset.desc}` : '');
+}
+</script>
 </body>
 </html>
 <?php
@@ -238,6 +283,20 @@ endif;
 
 // ── Processamento ─────────────────────────────────────────────────
 if (!$csv_file || !file_exists($csv_file)) die("Arquivo CSV não encontrado.\n");
+
+// Carrega sequência selecionada
+$seq_items = [];
+if ($sequence_id) {
+    $seq_data = sb_get("sequences?id=eq." . urlencode($sequence_id) . "&is_active=eq.true&select=name,items&limit=1");
+    if (!empty($seq_data[0]['items'])) {
+        $seq_items = $seq_data[0]['items'];
+        output("<p style='font-family:Arial;color:#0f766e;font-size:14px'>📋 Sequência: <strong>" . htmlspecialchars($seq_data[0]['name']) . "</strong> — " . count($seq_items) . " mensagens</p>");
+    }
+}
+if (empty($seq_items)) {
+    output("<p style='color:#dc2626;font-family:Arial'>❌ Nenhuma sequência selecionada ou sequência inativa. Volte e selecione uma sequência.</p>");
+    exit;
+}
 
 $rows    = [];
 $handle  = fopen($csv_file, 'r');
@@ -301,48 +360,61 @@ foreach ($rows as $i => $row) {
         $lead_id = $created[0]['id'];
     }
 
-    // ── Fila de E-mail ────────────────────────────────────────────
-    if ($email && filter_var($email, FILTER_VALIDATE_EMAIL) && in_array($canal, ['email', 'ambos'])) {
-        $vars = [
-            '{{nome}}'             => htmlspecialchars($name),
-            '{{link_site}}'        => SITE_URL,
-            '{{link_wpp}}'         => WPP_LINK,
-            '{{link_descadastro}}' => SITE_URL . '/descadastro.php?email=' . urlencode($email),
-            '{{emoji}}'            => '🎯',
-            '{{tipo}}'             => 'Perfil Sabotador',
-            '{{titulo}}'           => 'Descubra seu padrão comportamental',
-            '{{descricao}}'        => '',
-        ];
-        foreach ($email_schedule as [$slug, $delay, $fixed_at]) {
-            $send_at = $fixed_at
-                ? (new DateTime($fixed_at, $tz))->format(DateTime::ATOM)
-                : (clone $base)->modify("+{$delay} days")->setTime(9, 0, 0)->format(DateTime::ATOM);
-            if (strtotime($send_at) < time() - 60) continue;
+    // ── Fila a partir da sequência ───────────────────────────────
+    $perfis_nomes = [
+        'A' => 'Recompensadora', 'B' => 'Piloto Automático',
+        'C' => 'Prisioneira do Esforço', 'D' => 'Compensadora Noturna',
+    ];
+    $nome_perfil = $sab ? ($perfis_nomes[$sab] ?? 'Perfil Sabotador') : 'Perfil Sabotador';
+
+    $vars_email = [
+        '{{nome}}'             => htmlspecialchars($name),
+        '{{nome_lead}}'        => htmlspecialchars($name),
+        '{{nome_perfil}}'      => htmlspecialchars($nome_perfil),
+        '{{link_site}}'        => SITE_URL,
+        '{{link_wpp}}'         => WPP_LINK,
+        '{{link_vip}}'         => WPP_LINK,
+        '{{link_hotmart}}'     => HOTMART_LINK,
+        '{{link_descadastro}}' => SITE_URL . '/descadastro.php?email=' . urlencode($email),
+        '{{emoji}}'            => '🎯',
+        '{{tipo}}'             => $nome_perfil,
+        '{{titulo}}'           => 'Descubra seu padrão comportamental',
+        '{{descricao}}'        => '',
+    ];
+
+    $tel = $phone ? '55' . ltrim($phone, '0') : '';
+
+    foreach ($seq_items as $item) {
+        $type = $item['type'] ?? '';
+        if (!in_array($type, ['wpp', 'email'])) continue;
+
+        // Filtra por canal
+        if ($canal === 'email' && $type !== 'email') continue;
+        if ($canal === 'wpp'   && $type !== 'wpp')   continue;
+
+        $send_at = seq_schedule($item, $base, $tz);
+        if (!$send_at || strtotime($send_at) < time() - 60) continue;
+
+        if ($type === 'email' && $email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $slug = trim($item['template_slug'] ?? '');
+            if (!$slug) continue;
             sb_post('email_queue', [[
                 'lead_id'       => $lead_id,
                 'template_slug' => $slug,
                 'to_email'      => $email,
                 'to_name'       => $name,
-                'extra_vars'    => $vars,
+                'extra_vars'    => $vars_email,
                 'scheduled_at'  => $send_at,
                 'status'        => 'pending',
             ]]);
-        }
-    }
-
-    // ── Fila de WPP ──────────────────────────────────────────────
-    if ($phone && strlen($phone) >= 10 && in_array($canal, ['wpp', 'ambos'])) {
-        $tel = '55' . ltrim($phone, '0');
-        foreach ($wpp_messages as [$delay, $fixed_at, $msg_tpl]) {
-            $send_at = $fixed_at
-                ? (new DateTime($fixed_at, $tz))->format(DateTime::ATOM)
-                : (clone $base)->modify("+{$delay} hours")->format(DateTime::ATOM);
-            if (strtotime($send_at) < time() - 60) continue;
+        } elseif ($type === 'wpp' && $tel && strlen($phone) >= 10) {
+            $msg = seq_sub_vars($item['message'] ?? '', $name, $nome_perfil);
+            if (!$msg) continue;
             sb_post('whatsapp_queue', [[
                 'lead_id'      => $lead_id,
                 'to_phone'     => $tel,
                 'to_name'      => $name,
-                'message'      => str_replace('{{nome}}', $name, $msg_tpl),
+                'message'      => $msg,
                 'scheduled_at' => $send_at,
                 'status'       => 'pending',
             ]]);
@@ -353,6 +425,7 @@ foreach ($rows as $i => $row) {
     sb_patch("leads?id=eq.{$lead_id}", [
         'sequence_queued_at' => $base->format(DateTime::ATOM),
         'source_campaign'    => 'reengajamento_2026',
+        'source'             => 'import',
     ]);
 
     $ok++;
@@ -364,6 +437,27 @@ $wpp_note = $no_wpp > 0 ? " | Sem telefone (WPP ignorado): {$no_wpp}" : '';
 output("<br><strong>✅ Importação concluída!</strong>");
 output("Total: {$total} | Importadas: {$ok} | Ignoradas: {$skipped}{$wpp_note} | Erros: " . count($errors));
 if ($errors) output("<br>Erros:<br>" . implode('<br>', array_map('htmlspecialchars', $errors)));
+
+// ── Helpers de sequência ─────────────────────────────────────────
+function seq_schedule(array $item, DateTime $base, DateTimeZone $tz): ?string {
+    if (!empty($item['fixed_date'])) {
+        $time = $item['fixed_time'] ?? '09:00';
+        $dt = DateTime::createFromFormat('Y-m-d H:i', $item['fixed_date'] . ' ' . $time, $tz);
+        return $dt ? $dt->format(DateTime::ATOM) : null;
+    }
+    $hours = (int)($item['delay_hours'] ?? 0);
+    $dt = clone $base;
+    $dt->modify("+{$hours} hours");
+    return $dt->format(DateTime::ATOM);
+}
+
+function seq_sub_vars(string $msg, string $name, string $perfil): string {
+    return str_replace(
+        ['{{nome_lead}}', '{{nome}}', '{{nome_perfil}}', '{{link_vip}}', '{{link_hotmart}}', '{{link_site}}'],
+        [$name, $name, $perfil, WPP_LINK, HOTMART_LINK, SITE_URL],
+        $msg
+    );
+}
 
 // ── Helpers ───────────────────────────────────────────────────────
 function output(string $msg): void {

@@ -69,6 +69,20 @@ switch ($action) {
     case 'save_email_template':   require_auth(); save_email_template();   break;
     case 'delete_email_template': require_auth(); delete_email_template(); break;
 
+    // WPP Templates
+    case 'list_wpp_templates':  require_auth(); list_wpp_templates();  break;
+    case 'get_wpp_template':    require_auth(); get_wpp_template();    break;
+    case 'save_wpp_template':   require_auth(); save_wpp_template();   break;
+    case 'delete_wpp_template': require_auth(); delete_wpp_template(); break;
+    case 'toggle_wpp_template': require_auth(); toggle_wpp_template(); break;
+
+    // Sequências de envio
+    case 'list_sequences':   require_auth(); list_sequences();   break;
+    case 'get_sequence':     require_auth(); get_sequence();     break;
+    case 'save_sequence':    require_auth(); save_sequence();    break;
+    case 'delete_sequence':  require_auth(); delete_sequence();  break;
+    case 'toggle_sequence':  require_auth(); toggle_sequence();  break;
+
     // WhatsApp queue
     case 'wpp_stats':         require_auth(); wpp_stats();         break;
     case 'wpp_reset_stuck':   require_auth(); wpp_reset_stuck();   break;
@@ -610,6 +624,89 @@ function wpp_cancel_msg() {
     if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
     // Cancela apenas mensagens ainda não enviadas
     $r = sb_request('DELETE', 'whatsapp_queue?id=eq.' . rawurlencode($id) . '&status=neq.sent');
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+// ── WPP TEMPLATES ────────────────────────────────────────────────────────────
+function list_wpp_templates() {
+    $r = sb_request('GET', 'wpp_templates', null, 'select=id,name,slug,message,is_active,created_at&order=created_at.asc');
+    echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
+}
+function get_wpp_template() {
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r  = sb_request('GET', 'wpp_templates', null, 'id=eq.' . rawurlencode($id) . '&limit=1');
+    echo json_encode(['ok' => !empty($r['body'][0]), 'data' => $r['body'][0] ?? null]);
+}
+function save_wpp_template() {
+    $id      = trim($_POST['id'] ?? '');
+    $name    = trim($_POST['name'] ?? '');
+    $slug    = trim($_POST['slug'] ?? '') ?: strtolower(preg_replace('/[\s\-]+/', '_', $name));
+    $message = $_POST['message'] ?? '';
+    if (!$name || !$message) { echo json_encode(['ok'=>false,'error'=>'Nome e mensagem obrigatórios']); return; }
+    $data = ['name'=>$name,'slug'=>$slug,'message'=>$message,'updated_at'=>date('c')];
+    if ($id && is_valid_uuid($id)) {
+        $r = sb_request('PATCH', 'wpp_templates?id=eq.' . rawurlencode($id), $data);
+        echo json_encode(['ok' => $r['status'] < 300, 'action'=>'updated']);
+    } else {
+        $data['is_active'] = true; $data['created_at'] = date('c');
+        $r = sb_request('POST', 'wpp_templates', [$data]);
+        echo json_encode(['ok' => $r['status'] < 300, 'action'=>'created']);
+    }
+}
+function toggle_wpp_template() {
+    $id = trim($_POST['id'] ?? ''); $active = ($_POST['active'] ?? '0') === '1';
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r = sb_request('PATCH', 'wpp_templates?id=eq.' . rawurlencode($id), ['is_active'=>$active,'updated_at'=>date('c')]);
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+function delete_wpp_template() {
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r = sb_request('DELETE', 'wpp_templates?id=eq.' . rawurlencode($id));
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+// ── SEQUÊNCIAS ────────────────────────────────────────────────────────────────
+function list_sequences() {
+    $r = sb_request('GET', 'sequences', null, 'select=id,name,description,is_active,items,created_at&order=created_at.asc');
+    echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
+}
+function get_sequence() {
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r  = sb_request('GET', 'sequences', null, 'id=eq.' . rawurlencode($id) . '&limit=1');
+    echo json_encode(['ok' => !empty($r['body'][0]), 'data' => $r['body'][0] ?? null]);
+}
+function save_sequence() {
+    $id          = trim($_POST['id'] ?? '');
+    $name        = trim($_POST['name'] ?? '');
+    $description = trim($_POST['description'] ?? '');
+    $items_raw   = $_POST['items'] ?? '[]';
+    if (!$name) { echo json_encode(['ok'=>false,'error'=>'Nome obrigatório']); return; }
+    $items = json_decode($items_raw, true);
+    if (!is_array($items)) { echo json_encode(['ok'=>false,'error'=>'items JSON inválido']); return; }
+    $data = ['name'=>$name, 'description'=>$description ?: null, 'items'=>$items, 'updated_at'=>date('c')];
+    if ($id && is_valid_uuid($id)) {
+        $r = sb_request('PATCH', 'sequences?id=eq.' . rawurlencode($id), $data);
+        echo json_encode(['ok' => $r['status'] < 300, 'action'=>'updated', 'id'=>$id]);
+    } else {
+        $data['is_active'] = true; $data['created_at'] = date('c');
+        $r = sb_request('POST', 'sequences', [$data], '', ['Prefer: return=representation']);
+        $new_id = $r['body'][0]['id'] ?? null;
+        echo json_encode(['ok' => $r['status'] < 300, 'action'=>'created', 'id'=>$new_id]);
+    }
+}
+function delete_sequence() {
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r = sb_request('DELETE', 'sequences?id=eq.' . rawurlencode($id));
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+function toggle_sequence() {
+    $id = trim($_POST['id'] ?? ''); $active = ($_POST['active'] ?? '0') === '1';
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r = sb_request('PATCH', 'sequences?id=eq.' . rawurlencode($id), ['is_active'=>$active,'updated_at'=>date('c')]);
     echo json_encode(['ok' => $r['status'] < 300]);
 }
 

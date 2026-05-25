@@ -188,6 +188,7 @@ tbody td{padding:10px 12px;vertical-align:top}
       <div class="nav-item" data-page="whatsapp" onclick="goPage('whatsapp')"><span class="nav-item-icon">📱</span> WhatsApp</div>
       <div class="nav-item" data-page="wpp_templates" onclick="goPage('wpp_templates')"><span class="nav-item-icon">💬</span> Templates WPP</div>
       <div class="nav-item" data-page="leads_importados" onclick="goPage('leads_importados')"><span class="nav-item-icon">📥</span> Leads Importados</div>
+      <div class="nav-item" data-page="sequencias" onclick="goPage('sequencias')"><span class="nav-item-icon">📋</span> Sequências</div>
       <div class="nav-item" data-page="usuarios" onclick="goPage('usuarios')"><span class="nav-item-icon">👤</span> Usuários</div>
     </nav>
     <div class="sidebar-footer">
@@ -274,7 +275,7 @@ function goPage(name) {
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === name);
   });
-  const pages = { dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras, config: configPage, leads, templates: emailTemplates, whatsapp: wppPage, wpp_templates: wppTemplatesPage, leads_importados: leadsImportadosPage, usuarios: usuariosPage };
+  const pages = { dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras, config: configPage, leads, templates: emailTemplates, whatsapp: wppPage, wpp_templates: wppTemplatesPage, leads_importados: leadsImportadosPage, sequencias: sequenciasPage, usuarios: usuariosPage };
   if (pages[name]) pages[name]();
 }
 
@@ -2093,6 +2094,325 @@ function impFilter() {
     return matchQ && matchW;
   });
   impRender(filtered);
+}
+
+/* ── SEQUÊNCIAS ──────────────────────────────────────────────────────────── */
+// State: null = list view | object = editing sequence
+let _seqEditing = null;
+let _seqItems   = [];
+let _seqItemIdx = null; // index of item being edited inline
+
+async function sequenciasPage() {
+  _seqEditing = null;
+  _seqItems   = [];
+  const main = document.getElementById('main-content');
+  main.innerHTML = `<div class="page-title">Sequências de Envio</div>
+    <div class="page-sub">Configure sequências reutilizáveis de e-mail e WPP para usar no import de leads.</div>
+    <button onclick="seqNew()" style="background:var(--cta);color:#fff;border:none;padding:10px 20px;border-radius:var(--r);font-weight:600;cursor:pointer;margin-bottom:20px">+ Nova Sequência</button>
+    <div id="seq-list"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  await seqLoadList();
+}
+
+async function seqLoadList() {
+  const r = await proxyWrite({ action: 'list_sequences' });
+  const list = document.getElementById('seq-list');
+  if (!list) return;
+  if (!r.ok || !r.data?.length) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af">Nenhuma sequência cadastrada. Crie a primeira acima.</div>';
+    return;
+  }
+  list.innerHTML = r.data.map(s => {
+    const cnt = Array.isArray(s.items) ? s.items.length : 0;
+    const wppCnt   = Array.isArray(s.items) ? s.items.filter(i => i.type === 'wpp').length : 0;
+    const emailCnt = Array.isArray(s.items) ? s.items.filter(i => i.type === 'email').length : 0;
+    return `<div class="card" style="margin-bottom:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="font-weight:700;font-size:.95rem;color:var(--dark)">${escHtml(s.name)}</div>
+        ${s.description ? `<div style="font-size:.8rem;color:var(--text3);margin-top:2px">${escHtml(s.description)}</div>` : ''}
+        <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
+          <span style="background:#f0fdf4;color:#166534;padding:2px 9px;border-radius:10px;font-size:.72rem;font-weight:600">💬 ${wppCnt} WPP</span>
+          <span style="background:#eff6ff;color:#1e40af;padding:2px 9px;border-radius:10px;font-size:.72rem;font-weight:600">📧 ${emailCnt} Email</span>
+          <span style="background:#f3f4f6;color:#374151;padding:2px 9px;border-radius:10px;font-size:.72rem">${cnt} total</span>
+          ${s.is_active ? '<span style="background:#dcfce7;color:#166534;padding:2px 9px;border-radius:10px;font-size:.72rem;font-weight:600">● Ativa</span>' : '<span style="background:#fee2e2;color:#991b1b;padding:2px 9px;border-radius:10px;font-size:.72rem">○ Inativa</span>'}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button onclick="seqEdit(${JSON.stringify(JSON.stringify(s))})" style="background:#f3f4f6;border:1px solid var(--border);padding:7px 14px;border-radius:var(--r);cursor:pointer;font-size:.82rem;font-weight:600">✏️ Editar</button>
+        <button onclick="seqToggle('${s.id}',${s.is_active})" style="background:#f3f4f6;border:1px solid var(--border);padding:7px 14px;border-radius:var(--r);cursor:pointer;font-size:.82rem">${s.is_active ? 'Desativar' : 'Ativar'}</button>
+        <button onclick="seqDelete('${s.id}','${escHtml(s.name)}')" style="background:#fff1f2;border:1px solid #fecaca;color:#dc2626;padding:7px 14px;border-radius:var(--r);cursor:pointer;font-size:.82rem">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function seqNew() {
+  _seqEditing = { id: null, name: '', description: '', items: [] };
+  _seqItems   = [];
+  _seqItemIdx = null;
+  seqRenderEditor();
+}
+
+function seqEdit(jsonStr) {
+  const s  = JSON.parse(jsonStr);
+  _seqEditing = s;
+  _seqItems   = Array.isArray(s.items) ? JSON.parse(JSON.stringify(s.items)) : [];
+  _seqItemIdx = null;
+  seqRenderEditor();
+}
+
+function seqRenderEditor() {
+  const s    = _seqEditing;
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <button onclick="sequenciasPage()" style="background:#f3f4f6;border:1px solid var(--border);padding:7px 12px;border-radius:var(--r);cursor:pointer;font-size:.82rem">← Voltar</button>
+      <div class="page-title" style="margin:0">${s.id ? 'Editar' : 'Nova'} Sequência</div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;flex-wrap:wrap">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Nome *</label>
+          <input id="seq-name" type="text" class="search-bar" style="width:100%;margin:0" placeholder="Ex: Aquecimento Importados" value="${escHtml(s.name||'')}">
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Descrição</label>
+          <input id="seq-desc" type="text" class="search-bar" style="width:100%;margin:0" placeholder="Descrição opcional" value="${escHtml(s.description||'')}">
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-weight:700;font-size:.95rem;color:var(--dark)">Mensagens da sequência <span id="seq-cnt" style="font-size:.78rem;color:var(--text3);font-weight:400">(${_seqItems.length} itens)</span></div>
+      <button onclick="seqAddItemForm()" id="seq-add-btn" style="background:var(--cta);color:#fff;border:none;padding:8px 16px;border-radius:var(--r);font-weight:600;cursor:pointer;font-size:.83rem">+ Adicionar mensagem</button>
+    </div>
+
+    <div id="seq-items-wrap">${seqRenderItems()}</div>
+
+    <div id="seq-item-form" style="display:none"></div>
+
+    <div style="margin-top:20px;display:flex;gap:10px">
+      <button onclick="seqSave()" style="background:var(--cta);color:#fff;border:none;padding:12px 28px;border-radius:var(--r);font-weight:700;cursor:pointer;font-size:.9rem">💾 Salvar Sequência</button>
+      <button onclick="sequenciasPage()" style="background:#f3f4f6;border:1px solid var(--border);padding:12px 20px;border-radius:var(--r);cursor:pointer;font-size:.9rem">Cancelar</button>
+    </div>`;
+}
+
+function seqRenderItems() {
+  if (!_seqItems.length) return '<div style="text-align:center;padding:30px;color:#9ca3af;border:2px dashed var(--border);border-radius:var(--r)">Nenhuma mensagem adicionada ainda. Clique em "+ Adicionar mensagem" para começar.</div>';
+  return `<div class="card" style="padding:0;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:.83rem">
+      <thead><tr style="background:#f9fafb;border-bottom:2px solid var(--border)">
+        <th style="padding:8px 10px;text-align:center;width:50px">#</th>
+        <th style="padding:8px 10px;text-align:left">Tipo</th>
+        <th style="padding:8px 10px;text-align:left">Label / Conteúdo</th>
+        <th style="padding:8px 10px;text-align:left">Timing</th>
+        <th style="padding:8px 10px;text-align:center">Ações</th>
+      </tr></thead>
+      <tbody>${_seqItems.map((item, idx) => `
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px 10px;text-align:center;color:#9ca3af;font-size:.75rem">${idx+1}</td>
+          <td style="padding:8px 10px">
+            ${item.type === 'wpp'
+              ? '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:8px;font-size:.72rem;font-weight:700">💬 WPP</span>'
+              : '<span style="background:#eff6ff;color:#1e40af;padding:2px 8px;border-radius:8px;font-size:.72rem;font-weight:700">📧 Email</span>'}
+          </td>
+          <td style="padding:8px 10px;max-width:300px">
+            <div style="font-weight:600;font-size:.82rem;color:var(--dark)">${escHtml(item.label||'(sem label)')}</div>
+            ${item.type==='email'
+              ? `<div style="font-size:.75rem;color:var(--text3);font-family:monospace">${escHtml(item.template_slug||'')}</div>`
+              : `<div style="font-size:.75rem;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px">${escHtml((item.message||'').substring(0,80))}${(item.message||'').length>80?'…':''}</div>`}
+          </td>
+          <td style="padding:8px 10px;font-size:.78rem;color:var(--text3)">
+            ${item.fixed_date
+              ? `📅 ${item.fixed_date} ${item.fixed_time||'09:00'}`
+              : `⏱ D+${item.delay_hours||0}h`}
+          </td>
+          <td style="padding:8px 10px;text-align:center;white-space:nowrap">
+            ${idx>0?`<button onclick="seqMoveItem(${idx},-1)" style="background:none;border:none;cursor:pointer;padding:2px 5px;font-size:.85rem" title="Subir">▲</button>`:'<span style="display:inline-block;width:22px"></span>'}
+            ${idx<_seqItems.length-1?`<button onclick="seqMoveItem(${idx},1)" style="background:none;border:none;cursor:pointer;padding:2px 5px;font-size:.85rem" title="Descer">▼</button>`:'<span style="display:inline-block;width:22px"></span>'}
+            <button onclick="seqEditItemForm(${idx})" style="background:#f3f4f6;border:1px solid var(--border);padding:3px 8px;border-radius:6px;cursor:pointer;font-size:.78rem;margin-left:4px">✏️</button>
+            <button onclick="seqRemoveItem(${idx})" style="background:#fff1f2;border:1px solid #fecaca;color:#dc2626;padding:3px 8px;border-radius:6px;cursor:pointer;font-size:.78rem;margin-left:2px">🗑</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function seqItemFormHtml(item, idx) {
+  const isNew = idx === null;
+  const t = item || { type:'wpp', label:'', message:'', template_slug:'', delay_hours:0, fixed_date:'', fixed_time:'09:00' };
+  return `<div class="card" style="border:2px solid var(--cta);margin-top:12px">
+    <div style="font-weight:700;font-size:.9rem;margin-bottom:14px;color:var(--dark)">${isNew?'Adicionar mensagem':'Editar mensagem'}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div>
+        <label style="font-size:.8rem;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Tipo *</label>
+        <select id="sif-type" onchange="seqItemTypeChange()" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:9px;font-size:.85rem;background:#fff">
+          <option value="wpp" ${t.type==='wpp'?'selected':''}>💬 WPP — mensagem direta</option>
+          <option value="email" ${t.type==='email'?'selected':''}>📧 Email — via template</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.8rem;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Label (identificador)</label>
+        <input id="sif-label" type="text" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:9px;font-size:.85rem" placeholder="Ex: D+0 Boas-vindas" value="${escHtml(t.label||'')}">
+      </div>
+    </div>
+
+    <div id="sif-wpp-block" style="${t.type==='wpp'?'':'display:none'}">
+      <label style="font-size:.8rem;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Mensagem WPP *</label>
+      <div style="margin-bottom:6px;display:flex;flex-wrap:wrap;gap:4px">
+        ${['{{nome_lead}}','{{nome_perfil}}','{{link_vip}}','{{link_hotmart}}'].map(v=>`<button type="button" onclick="seqInsertVar('${v}')" style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:2px 8px;border-radius:6px;font-size:.72rem;font-family:monospace;cursor:pointer">${v}</button>`).join('')}
+      </div>
+      <textarea id="sif-message" rows="5" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:9px;font-size:.83rem;resize:vertical;font-family:inherit" placeholder="Texto da mensagem WPP…">${escHtml(t.message||'')}</textarea>
+    </div>
+
+    <div id="sif-email-block" style="${t.type==='email'?'':'display:none'}">
+      <label style="font-size:.8rem;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Slug do template de e-mail *</label>
+      <input id="sif-slug" type="text" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:9px;font-size:.85rem;font-family:monospace" placeholder="Ex: boas_vindas" value="${escHtml(t.template_slug||'')}">
+      <div style="font-size:.75rem;color:var(--text3);margin-top:4px">Deve corresponder a um slug existente em Templates E-mail.</div>
+    </div>
+
+    <div style="margin-top:14px">
+      <label style="font-size:.8rem;font-weight:600;color:var(--text2);display:block;margin-bottom:8px">Timing de envio *</label>
+      <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.83rem">
+          <input type="radio" name="sif-timing" id="sif-rel" value="rel" ${!t.fixed_date?'checked':''} onchange="seqTimingChange()"> Relativo (horas após import)
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.83rem">
+          <input type="radio" name="sif-timing" id="sif-fix" value="fix" ${t.fixed_date?'checked':''} onchange="seqTimingChange()"> Data fixa
+        </label>
+      </div>
+      <div id="sif-rel-block" style="${!t.fixed_date?'':'display:none'};margin-top:10px;display:${!t.fixed_date?'flex':'none'};align-items:center;gap:8px">
+        <span style="font-size:.83rem;color:var(--text2)">Enviar</span>
+        <input id="sif-hours" type="number" min="0" step="1" value="${t.delay_hours||0}" style="width:80px;border:1px solid var(--border);border-radius:var(--r);padding:7px;font-size:.85rem;text-align:center">
+        <span style="font-size:.83rem;color:var(--text2)">horas após o import</span>
+      </div>
+      <div id="sif-fix-block" style="${t.fixed_date?'':'display:none'};margin-top:10px;display:${t.fixed_date?'flex':'none'};align-items:center;gap:8px;flex-wrap:wrap">
+        <input id="sif-date" type="date" value="${t.fixed_date||''}" style="border:1px solid var(--border);border-radius:var(--r);padding:7px;font-size:.85rem">
+        <span style="font-size:.83rem;color:var(--text2)">às</span>
+        <input id="sif-time" type="time" value="${t.fixed_time||'09:00'}" style="border:1px solid var(--border);border-radius:var(--r);padding:7px;font-size:.85rem">
+        <span style="font-size:.75rem;color:var(--text3)">(Horário de Brasília)</span>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;display:flex;gap:8px">
+      <button onclick="seqSaveItemForm(${idx})" style="background:var(--cta);color:#fff;border:none;padding:9px 20px;border-radius:var(--r);font-weight:600;cursor:pointer;font-size:.83rem">${isNew?'✅ Adicionar':'✅ Atualizar'}</button>
+      <button onclick="seqCancelItemForm()" style="background:#f3f4f6;border:1px solid var(--border);padding:9px 16px;border-radius:var(--r);cursor:pointer;font-size:.83rem">Cancelar</button>
+    </div>
+  </div>`;
+}
+
+function seqItemTypeChange() {
+  const t = document.getElementById('sif-type')?.value;
+  document.getElementById('sif-wpp-block').style.display   = t==='wpp'   ? '' : 'none';
+  document.getElementById('sif-email-block').style.display = t==='email' ? '' : 'none';
+}
+function seqTimingChange() {
+  const isFix = document.getElementById('sif-fix')?.checked;
+  document.getElementById('sif-rel-block').style.display = isFix ? 'none' : 'flex';
+  document.getElementById('sif-fix-block').style.display = isFix ? 'flex' : 'none';
+}
+function seqInsertVar(v) {
+  const ta = document.getElementById('sif-message');
+  if (!ta) return;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0,s) + v + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + v.length;
+  ta.focus();
+}
+
+function seqAddItemForm() {
+  _seqItemIdx = null;
+  const wrap = document.getElementById('seq-item-form');
+  if (wrap) { wrap.style.display = ''; wrap.innerHTML = seqItemFormHtml(null, null); wrap.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+}
+function seqEditItemForm(idx) {
+  _seqItemIdx = idx;
+  const wrap = document.getElementById('seq-item-form');
+  if (wrap) { wrap.style.display = ''; wrap.innerHTML = seqItemFormHtml(_seqItems[idx], idx); wrap.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+}
+function seqCancelItemForm() {
+  const wrap = document.getElementById('seq-item-form');
+  if (wrap) { wrap.style.display = 'none'; wrap.innerHTML = ''; }
+}
+
+function seqSaveItemForm(idx) {
+  const type  = document.getElementById('sif-type')?.value;
+  const label = document.getElementById('sif-label')?.value.trim();
+  const isFix = document.getElementById('sif-fix')?.checked;
+  if (!type) { toast('Selecione o tipo','error'); return; }
+  if (type === 'wpp' && !document.getElementById('sif-message')?.value.trim()) { toast('Mensagem WPP obrigatória','error'); return; }
+  if (type === 'email' && !document.getElementById('sif-slug')?.value.trim()) { toast('Slug do template obrigatório','error'); return; }
+  const item = {
+    type,
+    label:         label || (type==='wpp' ? 'Mensagem WPP' : 'E-mail'),
+    message:       type==='wpp' ? document.getElementById('sif-message')?.value : '',
+    template_slug: type==='email' ? document.getElementById('sif-slug')?.value.trim() : '',
+    delay_hours:   isFix ? 0   : parseInt(document.getElementById('sif-hours')?.value||'0', 10),
+    fixed_date:    isFix ? document.getElementById('sif-date')?.value  : '',
+    fixed_time:    isFix ? document.getElementById('sif-time')?.value  : '',
+  };
+  if (typeof idx === 'number' && idx >= 0) {
+    _seqItems[idx] = item;
+  } else {
+    _seqItems.push(item);
+  }
+  seqCancelItemForm();
+  const wrap = document.getElementById('seq-items-wrap');
+  const cnt  = document.getElementById('seq-cnt');
+  if (wrap) wrap.innerHTML = seqRenderItems();
+  if (cnt)  cnt.textContent = `(${_seqItems.length} itens)`;
+}
+
+function seqMoveItem(idx, dir) {
+  const to = idx + dir;
+  if (to < 0 || to >= _seqItems.length) return;
+  [_seqItems[idx], _seqItems[to]] = [_seqItems[to], _seqItems[idx]];
+  const wrap = document.getElementById('seq-items-wrap');
+  if (wrap) wrap.innerHTML = seqRenderItems();
+}
+
+function seqRemoveItem(idx) {
+  if (!confirm('Remover esta mensagem da sequência?')) return;
+  _seqItems.splice(idx, 1);
+  const wrap = document.getElementById('seq-items-wrap');
+  const cnt  = document.getElementById('seq-cnt');
+  if (wrap) wrap.innerHTML = seqRenderItems();
+  if (cnt)  cnt.textContent = `(${_seqItems.length} itens)`;
+}
+
+async function seqSave() {
+  const name = document.getElementById('seq-name')?.value.trim();
+  const desc = document.getElementById('seq-desc')?.value.trim();
+  if (!name) { toast('Nome obrigatório','error'); return; }
+  const r = await proxyWrite({
+    action: 'save_sequence',
+    id:          _seqEditing.id || '',
+    name,
+    description: desc,
+    items:       JSON.stringify(_seqItems),
+  });
+  if (r.ok) {
+    toast('Sequência salva!');
+    _seqEditing.id = r.id || _seqEditing.id;
+    // update header to show we're editing
+    const title = document.querySelector('.page-title');
+    if (title) title.textContent = 'Editar Sequência';
+  } else {
+    toast(r.error || 'Erro ao salvar','error');
+  }
+}
+
+async function seqToggle(id, isActive) {
+  const r = await proxyWrite({ action: 'toggle_sequence', id, active: isActive ? '0' : '1' });
+  if (r.ok) { toast(isActive ? 'Sequência desativada' : 'Sequência ativada'); seqLoadList(); }
+  else toast(r.error || 'Erro','error');
+}
+
+async function seqDelete(id, name) {
+  if (!confirm(`Excluir a sequência "${name}"? Isso não afeta mensagens já enfileiradas.`)) return;
+  const r = await proxyWrite({ action: 'delete_sequence', id });
+  if (r.ok) { toast('Sequência excluída'); seqLoadList(); }
+  else toast(r.error || 'Erro','error');
 }
 
 /* ── INIT ─────────────────────── */
