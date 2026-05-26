@@ -242,7 +242,10 @@ tbody td{padding:10px 12px;vertical-align:top}
           <span class="nav-group-arrow">▶</span>
         </div>
         <div class="nav-group-body">
+          <div class="nav-sub-item" data-page="import_funcoes" onclick="goPage('import_funcoes')"><span class="nav-item-icon">📤</span> Funções Importação</div>
           <div class="nav-sub-item" data-page="leads_importados" onclick="goPage('leads_importados')"><span class="nav-item-icon">📥</span> Lista Importados</div>
+          <div class="nav-sub-item" data-page="import_dashboard" onclick="goPage('import_dashboard')"><span class="nav-item-icon">📊</span> Dashboard</div>
+          <div class="nav-sub-item" data-page="import_gestao" onclick="goPage('import_gestao')"><span class="nav-item-icon">⚙️</span> Gestão</div>
         </div>
       </div>
 
@@ -253,7 +256,10 @@ tbody td{padding:10px 12px;vertical-align:top}
           <span class="nav-group-arrow">▶</span>
         </div>
         <div class="nav-group-body">
-          <div class="nav-sub-item" data-page="whatsapp" onclick="goPage('whatsapp')"><span class="nav-item-icon">📱</span> WhatsApp</div>
+          <div class="nav-sub-item" data-page="painel_worker" onclick="goPage('painel_worker')"><span class="nav-item-icon">🔧</span> Diagnóstico Worker</div>
+          <div class="nav-sub-item" data-page="painel_manutencao" onclick="goPage('painel_manutencao')"><span class="nav-item-icon">🛠</span> Manutenção Fila</div>
+          <div class="nav-sub-item" data-page="painel_fila_email" onclick="goPage('painel_fila_email')"><span class="nav-item-icon">📧</span> Fila E-mail</div>
+          <div class="nav-sub-item" data-page="painel_fila_wpp" onclick="goPage('painel_fila_wpp')"><span class="nav-item-icon">💬</span> Fila WPP</div>
         </div>
       </div>
 
@@ -306,6 +312,15 @@ const PAGE_PERMS = {
   leads_importados: 'leads',
   sequencias:       'leads',
   usuarios:         'usuarios',
+  // Painel pages
+  painel_worker:    'leads',
+  painel_manutencao:'config',
+  painel_fila_email:'leads',
+  painel_fila_wpp:  'leads',
+  // Import pages
+  import_funcoes:   'leads',
+  import_dashboard: 'leads',
+  import_gestao:    'leads',
 };
 
 function hasPerm(page) {
@@ -440,7 +455,21 @@ function goPage(name) {
     el.classList.toggle('active', el.dataset.page === name);
   });
   updateNavActive(name);
-  const pages = { dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras, config: configPage, leads, templates: emailTemplates, whatsapp: wppPage, wpp_templates: wppTemplatesPage, leads_importados: leadsImportadosPage, sequencias: sequenciasPage, usuarios: usuariosPage };
+  const pages = {
+    dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras,
+    config: configPage, leads,
+    templates: emailTemplates, whatsapp: wppPage, wpp_templates: wppTemplatesPage,
+    leads_importados: leadsImportadosPage, sequencias: sequenciasPage, usuarios: usuariosPage,
+    // Painel pages
+    painel_worker:    painelWorkerPage,
+    painel_manutencao:painelManutencaoPage,
+    painel_fila_email:painelFilaEmailPage,
+    painel_fila_wpp:  painelFilaWppPage,
+    // Import pages
+    import_funcoes:   importFuncoesPage,
+    import_dashboard: importDashboardPage,
+    import_gestao:    importGestaoPage,
+  };
   if (pages[name]) pages[name]();
 }
 
@@ -2836,6 +2865,540 @@ async function seqDelete(id, name) {
   const r = await proxyWrite({ action: 'delete_sequence', id });
   if (r.ok) { toast('Sequência excluída'); seqLoadList(); }
   else toast(r.error || 'Erro','error');
+}
+
+/* ── PAINEL: DIAGNÓSTICO WORKER ─────────────────────────────────────────── */
+function _clearActiveIntervals() {
+  window._activeIntervals = window._activeIntervals || [];
+  window._activeIntervals.forEach(id => clearInterval(id));
+  window._activeIntervals = [];
+}
+
+async function painelWorkerPage() {
+  _clearActiveIntervals();
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page-title">Diagnóstico Worker</div>
+    <div class="page-sub">Status das filas e do worker de e-mail/WPP em tempo real.</div>
+    <div id="pw-stats-wrap" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px"></div>
+    <div class="card" id="pw-worker-log">
+      <div class="card-title">Log do Worker</div>
+      <div id="pw-log-body" style="font-size:.82rem;color:var(--text3)">Carregando…</div>
+    </div>
+    <div class="card" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:16px 20px">
+      <button id="pw-process-btn" onclick="pwProcessNow()" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:.85rem;font-weight:700;cursor:pointer">Processar fila agora</button>
+      <span style="font-size:.78rem;color:var(--text3)">Dispara envios vencidos imediatamente, sem esperar o cron.</span>
+    </div>
+    <div id="pw-process-result" style="display:none;margin:0 0 16px 0"></div>`;
+  await pwLoadStats();
+  const iid = setInterval(pwLoadStats, 10000);
+  window._activeIntervals = window._activeIntervals || [];
+  window._activeIntervals.push(iid);
+}
+
+async function pwLoadStats() {
+  const [statsR, logR] = await Promise.all([
+    proxyWrite({ action: 'painel_stats' }),
+    proxyWrite({ action: 'painel_worker_status' }),
+  ]);
+  const sw = document.getElementById('pw-stats-wrap');
+  if (sw && statsR.ok) {
+    const s = statsR;
+    const statCard = (label, val, color) =>
+      `<div class="stat-card"><div class="stat-num" style="color:${color}">${val}</div><div class="stat-label">${label}</div></div>`;
+    sw.innerHTML =
+      statCard('Email pendentes', s.email_pend||0, (s.email_pend||0)>0?'#d97706':'var(--cta)') +
+      statCard('Email falhas',    s.email_fail||0, (s.email_fail||0)>0?'var(--red)':'var(--cta)') +
+      statCard('WPP pendentes',   s.wpp_pend||0,   (s.wpp_pend||0)>0?'#d97706':'var(--cta)') +
+      statCard('WPP falhas',      s.wpp_fail||0,   (s.wpp_fail||0)>0?'var(--red)':'var(--cta)') +
+      statCard('E-mails vencidos',s.email_overdue||0, (s.email_overdue||0)>0?'var(--red)':'#16a34a') +
+      statCard('WPP vencidos',    s.wpp_overdue||0,   (s.wpp_overdue||0)>0?'var(--red)':'#16a34a');
+  }
+  const lb = document.getElementById('pw-log-body');
+  if (lb && logR.ok) {
+    if (!logR.log_available) {
+      lb.innerHTML = '<span style="color:var(--red)">Log não disponível — email_worker.log não encontrado.</span>';
+    } else {
+      const ageColor = logR.log_age_ok ? '#16a34a' : '#d97706';
+      const ageMsg   = logR.log_age_ok ? 'Cron ativo (log atualizado há menos de 30min)' : 'Atenção: log desatualizado — cron pode estar parado';
+      lb.innerHTML = `<div style="margin-bottom:8px;font-size:.8rem;font-weight:600;color:${ageColor}">${ageMsg}</div>` +
+        (logR.log_lines?.length
+          ? `<pre style="background:#1e293b;color:#a3e635;font-family:monospace;font-size:.75rem;padding:10px;border-radius:6px;overflow-x:auto;white-space:pre-wrap;word-break:break-all">${escHtml(logR.log_lines.join('\n'))}</pre>`
+          : '<span style="color:var(--text3)">Log vazio.</span>');
+    }
+  }
+}
+
+async function pwProcessNow() {
+  const btn = document.getElementById('pw-process-btn');
+  const res = document.getElementById('pw-process-result');
+  if (btn) { btn.disabled = true; btn.textContent = 'Processando…'; }
+  if (res) res.style.display = 'none';
+  const r = await proxyWrite({ action: 'painel_process_now' });
+  if (btn) { btn.disabled = false; btn.textContent = 'Processar fila agora'; }
+  if (res) {
+    res.style.display = 'block';
+    res.innerHTML = `<div class="card" style="border-color:${r.ok?'#86efac':'#fca5a5'};background:${r.ok?'#f0fdf4':'#fef2f2'}"><span style="font-size:.85rem;color:${r.ok?'#166534':'var(--red)'}">${escHtml(r.msg||r.error||'')}</span></div>`;
+  }
+  if (r.ok) toast(r.msg || 'Concluído!');
+  else toast(r.error || 'Erro', 'error');
+  await pwLoadStats();
+}
+
+/* ── PAINEL: MANUTENÇÃO FILA ─────────────────────────────────────────────── */
+async function painelManutencaoPage() {
+  _clearActiveIntervals();
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page-title">Manutenção Fila</div>
+    <div class="page-sub">Retentar falhas, resetar travados, limpar filas.</div>
+    <div id="pm-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  await pmLoad();
+}
+
+async function pmLoad() {
+  const r = await proxyWrite({ action: 'painel_stats' });
+  const el = document.getElementById('pm-body');
+  if (!r.ok) { el.innerHTML = `<div class="card" style="color:var(--red)">Erro: ${escHtml(r.error||'')}</div>`; return; }
+
+  const pmBtn = (label, op, danger, disabled) =>
+    `<button onclick="pmAction('${op}')" ${disabled?'disabled':''} style="background:${danger?'#fef2f2':'#fff7ed'};border:1px solid ${danger?'#fecaca':'#fed7aa'};color:${danger?'#dc2626':'#c2410c'};border-radius:7px;padding:7px 13px;font-size:.78rem;font-weight:600;cursor:${disabled?'default':'pointer'};opacity:${disabled?'.4':'1'}">${label}</button>`;
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div class="card-title">Email</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+          <span style="font-size:.82rem">Travados: <strong style="color:${(r.email_stuck||0)>0?'#d97706':'#16a34a'}">${r.email_stuck||0}</strong></span>
+          <span style="font-size:.82rem">Falhas: <strong style="color:${(r.email_fail||0)>0?'var(--red)':'#16a34a'}">${r.email_fail||0}</strong></span>
+          <span style="font-size:.82rem">Pendentes: <strong>${r.email_pend||0}</strong></span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${pmBtn('Retentar falhas',    'retry_failed_email',   false, (r.email_fail||0)===0)}
+          ${pmBtn('Resetar travados',   'reset_stuck_email',    false, (r.email_stuck||0)===0)}
+          ${pmBtn('Excluir falhas',     'delete_failed_email',  true,  (r.email_fail||0)===0)}
+          ${pmBtn('Limpar pendentes',   'delete_pending_email', true,  (r.email_pend||0)===0)}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">WPP</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+          <span style="font-size:.82rem">Travados: <strong style="color:${(r.wpp_stuck||0)>0?'#d97706':'#16a34a'}">${r.wpp_stuck||0}</strong></span>
+          <span style="font-size:.82rem">Falhas: <strong style="color:${(r.wpp_fail||0)>0?'var(--red)':'#16a34a'}">${r.wpp_fail||0}</strong></span>
+          <span style="font-size:.82rem">Pendentes: <strong>${r.wpp_pend||0}</strong></span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${pmBtn('Retentar falhas',    'retry_failed_wpp',   false, (r.wpp_fail||0)===0)}
+          ${pmBtn('Resetar travados',   'reset_stuck_wpp',    false, (r.wpp_stuck||0)===0)}
+          ${pmBtn('Excluir falhas',     'delete_failed_wpp',  true,  (r.wpp_fail||0)===0)}
+          ${pmBtn('Limpar pendentes',   'delete_pending_wpp', true,  (r.wpp_pend||0)===0)}
+        </div>
+      </div>
+    </div>`;
+}
+
+async function pmAction(op) {
+  const dangerous = ['delete_failed_email','delete_failed_wpp','delete_pending_email','delete_pending_wpp'];
+  if (dangerous.includes(op) && !confirm('Confirma esta operação destrutiva? Não pode ser desfeita.')) return;
+  const r = await proxyWrite({ action: 'painel_maintenance', op });
+  if (r.ok) { toast(r.msg || 'Operação concluída!'); await pmLoad(); }
+  else toast(r.error || 'Erro', 'error');
+}
+
+/* ── PAINEL: FILA EMAIL ──────────────────────────────────────────────────── */
+async function painelFilaEmailPage() {
+  _clearActiveIntervals();
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page-title">Fila E-mail</div>
+    <div class="page-sub">Visualize e gerencie os e-mails na fila.</div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+      <button id="pfe-tab-pend" onclick="pfeSetTab('pending')" style="background:var(--cta);color:#fff;border:none;padding:8px 18px;border-radius:var(--r);font-weight:600;cursor:pointer;font-size:.85rem">Aguardando</button>
+      <button id="pfe-tab-sent" onclick="pfeSetTab('sent')" style="background:#f3f4f6;border:1px solid var(--border);padding:8px 18px;border-radius:var(--r);cursor:pointer;font-size:.85rem">Enviados</button>
+      <button onclick="pfeLoad()" style="background:#f3f4f6;border:1px solid var(--border);padding:8px 14px;border-radius:var(--r);cursor:pointer;font-size:.82rem;margin-left:auto">Atualizar</button>
+    </div>
+    <div id="pfe-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  window._pfeTab = 'pending';
+  await pfeLoad();
+}
+
+async function pfeSetTab(tab) {
+  window._pfeTab = tab;
+  const btnP = document.getElementById('pfe-tab-pend');
+  const btnS = document.getElementById('pfe-tab-sent');
+  if (btnP) { btnP.style.background = tab==='pending' ? 'var(--cta)' : '#f3f4f6'; btnP.style.color = tab==='pending' ? '#fff' : ''; btnP.style.border = tab==='pending' ? 'none' : '1px solid var(--border)'; }
+  if (btnS) { btnS.style.background = tab==='sent'    ? 'var(--cta)' : '#f3f4f6'; btnS.style.color = tab==='sent'    ? '#fff' : ''; btnS.style.border = tab==='sent'    ? 'none' : '1px solid var(--border)'; }
+  await pfeLoad();
+}
+
+async function pfeLoad() {
+  const tab   = window._pfeTab || 'pending';
+  const queue = tab === 'pending' ? 'email_pending' : 'email_sent';
+  const r     = await proxyWrite({ action: 'painel_queue_list', queue });
+  const el    = document.getElementById('pfe-body');
+  if (!r.ok) { el.innerHTML = `<div class="card" style="color:var(--red)">Erro: ${escHtml(r.error||'')}</div>`; return; }
+  const items = r.items || [];
+  if (!items.length) { el.innerHTML = '<div class="card" style="text-align:center;padding:32px;color:var(--text3)">Nenhum item.</div>'; return; }
+
+  if (tab === 'pending') {
+    el.innerHTML = `<div class="card" style="padding:0;overflow:hidden"><div class="table-wrap"><table>
+      <thead><tr><th>Lead / E-mail</th><th>Template</th><th>Agendado</th><th>Tentativas</th><th>Ações</th></tr></thead>
+      <tbody>${items.map(m => {
+        const overdue = m.scheduled_at && new Date(m.scheduled_at) < new Date();
+        return `<tr>
+          <td style="font-size:.83rem"><strong>${escHtml(m.to_name||'—')}</strong><br><span style="color:var(--text3);font-size:.75rem">${escHtml(m.to_email||'')}</span></td>
+          <td><span style="background:#eff6ff;color:#1e40af;padding:2px 8px;border-radius:8px;font-size:.72rem;font-weight:600">${escHtml(m.template_slug||'')}</span></td>
+          <td style="font-size:.78rem;color:${overdue?'var(--red)':'var(--text3)'}${overdue?';font-weight:600':''}">${m.scheduled_at ? new Date(m.scheduled_at).toLocaleString('pt-BR') : '—'}${overdue?' (atrasado)':''}</td>
+          <td style="text-align:center;font-size:.82rem">${m.attempts||0}</td>
+          <td style="white-space:nowrap">
+            <button onclick="pfeForce('${m.id}')" style="background:#7c3aed;color:#fff;border:none;padding:4px 9px;border-radius:5px;font-size:.72rem;cursor:pointer;margin-right:4px">Forcar</button>
+            <button onclick="pfeDelete('${m.id}')" style="background:var(--red);color:#fff;border:none;padding:4px 9px;border-radius:5px;font-size:.72rem;cursor:pointer">Excluir</button>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div></div>`;
+  } else {
+    el.innerHTML = `<div class="card" style="padding:0;overflow:hidden"><div class="table-wrap"><table>
+      <thead><tr><th>Lead / E-mail</th><th>Template</th><th>Enviado em</th></tr></thead>
+      <tbody>${items.map(m => `<tr>
+        <td style="font-size:.83rem"><strong>${escHtml(m.to_name||'—')}</strong><br><span style="color:var(--text3);font-size:.75rem">${escHtml(m.to_email||'')}</span></td>
+        <td><span style="background:#f0fdf4;color:#166534;padding:2px 8px;border-radius:8px;font-size:.72rem;font-weight:600">${escHtml(m.template_slug||'')}</span></td>
+        <td style="font-size:.78rem;color:var(--text3)">${m.sent_at ? new Date(m.sent_at).toLocaleString('pt-BR') : '—'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`;
+  }
+}
+
+async function pfeForce(id) {
+  if (!confirm('Forçar envio deste e-mail agora?')) return;
+  const r = await proxyWrite({ action: 'painel_force_send', queue_type: 'email', item_id: id });
+  if (r.ok) { toast(r.msg || 'E-mail enviado!'); await pfeLoad(); }
+  else toast(r.msg || r.error || 'Falha no envio', 'error');
+}
+
+async function pfeDelete(id) {
+  if (!confirm('Remover este item da fila?')) return;
+  const r = await proxyWrite({ action: 'painel_maintenance', op: 'delete_item_email', item_id: id });
+  if (r.ok) { toast('Item removido!'); await pfeLoad(); }
+  else toast(r.error || 'Erro', 'error');
+}
+
+/* ── PAINEL: FILA WPP ────────────────────────────────────────────────────── */
+async function painelFilaWppPage() {
+  _clearActiveIntervals();
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page-title">Fila WPP</div>
+    <div class="page-sub">Visualize e gerencie as mensagens WhatsApp na fila.</div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+      <button id="pfw-tab-pend" onclick="pfwSetTab('pending')" style="background:var(--cta);color:#fff;border:none;padding:8px 18px;border-radius:var(--r);font-weight:600;cursor:pointer;font-size:.85rem">Aguardando</button>
+      <button id="pfw-tab-sent" onclick="pfwSetTab('sent')" style="background:#f3f4f6;border:1px solid var(--border);padding:8px 18px;border-radius:var(--r);cursor:pointer;font-size:.85rem">Enviados</button>
+      <button onclick="pfwLoad()" style="background:#f3f4f6;border:1px solid var(--border);padding:8px 14px;border-radius:var(--r);cursor:pointer;font-size:.82rem;margin-left:auto">Atualizar</button>
+    </div>
+    <div id="pfw-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  window._pfwTab = 'pending';
+  await pfwLoad();
+}
+
+async function pfwSetTab(tab) {
+  window._pfwTab = tab;
+  const btnP = document.getElementById('pfw-tab-pend');
+  const btnS = document.getElementById('pfw-tab-sent');
+  if (btnP) { btnP.style.background = tab==='pending' ? 'var(--cta)' : '#f3f4f6'; btnP.style.color = tab==='pending' ? '#fff' : ''; btnP.style.border = tab==='pending' ? 'none' : '1px solid var(--border)'; }
+  if (btnS) { btnS.style.background = tab==='sent'    ? 'var(--cta)' : '#f3f4f6'; btnS.style.color = tab==='sent'    ? '#fff' : ''; btnS.style.border = tab==='sent'    ? 'none' : '1px solid var(--border)'; }
+  await pfwLoad();
+}
+
+async function pfwLoad() {
+  const tab   = window._pfwTab || 'pending';
+  const queue = tab === 'pending' ? 'wpp_pending' : 'wpp_sent';
+  const r     = await proxyWrite({ action: 'painel_queue_list', queue });
+  const el    = document.getElementById('pfw-body');
+  if (!r.ok) { el.innerHTML = `<div class="card" style="color:var(--red)">Erro: ${escHtml(r.error||'')}</div>`; return; }
+  const items = r.items || [];
+  if (!items.length) { el.innerHTML = '<div class="card" style="text-align:center;padding:32px;color:var(--text3)">Nenhum item.</div>'; return; }
+
+  if (tab === 'pending') {
+    el.innerHTML = `<div class="card" style="padding:0;overflow:hidden"><div class="table-wrap"><table>
+      <thead><tr><th>Lead</th><th>Telefone</th><th>Mensagem</th><th>Agendado</th><th>Tentativas</th><th>Ações</th></tr></thead>
+      <tbody>${items.map(m => {
+        const overdue = m.scheduled_at && new Date(m.scheduled_at) < new Date();
+        return `<tr>
+          <td style="font-size:.83rem;font-weight:600">${escHtml(m.to_name||'—')}</td>
+          <td style="font-size:.78rem;color:var(--text3)">${escHtml(m.to_phone||'')}</td>
+          <td style="font-size:.75rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml((m.message||'').slice(0,50))}${(m.message||'').length>50?'…':''}</td>
+          <td style="font-size:.78rem;color:${overdue?'var(--red)':'var(--text3)'}${overdue?';font-weight:600':''}">${m.scheduled_at ? new Date(m.scheduled_at).toLocaleString('pt-BR') : '—'}${overdue?' (atrasado)':''}</td>
+          <td style="text-align:center;font-size:.82rem">${m.attempts||0}</td>
+          <td style="white-space:nowrap">
+            <button onclick="pfwForce('${m.id}')" style="background:#7c3aed;color:#fff;border:none;padding:4px 9px;border-radius:5px;font-size:.72rem;cursor:pointer;margin-right:4px">Forcar</button>
+            <button onclick="pfwDelete('${m.id}')" style="background:var(--red);color:#fff;border:none;padding:4px 9px;border-radius:5px;font-size:.72rem;cursor:pointer">Excluir</button>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div></div>`;
+  } else {
+    el.innerHTML = `<div class="card" style="padding:0;overflow:hidden"><div class="table-wrap"><table>
+      <thead><tr><th>Lead</th><th>Telefone</th><th>Mensagem</th><th>Enviado em</th><th>Status</th></tr></thead>
+      <tbody>${items.map(m => {
+        const ds = (m.delivery_status||'').toLowerCase();
+        let badge = '<span style="color:var(--text3);font-size:.72rem">—</span>';
+        if (ds === 'read' || ds === 'played') badge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:700">Lido</span>';
+        else if (ds === 'received') badge = '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:700">Entregue</span>';
+        else if (ds === 'sent') badge = '<span style="background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:600">Enviado</span>';
+        return `<tr>
+          <td style="font-size:.83rem;font-weight:600">${escHtml(m.to_name||'—')}</td>
+          <td style="font-size:.78rem;color:var(--text3)">${escHtml(m.to_phone||'')}</td>
+          <td style="font-size:.75rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml((m.message||'').slice(0,50))}${(m.message||'').length>50?'…':''}</td>
+          <td style="font-size:.78rem;color:var(--text3)">${m.sent_at ? new Date(m.sent_at).toLocaleString('pt-BR') : '—'}</td>
+          <td>${badge}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div></div>`;
+  }
+}
+
+async function pfwForce(id) {
+  if (!confirm('Forçar envio deste WPP agora?')) return;
+  const r = await proxyWrite({ action: 'painel_force_send', queue_type: 'wpp', item_id: id });
+  if (r.ok) { toast(r.msg || 'WPP enviado!'); await pfwLoad(); }
+  else toast(r.msg || r.error || 'Falha no envio', 'error');
+}
+
+async function pfwDelete(id) {
+  if (!confirm('Remover este item da fila?')) return;
+  const r = await proxyWrite({ action: 'painel_maintenance', op: 'delete_item_wpp', item_id: id });
+  if (r.ok) { toast('Item removido!'); await pfwLoad(); }
+  else toast(r.error || 'Erro', 'error');
+}
+
+/* ── IMPORT: FUNÇÕES IMPORTAÇÃO ──────────────────────────────────────────── */
+async function importFuncoesPage() {
+  _clearActiveIntervals();
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page-title">Funções Importação</div>
+    <div class="page-sub">Importe um CSV e enfileire leads em uma sequência de envio.</div>
+    <div class="card">
+      <div class="field-group">
+        <label>Arquivo CSV</label>
+        <input type="file" id="if-file" accept=".csv,.txt" onchange="ifParseCsv(this)" style="font-size:.85rem">
+        <small style="color:var(--text3)">Colunas: nome, email, telefone, cidade, estado, sabotador, tipo (opcionais)</small>
+      </div>
+      <div id="if-preview" style="margin-bottom:16px"></div>
+      <div class="field-group">
+        <label>Sequência</label>
+        <select id="if-seq" style="width:100%;border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;font-size:.88rem">
+          <option value="">Carregando sequências…</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Canal de envio</label>
+        <div style="display:flex;gap:14px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.85rem"><input type="radio" name="if-canal" value="email"> Só E-mail</label>
+          <label style="display:flex;align-items:center;gap=6px;cursor:pointer;font-size:.85rem"><input type="radio" name="if-canal" value="wpp"> Só WPP</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.85rem"><input type="radio" name="if-canal" value="ambos" checked> Ambos</label>
+        </div>
+      </div>
+      <button id="if-btn" onclick="ifSubmit()" style="background:var(--cta);color:#fff;border:none;padding:11px 28px;border-radius:var(--r);font-weight:700;cursor:pointer;font-size:.9rem">Importar e enfileirar</button>
+      <div id="if-result" style="margin-top:16px"></div>
+    </div>`;
+
+  // Load sequences
+  const r = await proxyWrite({ action: 'list_sequences' });
+  const sel = document.getElementById('if-seq');
+  if (sel && r.ok && r.data?.length) {
+    sel.innerHTML = '<option value="">Selecione uma sequência…</option>' +
+      r.data.map(s => {
+        const cnt      = Array.isArray(s.items) ? s.items.length : 0;
+        const wppCnt   = Array.isArray(s.items) ? s.items.filter(i => i.type==='wpp').length : 0;
+        const emailCnt = cnt - wppCnt;
+        return `<option value="${escHtml(s.id)}">${escHtml(s.name)} (${cnt} msgs: ${wppCnt} WPP + ${emailCnt} email)</option>`;
+      }).join('');
+  } else if (sel) {
+    sel.innerHTML = '<option value="">Nenhuma sequência ativa</option>';
+  }
+  window._ifCsvRows = [];
+}
+
+function ifParseCsv(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text  = e.target.result;
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (!lines.length) return;
+    const sep     = lines[0].includes(';') ? ';' : ',';
+    const headers = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/['"]/g,''));
+    window._ifCsvRows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const vals = lines[i].split(sep).map(v => v.trim().replace(/^["']|["']$/g,''));
+      if (vals.every(v => !v)) continue;
+      const row = {};
+      headers.forEach((h, idx) => { row[h] = vals[idx] || ''; });
+      window._ifCsvRows.push(row);
+    }
+    const prev = document.getElementById('if-preview');
+    if (!window._ifCsvRows.length) { prev.innerHTML = '<p style="color:var(--red);font-size:.85rem">Nenhuma linha encontrada.</p>'; return; }
+    const show = window._ifCsvRows.slice(0, 5);
+    prev.innerHTML = `
+      <div style="font-size:.82rem;color:var(--text2);margin-bottom:8px"><strong>${window._ifCsvRows.length}</strong> linha(s). Primeiras ${show.length}:</div>
+      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px">
+        <table style="width:100%;border-collapse:collapse;font-size:.76rem">
+          <thead><tr style="background:#f9fafb">${headers.map(h=>`<th style="padding:5px 9px;text-align:left;border-bottom:1px solid var(--border)">${escHtml(h)}</th>`).join('')}</tr></thead>
+          <tbody>${show.map(row=>`<tr>${headers.map(h=>`<td style="padding:5px 9px;border-bottom:1px solid var(--border)">${escHtml(row[h]||'')}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function ifSubmit() {
+  const rows = window._ifCsvRows || [];
+  if (!rows.length) { toast('Carregue um CSV primeiro', 'error'); return; }
+  const seq_id = document.getElementById('if-seq')?.value;
+  if (!seq_id)  { toast('Selecione uma sequência', 'error'); return; }
+  const canalEl = document.querySelector('input[name="if-canal"]:checked');
+  const canal   = canalEl?.value || 'ambos';
+  const btn = document.getElementById('if-btn');
+  const res = document.getElementById('if-result');
+  if (btn) { btn.disabled = true; btn.textContent = 'Importando…'; }
+  if (res) res.innerHTML = '';
+  const r = await proxyWrite({ action: 'import_with_sequence', rows_json: JSON.stringify(rows), sequence_id: seq_id, canal });
+  if (btn) { btn.disabled = false; btn.textContent = 'Importar e enfileirar'; }
+  if (res) {
+    if (r.ok) {
+      res.innerHTML = `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px;font-size:.85rem;color:#166534">
+        <strong>Concluído!</strong> Total: ${r.total} | Importados: ${r.imported} | Ignorados: ${r.skipped} | Erros: ${r.errors}
+      </div>`;
+      toast(`${r.imported} lead(s) importado(s)!`);
+    } else {
+      res.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:14px;font-size:.85rem;color:var(--red)">Erro: ${escHtml(r.error||'')}</div>`;
+      toast(r.error || 'Erro ao importar', 'error');
+    }
+  }
+}
+
+/* ── IMPORT: DASHBOARD ───────────────────────────────────────────────────── */
+async function importDashboardPage() {
+  _clearActiveIntervals();
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page-title">Dashboard Importação</div>
+    <div class="page-sub">Resumo estatístico dos leads importados.</div>
+    <div id="id-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  const r = await proxyWrite({ action: 'list_imported_leads' });
+  const el = document.getElementById('id-body');
+  if (!r.ok) { el.innerHTML = `<div class="card" style="color:var(--red)">Erro: ${escHtml(r.error||'')}</div>`; return; }
+
+  const data          = r.data || [];
+  const total         = data.length;
+  const withWpp       = data.filter(l => l.optin_wpp).length;
+  const withEmail     = data.filter(l => l.optin_email).length;
+  const enrolled      = data.filter(l => l.automation_enrolled || l.sequence_queued_at).length;
+  const emailBlocked  = data.filter(l => l.email_blocked).length;
+  const withPhone     = data.filter(l => l.phone).length;
+  const withEmailAddr = data.filter(l => l.email).length;
+
+  const stat = (label, val, color) =>
+    `<div class="stat-card"><div class="stat-num" style="color:${color}">${val}</div><div class="stat-label">${label}</div></div>`;
+
+  el.innerHTML = `
+    <div class="stats-grid">
+      ${stat('Total importados', total, 'var(--cta)')}
+      ${stat('Com opt-in WPP', withWpp, '#16a34a')}
+      ${stat('Com opt-in E-mail', withEmail, '#2563eb')}
+      ${stat('Na automação', enrolled, '#7c3aed')}
+      ${stat('E-mail bloqueado', emailBlocked, emailBlocked>0?'var(--red)':'#6b7280')}
+      ${stat('Com telefone', withPhone, '#0891b2')}
+    </div>
+    <div class="card">
+      <div class="card-title">Cobertura de dados</div>
+      ${[
+        ['Com e-mail', withEmailAddr, total],
+        ['Com telefone', withPhone, total],
+        ['Opt-in WPP', withWpp, total],
+        ['Opt-in E-mail', withEmail, total],
+        ['Na automação', enrolled, total],
+      ].map(([label, v, t]) => {
+        const pct = t ? Math.round(v/t*100) : 0;
+        return `<div class="dist-row">
+          <div class="dist-label">${label}</div>
+          <div class="dist-bar-wrap"><div class="dist-bar" style="width:${pct}%"></div></div>
+          <div class="dist-pct">${v} <span style="color:var(--text3);font-weight:400">(${pct}%)</span></div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+/* ── IMPORT: GESTÃO ──────────────────────────────────────────────────────── */
+async function importGestaoPage() {
+  _clearActiveIntervals();
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page-title">Gestão Importação</div>
+    <div class="page-sub">Leads agrupados por campanha/batch de importação.</div>
+    <div id="ig-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  const r = await proxyWrite({ action: 'list_imported_leads' });
+  const el = document.getElementById('ig-body');
+  if (!r.ok) { el.innerHTML = `<div class="card" style="color:var(--red)">Erro: ${escHtml(r.error||'')}</div>`; return; }
+
+  const data   = r.data || [];
+  const batches = {};
+  data.forEach(l => {
+    const b = l.import_batch || '(sem batch)';
+    if (!batches[b]) batches[b] = { name: b, leads: [], first_date: l.created_at };
+    batches[b].leads.push(l);
+    if (l.created_at && l.created_at < batches[b].first_date) batches[b].first_date = l.created_at;
+  });
+
+  const sortedBatches = Object.values(batches).sort((a,b) => (b.first_date||'').localeCompare(a.first_date||''));
+
+  if (!sortedBatches.length) {
+    el.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text3)">Nenhum lead importado ainda.</div>';
+    return;
+  }
+
+  el.innerHTML = sortedBatches.map(b => {
+    const count    = b.leads.length;
+    const enrolled = b.leads.filter(l => l.sequence_queued_at).length;
+    const dateStr  = b.first_date ? new Date(b.first_date).toLocaleString('pt-BR') : '—';
+    return `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:700;font-size:.95rem">${escHtml(b.name)}</div>
+          <div style="font-size:.78rem;color:var(--text3);margin-top:4px">${dateStr}</div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <span style="background:#f3f4f6;padding:2px 9px;border-radius:10px;font-size:.72rem;font-weight:600">${count} leads</span>
+            <span style="background:#f0fdf4;color:#166534;padding:2px 9px;border-radius:10px;font-size:.72rem;font-weight:600">${enrolled} na automação</span>
+            <span style="background:#eff6ff;color:#1e40af;padding:2px 9px;border-radius:10px;font-size:.72rem">${count-enrolled} sem automação</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button onclick="igExportBatch('${escHtml(b.name)}')" style="background:#f3f4f6;border:1px solid var(--border);padding:7px 14px;border-radius:var(--r);cursor:pointer;font-size:.82rem;font-weight:600">Exportar CSV</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  window._igAllLeads = data;
+}
+
+function igExportBatch(batch) {
+  const leads = (window._igAllLeads || []).filter(l => (l.import_batch || '(sem batch)') === batch);
+  if (!leads.length) { toast('Nenhum lead neste batch', 'error'); return; }
+  const cols = ['nome','email','telefone','sabotador','campanha','optin_wpp','optin_email','email_bloqueado','na_automacao','importado_em'];
+  const rows = leads.map(l => [
+    l.name||'', l.email||'', l.phone||'', l.sabotador||'', l.source_campaign||'',
+    l.optin_wpp?'sim':'nao', l.optin_email?'sim':'nao',
+    l.email_blocked?'sim':'nao', l.sequence_queued_at?'sim':'nao',
+    l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '',
+  ]);
+  const csv = [cols, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(csv);
+  a.download = 'batch_' + batch.replace(/[^a-z0-9]/gi,'_').toLowerCase() + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
 }
 
 /* ── INIT ─────────────────────── */

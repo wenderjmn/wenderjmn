@@ -1103,3 +1103,478 @@ function delete_imported_lead() {
     $r = sb_request('DELETE', 'imported_leads?id=eq.' . rawurlencode($id));
     echo json_encode(['ok' => $r['status'] < 300]);
 }
+
+// ── PAINEL — DIAGNÓSTICO E GESTÃO DE FILAS ────────────────────────────────────
+
+function painel_stats() {
+    $now_iso = gmdate('Y-m-d\TH:i:s\Z');
+    $counts = [];
+    foreach ([
+        'leads_total'   => 'leads?select=id',
+        'leads_queued'  => 'leads?sequence_queued_at=not.is.null&select=id',
+        'email_sent'    => 'email_queue?status=eq.sent&select=id',
+        'email_pend'    => 'email_queue?status=eq.pending&select=id',
+        'email_fail'    => 'email_queue?status=eq.failed&select=id',
+        'email_stuck'   => 'email_queue?status=eq.processing&select=id',
+        'wpp_sent'      => 'whatsapp_queue?status=eq.sent&select=id',
+        'wpp_pend'      => 'whatsapp_queue?status=eq.pending&select=id',
+        'wpp_fail'      => 'whatsapp_queue?status=eq.failed&select=id',
+        'wpp_stuck'     => 'whatsapp_queue?status=eq.processing&select=id',
+        'email_overdue' => 'email_queue?status=eq.pending&scheduled_at=lte.' . $now_iso . '&select=id',
+        'wpp_overdue'   => 'whatsapp_queue?status=eq.pending&scheduled_at=lte.' . $now_iso . '&select=id',
+    ] as $key => $path) {
+        $r = sb_request('GET', $path, null, '', ['Prefer: count=exact']);
+        $counts[$key] = $r['count'] ?? count((array)($r['body'] ?? []));
+    }
+    echo json_encode(array_merge(['ok' => true], $counts));
+}
+
+function painel_maintenance() {
+    $op      = trim($_POST['op'] ?? '');
+    $item_id = trim($_POST['item_id'] ?? '');
+
+    switch ($op) {
+        case 'retry_failed_email':
+            $r = sb_request('PATCH', 'email_queue?status=eq.failed', ['status'=>'pending','attempts'=>0,'error_msg'=>null]);
+            echo json_encode(['ok' => $r['status'] < 300, 'msg' => 'E-mails com falha reenfileirados']);
+            break;
+        case 'retry_failed_wpp':
+            $r = sb_request('PATCH', 'whatsapp_queue?status=eq.failed', ['status'=>'pending','attempts'=>0,'error_msg'=>null]);
+            echo json_encode(['ok' => $r['status'] < 300, 'msg' => 'WPP com falha reenfileirados']);
+            break;
+        case 'reset_stuck_email':
+            $r = sb_request('PATCH', 'email_queue?status=eq.processing', ['status'=>'pending','attempts'=>0]);
+            echo json_encode(['ok' => $r['status'] < 300, 'msg' => 'E-mails travados resetados']);
+            break;
+        case 'reset_stuck_wpp':
+            $r = sb_request('PATCH', 'whatsapp_queue?status=eq.processing', ['status'=>'pending','attempts'=>0]);
+            echo json_encode(['ok' => $r['status'] < 300, 'msg' => 'WPP travados resetados']);
+            break;
+        case 'delete_failed_email':
+            $r = sb_request('DELETE', 'email_queue?status=eq.failed');
+            echo json_encode(['ok' => $r['status'] < 300, 'msg' => 'E-mails com falha excluídos']);
+            break;
+        case 'delete_failed_wpp':
+            $r = sb_request('DELETE', 'whatsapp_queue?status=eq.failed');
+            echo json_encode(['ok' => $r['status'] < 300, 'msg' => 'WPP com falha excluídos']);
+            break;
+        case 'delete_pending_email':
+            $r = sb_request('DELETE', 'email_queue?status=eq.pending');
+            echo json_encode(['ok' => $r['status'] < 300, 'msg' => 'Fila de e-mails pendentes limpa']);
+            break;
+        case 'delete_pending_wpp':
+            $r = sb_request('DELETE', 'whatsapp_queue?status=eq.pending');
+            echo json_encode(['ok' => $r['status'] < 300, 'msg' => 'Fila de WPP pendentes limpa']);
+            break;
+        case 'delete_item_email':
+            if (!is_valid_uuid($item_id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+            $r = sb_request('DELETE', 'email_queue?id=eq.' . rawurlencode($item_id));
+            echo json_encode(['ok' => $r['status'] < 300, 'msg' => 'Item removido da fila']);
+            break;
+        case 'delete_item_wpp':
+            if (!is_valid_uuid($item_id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+            $r = sb_request('DELETE', 'whatsapp_queue?id=eq.' . rawurlencode($item_id));
+            echo json_encode(['ok' => $r['status'] < 300, 'msg' => 'Item removido da fila']);
+            break;
+        default:
+            echo json_encode(['ok'=>false,'error'=>'Operação desconhecida: '.$op]);
+    }
+}
+
+function painel_queue_list() {
+    $queue = trim($_POST['queue'] ?? '');
+    switch ($queue) {
+        case 'email_pending':
+            $r = sb_request('GET', 'email_queue', null,
+                'status=eq.pending&order=scheduled_at.asc&limit=200&select=id,lead_id,to_email,to_name,template_slug,scheduled_at,attempts');
+            break;
+        case 'email_failed':
+            $r = sb_request('GET', 'email_queue', null,
+                'status=eq.failed&order=created_at.desc&limit=50&select=id,lead_id,to_email,to_name,template_slug,attempts,error_msg');
+            break;
+        case 'email_sent':
+            $r = sb_request('GET', 'email_queue', null,
+                'status=eq.sent&order=sent_at.desc&limit=30&select=id,lead_id,to_email,to_name,template_slug,sent_at');
+            break;
+        case 'wpp_pending':
+            $r = sb_request('GET', 'whatsapp_queue', null,
+                'status=eq.pending&order=scheduled_at.asc&limit=200&select=id,lead_id,to_phone,to_name,message,scheduled_at,attempts');
+            break;
+        case 'wpp_failed':
+            $r = sb_request('GET', 'whatsapp_queue', null,
+                'status=eq.failed&order=created_at.desc&limit=50&select=id,lead_id,to_phone,to_name,message,attempts,error_msg');
+            break;
+        case 'wpp_sent':
+            $r = sb_request('GET', 'whatsapp_queue', null,
+                'status=eq.sent&order=sent_at.desc&limit=50&select=id,lead_id,to_phone,to_name,message,sent_at,delivery_status');
+            break;
+        default:
+            echo json_encode(['ok'=>false,'error'=>'Queue inválida: '.$queue]); return;
+    }
+    echo json_encode(['ok' => $r['status'] < 300, 'items' => $r['body'] ?? []]);
+}
+
+function painel_force_send() {
+    $queue_type = trim($_POST['queue_type'] ?? '');
+    $item_id    = trim($_POST['item_id']    ?? '');
+    if (!is_valid_uuid($item_id))      { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    if (!in_array($queue_type, ['email','wpp'], true)) { echo json_encode(['ok'=>false,'error'=>'queue_type inválido']); return; }
+
+    if ($queue_type === 'email') {
+        $items = sb_get('email_queue?id=eq.' . rawurlencode($item_id) . '&status=in.(pending,failed)&limit=1');
+        if (empty($items)) { echo json_encode(['ok'=>false,'error'=>'Item não encontrado ou já enviado']); return; }
+        $item = $items[0];
+        sb_request('PATCH', 'email_queue?id=eq.' . rawurlencode($item_id), ['status'=>'processing','attempts'=>($item['attempts']+1)]);
+        $tpls = sb_get('email_templates?slug=eq.' . rawurlencode($item['template_slug']) . '&limit=1');
+        if (empty($tpls)) {
+            sb_request('PATCH', 'email_queue?id=eq.' . rawurlencode($item_id), ['status'=>'failed','error_msg'=>'template not found']);
+            echo json_encode(['ok'=>false,'error'=>'Template não encontrado']); return;
+        }
+        $tpl   = $tpls[0];
+        $extra = $item['extra_vars'] ?? [];
+        if (is_string($extra)) $extra = json_decode($extra, true) ?: [];
+        $vars = array_merge([
+            '{{nome}}'             => htmlspecialchars($item['to_name'] ?? 'você'),
+            '{{link_descadastro}}' => 'https://www.oficialemagreser.com/descadastro.php?email='.urlencode($item['to_email']),
+            '{{link_wpp}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
+            '{{link_site}}'        => 'https://www.oficialemagreser.com',
+            '{{emoji}}'            => '', '{{tipo}}' => '', '{{titulo}}' => '', '{{descricao}}' => '',
+        ], $extra);
+        $subject = str_replace(array_keys($vars), array_values($vars), $tpl['subject']);
+        $body    = str_replace(array_keys($vars), array_values($vars), $tpl['body_html']);
+        if (stripos($body, '<html') === false)
+            $body = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"></head><body>'.$body.'</body></html>';
+        $result = send_smtp($item['to_email'], $item['to_name'] ?? '', $subject, $body);
+        if ($result['ok']) {
+            $now = gmdate('Y-m-d\TH:i:s\Z');
+            sb_request('PATCH', 'email_queue?id=eq.' . rawurlencode($item_id), ['status'=>'sent','sent_at'=>$now]);
+            sb_request('POST', 'email_log', [['queue_id'=>$item_id,'lead_id'=>$item['lead_id'],'to_email'=>$item['to_email'],'template_slug'=>$item['template_slug'],'smtp_response'=>'forced']]);
+            echo json_encode(['ok'=>true,'msg'=>'E-mail enviado: '.$item['to_email']]);
+        } else {
+            sb_request('PATCH', 'email_queue?id=eq.' . rawurlencode($item_id), ['status'=>'failed','error_msg'=>$result['msg'],'attempts'=>($item['attempts']+1)]);
+            echo json_encode(['ok'=>false,'msg'=>$result['msg']]);
+        }
+    } else {
+        // wpp
+        $items = sb_get('whatsapp_queue?id=eq.' . rawurlencode($item_id) . '&limit=1');
+        if (empty($items)) { echo json_encode(['ok'=>false,'error'=>'Item não encontrado']); return; }
+        $item   = $items[0];
+        $result = send_whatsapp($item['to_phone'], $item['message']);
+        if ($result['ok']) {
+            $now = gmdate('Y-m-d\TH:i:s\Z');
+            sb_request('PATCH', 'whatsapp_queue?id=eq.' . rawurlencode($item_id), ['status'=>'sent','sent_at'=>$now,'zapi_message_id'=>$result['zaapId']??null,'delivery_status'=>'sent']);
+            echo json_encode(['ok'=>true,'msg'=>'WPP enviado para '.$item['to_phone']]);
+        } else {
+            sb_request('PATCH', 'whatsapp_queue?id=eq.' . rawurlencode($item_id), ['status'=>'failed','error_msg'=>$result['msg'],'attempts'=>($item['attempts']+1)]);
+            echo json_encode(['ok'=>false,'msg'=>$result['msg']]);
+        }
+    }
+}
+
+function painel_process_now() {
+    $now_iso = gmdate('Y-m-d\TH:i:s\Z');
+    $pending = sb_get('email_queue?status=eq.pending&scheduled_at=lte.'.$now_iso.'&attempts=lt.3&order=scheduled_at.asc&limit=20');
+    $sent_c = 0; $fail_c = 0;
+    foreach ($pending as $item) {
+        if (!is_array($item) || !isset($item['id'])) continue;
+        sb_request('PATCH', 'email_queue?id=eq.' . rawurlencode($item['id']), ['attempts'=>($item['attempts']+1)]);
+        $tpls = sb_get('email_templates?slug=eq.'.rawurlencode($item['template_slug']).'&limit=1');
+        if (empty($tpls)) {
+            sb_request('PATCH', 'email_queue?id=eq.' . rawurlencode($item['id']), ['status'=>'failed','error_msg'=>'template not found']);
+            $fail_c++; continue;
+        }
+        $tpl   = $tpls[0];
+        $extra = $item['extra_vars'] ?? [];
+        if (is_string($extra)) $extra = json_decode($extra, true) ?: [];
+        $vars = array_merge([
+            '{{nome}}'             => htmlspecialchars($item['to_name'] ?? 'você'),
+            '{{link_descadastro}}' => 'https://www.oficialemagreser.com/descadastro.php?email='.urlencode($item['to_email']),
+            '{{link_wpp}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
+            '{{link_site}}'        => 'https://www.oficialemagreser.com',
+            '{{emoji}}'            => '', '{{tipo}}' => '', '{{titulo}}' => '', '{{descricao}}' => '',
+        ], $extra);
+        $subject = str_replace(array_keys($vars), array_values($vars), $tpl['subject']);
+        $body    = str_replace(array_keys($vars), array_values($vars), $tpl['body_html']);
+        if (stripos($body,'<html') === false)
+            $body = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"></head><body>'.$body.'</body></html>';
+        $result = send_smtp($item['to_email'], $item['to_name'] ?? '', $subject, $body);
+        if ($result['ok']) {
+            sb_request('PATCH', 'email_queue?id=eq.' . rawurlencode($item['id']), ['status'=>'sent','sent_at'=>$now_iso]);
+            sb_request('POST', 'email_log', [['queue_id'=>$item['id'],'lead_id'=>$item['lead_id'],'to_email'=>$item['to_email'],'template_slug'=>$item['template_slug'],'smtp_response'=>'process_now']]);
+            $sent_c++;
+        } else {
+            $status_new = ($item['attempts'] >= 2) ? 'failed' : 'pending';
+            sb_request('PATCH', 'email_queue?id=eq.' . rawurlencode($item['id']), ['status'=>$status_new,'error_msg'=>$result['msg']]);
+            $fail_c++;
+        }
+        usleep(300000);
+    }
+
+    $wpp_pending = sb_get('whatsapp_queue?status=eq.pending&scheduled_at=lte.'.$now_iso.'&attempts=lt.3&order=scheduled_at.asc&limit=10');
+    $wpp_sent_c = 0;
+    foreach ($wpp_pending as $item) {
+        if (!is_array($item) || !isset($item['id'])) continue;
+        sb_request('PATCH', 'whatsapp_queue?id=eq.' . rawurlencode($item['id']), ['attempts'=>($item['attempts']+1)]);
+        $result = send_whatsapp($item['to_phone'], $item['message']);
+        if ($result['ok']) {
+            sb_request('PATCH', 'whatsapp_queue?id=eq.' . rawurlencode($item['id']), ['status'=>'sent','sent_at'=>$now_iso,'zapi_message_id'=>$result['zaapId']??null,'delivery_status'=>'sent']);
+            $wpp_sent_c++;
+        } else {
+            $status_new = ($item['attempts'] >= 2) ? 'failed' : 'pending';
+            sb_request('PATCH', 'whatsapp_queue?id=eq.' . rawurlencode($item['id']), ['status'=>$status_new,'error_msg'=>$result['msg']]);
+        }
+        usleep(300000);
+    }
+
+    if ($sent_c === 0 && $fail_c === 0 && $wpp_sent_c === 0) {
+        $msg = 'Nenhum item vencido na fila agora.';
+    } else {
+        $msg = "E-mails enviados: {$sent_c} | Falhas e-mail: {$fail_c} | WPP enviados: {$wpp_sent_c}";
+    }
+    echo json_encode(['ok'=>true,'msg'=>$msg,'email_sent'=>$sent_c,'email_fail'=>$fail_c,'wpp_sent'=>$wpp_sent_c]);
+}
+
+function painel_worker_status() {
+    $log_file = dirname(__DIR__) . '/email_worker.log';
+    // Fallback: check same directory
+    if (!file_exists($log_file)) {
+        $log_file = __DIR__ . '/../email_worker.log';
+    }
+    $log_exists = file_exists($log_file);
+    $log_lines  = [];
+    $log_age_ok = false;
+    if ($log_exists) {
+        $content    = file_get_contents($log_file);
+        $all_lines  = array_filter(explode("\n", trim($content)));
+        $log_lines  = array_values(array_slice($all_lines, -5));
+        $log_age_ok = (time() - filemtime($log_file)) < 1800;
+    }
+    echo json_encode([
+        'ok'            => true,
+        'log_available' => $log_exists,
+        'log_age_ok'    => $log_age_ok,
+        'log_lines'     => $log_lines,
+    ]);
+}
+
+// ── IMPORTAÇÃO COM SEQUÊNCIA ──────────────────────────────────────────────────
+
+function import_with_sequence() {
+    $rows_json   = $_POST['rows_json']   ?? '[]';
+    $sequence_id = trim($_POST['sequence_id'] ?? '');
+    $canal       = trim($_POST['canal']       ?? 'ambos');
+
+    if (!is_valid_uuid($sequence_id)) { echo json_encode(['ok'=>false,'error'=>'sequence_id inválido']); return; }
+    if (!in_array($canal, ['email','wpp','ambos'], true)) $canal = 'ambos';
+
+    $rows = json_decode($rows_json, true);
+    if (!is_array($rows) || empty($rows)) { echo json_encode(['ok'=>false,'error'=>'Nenhuma linha no CSV']); return; }
+
+    // Carrega sequência ativa
+    $seq_data = sb_get('sequences?id=eq.' . rawurlencode($sequence_id) . '&is_active=eq.true&select=name,items&limit=1');
+    if (empty($seq_data[0]['items'])) { echo json_encode(['ok'=>false,'error'=>'Sequência não encontrada ou inativa']); return; }
+    $seq_items = $seq_data[0]['items'];
+
+    $tz   = new DateTimeZone('America/Sao_Paulo');
+    $base = new DateTime('now', $tz);
+
+    $total    = count($rows);
+    $imported = 0;
+    $skipped  = 0;
+    $errors   = 0;
+
+    foreach ($rows as $i => $row) {
+        $name   = trim($row['nome']     ?? $row['name']      ?? '');
+        $email  = strtolower(trim($row['email'] ?? $row['e-mail'] ?? ''));
+        $phone  = preg_replace('/\D/', '', $row['telefone']  ?? $row['phone'] ?? $row['whatsapp'] ?? '');
+        $cidade = trim($row['cidade']   ?? '');
+        $estado = strtoupper(trim($row['estado'] ?? ''));
+        $sab    = strtoupper(trim($row['sabotador'] ?? $row['perfil'] ?? ''));
+        $tipo   = strtolower(trim($row['tipo'] ?? $row['origem'] ?? ''));
+
+        // Validações por canal
+        if (in_array($canal, ['email', 'ambos']) && (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL))) {
+            if ($canal === 'email') { $skipped++; continue; }
+        }
+        if (in_array($canal, ['wpp', 'ambos']) && (!$phone || strlen($phone) < 10)) {
+            if ($canal === 'wpp') { $skipped++; continue; }
+        }
+        if (!$name) $name = $email ? explode('@', $email)[0] : 'Lead ' . ($i + 2);
+
+        // Upsert lead
+        $existing = $email
+            ? sb_get('leads?email=eq.' . rawurlencode($email) . '&select=id,sequence_queued_at&limit=1')
+            : [];
+
+        if (!empty($existing)) {
+            if (!empty($existing[0]['sequence_queued_at'])) { $skipped++; continue; }
+            $lead_id = $existing[0]['id'];
+        } else {
+            $created = sb_get_with_return('leads', [
+                'name'            => $name,
+                'email'           => $email  ?: null,
+                'phone'           => $phone  ?: null,
+                'cidade'          => $cidade ?: null,
+                'estado'          => $estado ?: null,
+                'sabotador'       => $sab    ?: null,
+                'source'          => 'import',
+                'source_campaign' => 'reengajamento_2026',
+                'utm_medium'      => $tipo   ?: null,
+            ]);
+            if (empty($created[0]['id'])) { $errors++; continue; }
+            $lead_id = $created[0]['id'];
+        }
+
+        $perfis_nomes = [
+            'A' => 'Recompensadora', 'B' => 'Piloto Automático',
+            'C' => 'Prisioneira do Esforço', 'D' => 'Compensadora Noturna',
+        ];
+        $nome_perfil = $sab ? ($perfis_nomes[$sab] ?? 'Perfil Sabotador') : 'Perfil Sabotador';
+
+        $vars_email = [
+            '{{nome}}'             => htmlspecialchars($name),
+            '{{nome_lead}}'        => htmlspecialchars($name),
+            '{{nome_perfil}}'      => htmlspecialchars($nome_perfil),
+            '{{link_site}}'        => 'https://www.oficialemagreser.com',
+            '{{link_wpp}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
+            '{{link_vip}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
+            '{{link_hotmart}}'     => getenv('HOTMART_LINK') ?: 'https://pay.hotmart.com/emagreser',
+            '{{link_descadastro}}' => 'https://www.oficialemagreser.com/descadastro.php?email='.urlencode($email),
+            '{{emoji}}'            => '🎯', '{{tipo}}' => $nome_perfil,
+            '{{titulo}}'           => 'Descubra seu padrão comportamental', '{{descricao}}' => '',
+        ];
+
+        $tel = $phone ? '55' . ltrim($phone, '0') : '';
+
+        foreach ($seq_items as $item) {
+            $type = $item['type'] ?? '';
+            if (!in_array($type, ['wpp', 'email'])) continue;
+            if ($canal === 'email' && $type !== 'email') continue;
+            if ($canal === 'wpp'   && $type !== 'wpp')   continue;
+
+            $send_at = seq_schedule_proxy($item, $base, $tz);
+            if (!$send_at || strtotime($send_at) < time() - 60) continue;
+
+            if ($type === 'email' && $email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $slug = trim($item['template_slug'] ?? '');
+                if (!$slug) continue;
+                sb_request('POST', 'email_queue', [[
+                    'lead_id'       => $lead_id,
+                    'template_slug' => $slug,
+                    'to_email'      => $email,
+                    'to_name'       => $name,
+                    'extra_vars'    => $vars_email,
+                    'scheduled_at'  => $send_at,
+                    'status'        => 'pending',
+                ]]);
+            } elseif ($type === 'wpp' && $tel && strlen($phone) >= 10) {
+                $msg = seq_sub_vars_proxy($item['message'] ?? '', $name, $nome_perfil);
+                if (!$msg) continue;
+                sb_request('POST', 'whatsapp_queue', [[
+                    'lead_id'      => $lead_id,
+                    'to_phone'     => $tel,
+                    'to_name'      => $name,
+                    'message'      => $msg,
+                    'scheduled_at' => $send_at,
+                    'status'       => 'pending',
+                ]]);
+            }
+        }
+
+        sb_request('PATCH', 'leads?id=eq.' . rawurlencode($lead_id), [
+            'sequence_queued_at' => $base->format(DateTime::ATOM),
+            'source_campaign'    => 'reengajamento_2026',
+            'source'             => 'import',
+        ]);
+
+        $imported++;
+        usleep(50000);
+    }
+
+    echo json_encode(['ok'=>true,'total'=>$total,'imported'=>$imported,'skipped'=>$skipped,'errors'=>$errors]);
+}
+
+// ── HELPERS PRIVADOS ──────────────────────────────────────────────────────────
+
+function sb_get(string $path): array {
+    $r = sb_request('GET', $path);
+    return is_array($r['body']) ? $r['body'] : [];
+}
+
+function sb_get_with_return(string $table, array $data): array {
+    $r = sb_request('POST', $table, [$data], '', ['Prefer: return=representation']);
+    return is_array($r['body']) ? $r['body'] : [];
+}
+
+function seq_schedule_proxy(array $item, DateTime $base, DateTimeZone $tz): ?string {
+    if (!empty($item['fixed_date'])) {
+        $time = $item['fixed_time'] ?? '09:00';
+        $dt   = DateTime::createFromFormat('Y-m-d H:i', $item['fixed_date'] . ' ' . $time, $tz);
+        return $dt ? $dt->format(DateTime::ATOM) : null;
+    }
+    $hours = (int)($item['delay_hours'] ?? 0);
+    $dt    = clone $base;
+    $dt->modify("+{$hours} hours");
+    return $dt->format(DateTime::ATOM);
+}
+
+function seq_sub_vars_proxy(string $msg, string $name, string $perfil): string {
+    return str_replace(
+        ['{{nome_lead}}', '{{nome}}', '{{nome_perfil}}', '{{link_vip}}', '{{link_hotmart}}', '{{link_site}}'],
+        [$name, $name, $perfil, 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ', getenv('HOTMART_LINK') ?: 'https://pay.hotmart.com/emagreser', 'https://www.oficialemagreser.com'],
+        $msg
+    );
+}
+
+function send_smtp(string $to, string $toName, string $subject, string $body): array {
+    $resend_key = getenv('RESEND_API_KEY') ?: '';
+    if (!$resend_key) return ['ok'=>false,'msg'=>'RESEND_API_KEY não configurada'];
+    $from    = 'Programa EmagreSer <emagreser@oficialemagreser.com>';
+    $text    = strip_tags(str_replace(['<br>','<br/>','<br />'], "\n", $body));
+    $payload = json_encode([
+        'from'     => $from,
+        'to'       => [$toName ? "{$toName} <{$to}>" : $to],
+        'reply_to' => 'emagreser@oficialemagreser.com',
+        'subject'  => $subject,
+        'html'     => $body,
+        'text'     => $text,
+    ]);
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_TIMEOUT        => 20,
+        CURLOPT_HTTPHEADER     => ['Authorization: Bearer '.$resend_key, 'Content-Type: application/json'],
+    ]);
+    $res  = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err  = curl_error($ch);
+    curl_close($ch);
+    if ($err) return ['ok'=>false,'msg'=>"cURL: {$err}"];
+    $data = json_decode($res, true);
+    if ($code === 200 || $code === 201) return ['ok'=>true,'msg'=>'resend_id:'.($data['id']??'ok')];
+    return ['ok'=>false,'msg'=>"Resend [{$code}]: ".($data['message']??$res)];
+}
+
+function send_whatsapp(string $phone, string $message): array {
+    $instance      = getenv('ZAPI_INSTANCE')     ?: '';
+    $token         = getenv('ZAPI_TOKEN')        ?: '';
+    $client_token  = getenv('ZAPI_CLIENT_TOKEN') ?: '';
+    if (!$instance || !$token) return ['ok'=>false,'msg'=>'ZAPI não configurado','zaapId'=>null];
+    $url = 'https://api.z-api.io/instances/' . $instance . '/token/' . $token . '/send-text';
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode(['phone'=>$phone,'message'=>$message]),
+        CURLOPT_TIMEOUT        => 15,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json','Client-Token: '.$client_token],
+    ]);
+    $res  = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    $data = json_decode($res, true);
+    if ($code === 200 && !empty($data['zaapId'])) return ['ok'=>true,'msg'=>'sent','zaapId'=>$data['zaapId']];
+    return ['ok'=>false,'msg'=>$res,'zaapId'=>null];
+}
