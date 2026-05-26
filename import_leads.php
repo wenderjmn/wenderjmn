@@ -27,6 +27,7 @@ define('SITE_URL',             'https://www.oficialemagreser.com');
 define('WPP_LINK',             'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ');
 define('HOTMART_LINK',         getenv('HOTMART_LINK')         ?: 'https://pay.hotmart.com/emagreser');
 define('IRA_VIDEO_URL',        getenv('IRA_VIDEO_URL')        ?: '');
+define('OPTIN_VIDEO_URL',      getenv('OPTIN_VIDEO_URL')      ?: '');
 
 $is_cli = php_sapi_name() === 'cli';
 

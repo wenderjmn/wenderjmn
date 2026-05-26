@@ -793,18 +793,40 @@ function send_optin_wpp() {
     if (empty($lead['phone'])) { echo json_encode(['ok'=>false,'error'=>'Lead sem telefone']); return; }
     if ($lead['wpp_optout'] === true) { echo json_encode(['ok'=>false,'error'=>'Lead com opt-out ativo']); return; }
 
-    $nome = $lead['name'] ?? 'você';
-    $msg  = "Olá, *{$nome}*! 👋\n\nSou da equipe do Programa *EmagreSer* com a Dra. Daniely.\n\nVocê está na nossa lista e gostaríamos de compartilhar conteúdos gratuitos sobre emagrecimento saudável, incluindo acesso à nossa Masterclass *\"O Código dos Sabotadores\"* em 11/06.\n\n✅ Para continuar recebendo, *responda SIM*.\n🚫 Para não receber mais, *responda NÃO* e não entraremos mais em contato.";
+    $nome      = $lead['name'] ?? 'você';
+    $video_url = defined('OPTIN_VIDEO_URL') ? OPTIN_VIDEO_URL : getenv('OPTIN_VIDEO_URL');
 
-    $now = gmdate('Y-m-d\TH:i:s\Z');
-    $r = sb_request('POST', 'whatsapp_queue', [[
-        'lead_id'      => $lead['id'],
-        'to_phone'     => $lead['phone'],
-        'to_name'      => $nome,
-        'message'      => $msg,
-        'scheduled_at' => $now,
-        'status'       => 'pending',
-    ]]);
+    // Mensagem 1 (imediata): apresentação + vídeo do programa
+    if ($video_url) {
+        $msg1 = "Olá, *{$nome}*! 👋\n\nSou da equipe do Programa *EmagreSer* com a Dra. Daniely e a Ira.\n\nGravamos um vídeo especial de apresentação para você entender como nosso programa funciona 👇\n\n{$video_url}";
+    } else {
+        $msg1 = "Olá, *{$nome}*! 👋\n\nSou da equipe do Programa *EmagreSer* com a Dra. Daniely e a Ira.\n\nVocê faz parte de uma lista especial e queremos te apresentar nosso programa de emagrecimento saudável, que trabalha os padrões neurológicos que sabotam o resultado.";
+    }
+
+    // Mensagem 2 (5 min depois): pergunta de opt-in
+    $msg2 = "*{$nome}*, o que achou? 😊\n\nGostaríamos de continuar te enviando conteúdos gratuitos e o acesso à nossa *Masterclass ao vivo* no dia *11/06 às 20h* — 100% gratuita.\n\n✅ *Responda SIM* para continuar recebendo.\n🚫 *Responda NÃO* se preferir não receber mais.\n\nSua resposta é muito importante para nós! 🙏";
+
+    $now      = gmdate('Y-m-d\TH:i:s\Z');
+    $five_min = gmdate('Y-m-d\TH:i:s\Z', strtotime('+5 minutes'));
+
+    $r = sb_request('POST', 'whatsapp_queue', [
+        [
+            'lead_id'      => $lead['id'],
+            'to_phone'     => $lead['phone'],
+            'to_name'      => $nome,
+            'message'      => $msg1,
+            'scheduled_at' => $now,
+            'status'       => 'pending',
+        ],
+        [
+            'lead_id'      => $lead['id'],
+            'to_phone'     => $lead['phone'],
+            'to_name'      => $nome,
+            'message'      => $msg2,
+            'scheduled_at' => $five_min,
+            'status'       => 'pending',
+        ],
+    ]);
 
     if ($r['status'] < 300) {
         // Marca opt-in como pendente
