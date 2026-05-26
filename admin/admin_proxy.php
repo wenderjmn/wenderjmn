@@ -101,6 +101,12 @@ switch ($action) {
     case 'set_optin_status':   require_auth(); set_optin_status();   break;
     case 'send_optin_wpp':     require_auth(); send_optin_wpp();     break;
     case 'cancel_lead_emails': require_auth(); cancel_lead_emails(); break;
+    case 'list_imported_leads':       require_auth(); list_imported_leads();       break;
+    case 'import_csv_batch':          require_auth(); import_csv_batch();          break;
+    case 'toggle_imported_optin':     require_auth(); toggle_imported_optin();     break;
+    case 'enqueue_imported_lead':     require_auth(); enqueue_imported_lead();     break;
+    case 'enqueue_imported_bulk':     require_auth(); enqueue_imported_bulk();     break;
+    case 'delete_imported_lead':      require_auth(); delete_imported_lead();      break;
 
     // Gestão de usuários (apenas super_admin ou perm_usuarios)
     case 'list_users':    require_auth(); list_users();    break;
@@ -941,4 +947,148 @@ function sb_request(string $method, string $path, ?array $body = null, string $q
     }
 
     return ['status' => $status, 'body' => json_decode($response, true), 'count' => $count];
+}
+
+// ── IMPORTED LEADS ───────────────────────────────────────────────────────────
+
+function list_imported_leads() {
+    require_perm('leads');
+    $batch  = trim($_POST['batch']  ?? '');
+    $filter = trim($_POST['filter'] ?? '');
+    $qs = 'select=id,name,email,phone,sabotador,source,source_campaign,optin_wpp,optin_email,email_blocked,wpp_optout,automation_enrolled,sequence_queued_at,import_batch,notes,created_at&order=created_at.desc&limit=2000';
+    if ($batch) $qs .= '&import_batch=eq.' . rawurlencode($batch);
+    $r = sb_request('GET', 'imported_leads', null, $qs);
+    echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
+}
+
+function import_csv_batch() {
+    require_perm('leads');
+    $rows_json = $_POST['rows'] ?? '[]';
+    $batch     = trim($_POST['batch'] ?? '');
+    if (!$batch) { echo json_encode(['ok'=>false,'error'=>'Batch obrigatório']); return; }
+    $rows = json_decode($rows_json, true);
+    if (!is_array($rows) || empty($rows)) { echo json_encode(['ok'=>false,'error'=>'Sem registros']); return; }
+
+    $records = [];
+    foreach ($rows as $row) {
+        $name  = trim($row['nome']  ?? $row['name']     ?? '');
+        $email = trim($row['email'] ?? '');
+        $phone = trim($row['telefone'] ?? $row['phone'] ?? '');
+        $sab   = trim($row['sabotador'] ?? '') ?: 'IG — Sem mapeamento';
+        $camp  = trim($row['campanha']  ?? $row['source_campaign'] ?? '');
+        if (!$name && !$email && !$phone) continue;
+        // Normaliza telefone
+        $ph = preg_replace('/\D/','',$phone);
+        if (strlen($ph)===11) $ph='55'.$ph;
+        elseif(strlen($ph)===10) $ph='550'.$ph;
+        $records[] = [
+            'name'            => $name,
+            'email'           => $email ?: null,
+            'phone'           => $ph    ?: null,
+            'sabotador'       => $sab,
+            'source_campaign' => $camp  ?: null,
+            'import_batch'    => $batch,
+            'created_at'      => gmdate('c'),
+            'updated_at'      => gmdate('c'),
+        ];
+    }
+    if (empty($records)) { echo json_encode(['ok'=>false,'error'=>'Nenhum registro válido']); return; }
+    $r = sb_request('POST', 'imported_leads', $records, 'on_conflict=email');
+    echo json_encode(['ok' => $r['status'] < 300, 'imported' => count($records)]);
+}
+
+function toggle_imported_optin() {
+    require_perm('leads');
+    $id    = trim($_POST['id']    ?? '');
+    $field = trim($_POST['field'] ?? ''); // optin_wpp | optin_email
+    $val   = ($_POST['value'] ?? '0') === '1';
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    if (!in_array($field, ['optin_wpp','optin_email','email_blocked','wpp_optout'], true)) {
+        echo json_encode(['ok'=>false,'error'=>'Campo inválido']); return;
+    }
+    $r = sb_request('PATCH', 'imported_leads?id=eq.' . rawurlencode($id), [$field => $val, 'updated_at' => gmdate('c')]);
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+function enqueue_imported_lead() {
+    require_perm('leads');
+    $id   = trim($_POST['id']   ?? '');
+    $type = trim($_POST['type'] ?? ''); // email | wpp | both
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    if (!in_array($type, ['email','wpp','both'], true)) { echo json_encode(['ok'=>false,'error'=>'Tipo inválido']); return; }
+
+    $leads = sb_get('imported_leads?id=eq.' . rawurlencode($id) . '&select=id,name,email,phone,sabotador&limit=1');
+    if (empty($leads)) { echo json_encode(['ok'=>false,'error'=>'Lead não encontrado']); return; }
+    $lead = $leads[0];
+    $now  = gmdate('c');
+    $inserted = 0;
+
+    if (in_array($type, ['email','both']) && !empty($lead['email'])) {
+        $r = sb_request('POST', 'email_queue', [[
+            'lead_id'       => $lead['id'],
+            'template_slug' => 'reengajamento_1',
+            'to_email'      => $lead['email'],
+            'to_name'       => $lead['name'] ?? '',
+            'scheduled_at'  => $now,
+            'status'        => 'pending',
+        ]]);
+        if ($r['status'] < 300) $inserted++;
+    }
+    if (in_array($type, ['wpp','both']) && !empty($lead['phone'])) {
+        $nome = $lead['name'] ?? 'você';
+        $msg  = "Olá, *{$nome}*! 🌱\n\nAqui é a Daniely, do Programa EmagreSer.\n\nVocê faz parte do nosso grupo especial e eu quero te convidar para a nossa Masterclass gratuita *\"O Código dos Sabotadores\"* — 11/06 às 20h.\n\nResponda esta mensagem para receber o link! 👇";
+        $r = sb_request('POST', 'whatsapp_queue', [[
+            'lead_id'      => $lead['id'],
+            'to_phone'     => $lead['phone'],
+            'to_name'      => $nome,
+            'message'      => $msg,
+            'scheduled_at' => $now,
+            'status'       => 'pending',
+        ]]);
+        if ($r['status'] < 300) $inserted++;
+    }
+
+    sb_request('PATCH', 'imported_leads?id=eq.' . rawurlencode($id), ['sequence_queued_at' => $now, 'updated_at' => $now]);
+    echo json_encode(['ok' => $inserted > 0, 'inserted' => $inserted]);
+}
+
+function enqueue_imported_bulk() {
+    require_perm('leads');
+    $ids_json = $_POST['ids']  ?? '[]';
+    $type     = trim($_POST['type'] ?? 'both');
+    $ids = json_decode($ids_json, true);
+    if (!is_array($ids) || empty($ids)) { echo json_encode(['ok'=>false,'error'=>'Sem IDs']); return; }
+    if (!in_array($type, ['email','wpp','both'], true)) { echo json_encode(['ok'=>false,'error'=>'Tipo inválido']); return; }
+
+    // Only valid UUIDs
+    $ids = array_filter($ids, 'is_valid_uuid');
+    if (empty($ids)) { echo json_encode(['ok'=>false,'error'=>'IDs inválidos']); return; }
+
+    $ids_qs = implode(',', array_map('rawurlencode', $ids));
+    $leads  = sb_get('imported_leads?id=in.(' . $ids_qs . ')&select=id,name,email,phone&limit=500');
+
+    $email_rows = []; $wpp_rows = [];
+    $now = gmdate('c');
+    foreach ($leads as $lead) {
+        if (in_array($type, ['email','both']) && !empty($lead['email'])) {
+            $email_rows[] = ['lead_id'=>$lead['id'],'template_slug'=>'reengajamento_1','to_email'=>$lead['email'],'to_name'=>$lead['name']??'','scheduled_at'=>$now,'status'=>'pending'];
+        }
+        if (in_array($type, ['wpp','both']) && !empty($lead['phone'])) {
+            $nome = $lead['name'] ?? 'você';
+            $wpp_rows[] = ['lead_id'=>$lead['id'],'to_phone'=>$lead['phone'],'to_name'=>$nome,'message'=>"Olá, *{$nome}*! Aqui é a Daniely do Programa EmagreSer. Masterclass gratuita 11/06 às 20h — guarde a data!",'scheduled_at'=>$now,'status'=>'pending'];
+        }
+    }
+    $inserted = 0;
+    if (!empty($email_rows)) { $r=sb_request('POST','email_queue',$email_rows); if($r['status']<300) $inserted+=count($email_rows); }
+    if (!empty($wpp_rows))   { $r=sb_request('POST','whatsapp_queue',$wpp_rows); if($r['status']<300) $inserted+=count($wpp_rows); }
+
+    echo json_encode(['ok'=>true, 'inserted'=>$inserted]);
+}
+
+function delete_imported_lead() {
+    require_perm('leads');
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r = sb_request('DELETE', 'imported_leads?id=eq.' . rawurlencode($id));
+    echo json_encode(['ok' => $r['status'] < 300]);
 }
