@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Briefing Completo — EmagreSer 2.0</title>
+<style>
+:root{
+  --teal:#0d9488;--teal2:#0f766e;--teal-light:#f0fdfa;--teal-border:#99f6e4;
+  --indigo:#6366f1;--indigo-light:#eef2ff;
+  --orange:#f97316;--orange-light:#fff7ed;
+  --red:#ef4444;--red-light:#fef2f2;
+  --green:#22c55e;--green-light:#f0fdf4;
+  --yellow:#eab308;--yellow-light:#fefce8;
+  --purple:#9333ea;--purple-light:#faf5ff;
+  --dark:#0f172a;--text:#374151;--text2:#6b7280;--text3:#9ca3af;
+  --border:#e5e7eb;--bg:#f8fafc;--white:#fff;
+  --r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6}
+
+/* PAGE */
+.page{max-width:1100px;margin:0 auto;padding:40px 24px}
+
+/* COVER */
+.cover{background:linear-gradient(135deg,#0f172a 0%,#1e293b 40%,#0d9488 100%);border-radius:16px;padding:56px 48px;margin-bottom:40px;position:relative;overflow:hidden}
+.cover::before{content:'';position:absolute;top:-60px;right:-60px;width:320px;height:320px;background:radial-gradient(circle,rgba(99,102,241,.3),transparent 70%);pointer-events:none}
+.cover::after{content:'';position:absolute;bottom:-80px;left:20%;width:400px;height:400px;background:radial-gradient(circle,rgba(13,148,136,.2),transparent 70%);pointer-events:none}
+.cover-badge{display:inline-block;background:rgba(13,148,136,.3);color:#5eead4;border:1px solid rgba(94,234,212,.3);border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px}
+.cover h1{font-size:38px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:8px}
+.cover h1 span{color:#5eead4}
+.cover-sub{color:#94a3b8;font-size:16px;margin-bottom:32px}
+.cover-stats{display:flex;gap:24px;flex-wrap:wrap}
+.cstat{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px 20px;text-align:center;min-width:100px}
+.cstat-val{font-size:26px;font-weight:800;color:#5eead4}
+.cstat-lbl{font-size:11px;color:#94a3b8;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+
+/* SECTION */
+.section{margin-bottom:48px}
+.section-title{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;color:var(--dark);margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--teal)}
+.section-title .num{background:var(--teal);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+
+/* CARDS */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+.card-grid{display:grid;gap:16px}
+.card-grid-2{grid-template-columns:1fr 1fr}
+.card-grid-3{grid-template-columns:1fr 1fr 1fr}
+.card-grid-4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:700px){.card-grid-2,.card-grid-3,.card-grid-4{grid-template-columns:1fr}}
+
+/* STAT CARDS */
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px}
+.stat-val{font-size:32px;font-weight:800;line-height:1}
+.stat-lbl{font-size:12px;color:var(--text2);margin-top:4px;font-weight:500}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:#f9fafb}
+th{padding:10px 14px;text-align:left;font-weight:700;color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border);white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-green{background:#dcfce7;color:#166534}
+.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-red{background:#fee2e2;color:#991b1b}
+.badge-orange{background:#ffedd5;color:#9a3412}
+.badge-purple{background:#f3e8ff;color:#6b21a8}
+.badge-teal{background:var(--teal-light);color:var(--teal2)}
+.badge-gray{background:#f3f4f6;color:#374151}
+
+/* STATUS DOT */
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.dot-green{background:#22c55e}
+.dot-red{background:#ef4444}
+.dot-yellow{background:#eab308}
+.dot-gray{background:#9ca3af}
+
+/* TIMELINE */
+.timeline{position:relative;padding-left:28px}
+.timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--teal),var(--indigo))}
+.tl-item{position:relative;margin-bottom:20px}
+.tl-dot{position:absolute;left:-24px;top:4px;width:14px;height:14px;border-radius:50%;border:2px solid var(--teal);background:var(--white)}
+.tl-dot.email{border-color:var(--indigo);background:var(--indigo-light)}
+.tl-dot.wpp{border-color:var(--teal);background:var(--teal-light)}
+.tl-dot.both{background:linear-gradient(135deg,var(--teal),var(--indigo));border:none}
+.tl-head{font-weight:700;font-size:13px;color:var(--dark)}
+.tl-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.tl-date{font-size:11px;color:var(--text3);font-family:monospace;font-weight:600}
+
+/* ARCH DIAGRAM */
+.arch{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;overflow-x:auto}
+
+/* FLOW */
+.flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;row-gap:8px}
+.flow-box{background:var(--teal-light);border:1.5px solid var(--teal);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--teal2);white-space:nowrap}
+.flow-box.email{background:var(--indigo-light);border-color:var(--indigo);color:var(--indigo)}
+.flow-box.db{background:#fef3c7;border-color:#d97706;color:#92400e}
+.flow-box.api{background:#f3e8ff;border-color:var(--purple);color:var(--purple)}
+.flow-box.dark{background:var(--dark);color:#e2e8f0;border-color:var(--dark)}
+.flow-arrow{font-size:18px;color:var(--text3);padding:0 6px;flex-shrink:0}
+
+/* MODULE TREE */
+.mod-tree{font-size:13px}
+.mod-group{margin-bottom:16px}
+.mod-group-title{font-weight:700;font-size:13px;color:var(--white);background:var(--teal);border-radius:6px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;margin-bottom:8px}
+.mod-items{padding-left:20px;border-left:2px solid var(--teal-border);margin-left:12px}
+.mod-item{display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-radius:6px;margin-bottom:4px}
+.mod-item:hover{background:#f9fafb}
+.mod-item-icon{font-size:15px;flex-shrink:0;width:20px;text-align:center}
+.mod-item-body{flex:1}
+.mod-item-name{font-weight:600;color:var(--dark)}
+.mod-item-desc{font-size:11px;color:var(--text2);margin-top:1px}
+.mod-item-perms{margin-top:3px;display:flex;gap:4px;flex-wrap:wrap}
+
+/* PERM PILL */
+.perm{font-size:10px;padding:1px 7px;border-radius:10px;font-weight:600}
+.perm-super{background:#1e293b;color:#e2e8f0}
+.perm-leads{background:#dbeafe;color:#1e40af}
+.perm-videos{background:#fce7f3;color:#9d174d}
+.perm-quiz{background:#dcfce7;color:#166534}
+.perm-textos{background:#fef9c3;color:#713f12}
+.perm-config{background:#f3e8ff;color:#6b21a8}
+.perm-usuarios{background:#ffedd5;color:#9a3412}
+.perm-mentoras{background:#f0fdfa;color:#0f766e}
+.perm-dashboard{background:#f1f5f9;color:#475569}
+
+/* ROLE TABLE */
+.role-matrix td,.role-matrix th{text-align:center;font-size:12px}
+.role-matrix td:first-child{text-align:left;font-weight:600}
+.ck{color:#22c55e;font-size:15px}
+.xx{color:#e5e7eb;font-size:15px}
+
+/* DB SCHEMA */
+.schema-table{background:var(--white);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.schema-head{background:var(--dark);color:#fff;padding:10px 14px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px}
+.schema-cols{padding:8px 0}
+.schema-col{display:flex;align-items:center;gap:8px;padding:4px 14px;font-size:12px;font-family:monospace}
+.schema-col-name{font-weight:600;color:var(--dark);min-width:160px}
+.schema-col-type{color:var(--indigo);font-size:11px;min-width:80px}
+.schema-col-desc{color:var(--text2);font-size:11px}
+.schema-pk{color:#f59e0b;font-size:10px;font-weight:700;background:#fef3c7;padding:1px 5px;border-radius:4px}
+.schema-fk{color:#6366f1;font-size:10px;font-weight:700;background:#eef2ff;padding:1px 5px;border-radius:4px}
+
+/* BAR CHART */
+.bar-chart{display:flex;flex-direction:column;gap:8px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{width:180px;font-size:12px;font-weight:600;color:var(--text);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:18px;background:#f3f4f6;border-radius:9px;overflow:hidden}
+.bar-fill{height:100%;border-radius:9px;transition:width .3s}
+.bar-val{font-size:11px;font-weight:700;color:var(--text2);min-width:30px;text-align:right}
+
+/* CALLOUT */
+.callout{border-radius:var(--r);padding:14px 18px;margin-bottom:16px;display:flex;gap:12px;align-items:flex-start}
+.callout-warn{background:#fffbeb;border:1px solid #fcd34d}
+.callout-info{background:var(--teal-light);border:1px solid var(--teal-border)}
+.callout-danger{background:#fef2f2;border:1px solid #fecaca}
+.callout-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.callout-body{font-size:13px;color:var(--text)}
+.callout-body strong{display:block;font-weight:700;margin-bottom:2px}
+
+/* CHECKLIST */
+.checklist{list-style:none;display:flex;flex-direction:column;gap:6px}
+.checklist li{display:flex;align-items:flex-start;gap:8px;font-size:13px}
+.checklist li::before{content:'☐';color:var(--text3);flex-shrink:0;font-size:15px;margin-top:-1px}
+.checklist li.done::before{content:'☑';color:var(--teal)}
+.checklist li.urgent{color:var(--red)}
+.checklist li.urgent::before{content:'⚠';font-size:12px}
+
+/* PAGE BREAK for print */
+@media print{
+  .page{padding:20px}
+  .cover{border-radius:0}
+  .no-print{display:none}
+}
+
+/* SEPARATOR */
+.sep{height:1px;background:linear-gradient(90deg,var(--teal),var(--indigo),transparent);margin:32px 0;opacity:.3}
+
+/* TOC */
+.toc{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:20px 24px}
+.toc h3{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.toc ol{padding-left:18px;display:grid;grid-template-columns:1fr 1fr;gap:4px 32px}
+.toc li{font-size:13px;color:var(--teal2);cursor:pointer;padding:2px 0}
+.toc li:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ══════════════ COVER ══════════════ -->
+<div class="cover">
+  <div class="cover-badge">Briefing Técnico — v4 · 26/05/2026</div>
+  <h1>EmagreSer <span>2.0</span></h1>
+  <p class="cover-sub">Sistema completo de captação, qualificação e nurturing de leads<br>para a Masterclass 11/06/2026 — "O Código dos Sabotadores"</p>
+  <div class="cover-stats">
+    <div class="cstat"><div class="cstat-val">7</div><div class="cstat-lbl">Leads</div></div>
+    <div class="cstat"><div class="cstat-val">63</div><div class="cstat-lbl">Emails na fila</div></div>
+    <div class="cstat"><div class="cstat-val">49</div><div class="cstat-lbl">WPP na fila</div></div>
+    <div class="cstat"><div class="cstat-val">25</div><div class="cstat-lbl">Templates email</div></div>
+    <div class="cstat"><div class="cstat-val">20</div><div class="cstat-lbl">Itens/sequência</div></div>
+    <div class="cstat"><div class="cstat-val">11/06</div><div class="cstat-lbl">Masterclass</div></div>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="toc no-print" style="margin-bottom:40px">
+  <h3>Índice</h3>
+  <ol>
+    <li>Visão geral do produto</li>
+    <li>Arquitetura técnica</li>
+    <li>Banco de dados</li>
+    <li>Fluxos de envio</li>
+    <li>Calendário da sequência</li>
+    <li>Módulos do admin</li>
+    <li>Hierarquia e permissões</li>
+    <li>Templates de e-mail</li>
+    <li>Estado atual</li>
+    <li>Pendências e próximos passos</li>
+  </ol>
+</div>
+
+<!-- ══════════════ 1. VISÃO GERAL ══════════════ -->
+<div class="section" id="s1">
+  <div class="section-title"><div class="num">1</div> Visão Geral do Produto</div>
+
+  <div class="card-grid card-grid-2" style="margin-bottom:20px">
+    <div class="card">
+      <div style="font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">O que é</div>
+      <p style="font-size:13px;line-height:1.7;color:var(--text)">
+        Sistema de captação e nutrição de leads para o <strong>Programa EmagreSer</strong>, comandado pelas
+        profissionais <strong>Daniely Albuquerque</strong> (Psicóloga) e <strong>Ira</strong>. O produto central é uma
+        <strong>Masterclass gratuita</strong> em 11/06/2026 às 20h que funciona como porta de entrada para o programa pago no Hotmart.
+      </p>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:6px">Diferencial central</div>
+        <p style="font-size:12px;color:var(--text)">
+          <strong>Mapeamento de perfil comportamental sabotador</strong> — o quiz classifica a lead em um dos 4 perfis, e toda a comunicação é personalizada para esse perfil. Não é dieta genérica; é neurobiologia aplicada.
+        </p>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Perfis sabotadores</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff7ed;border-radius:8px;border-left:3px solid var(--orange)">
+          <span style="font-size:20px">🍫</span>
+          <div><div style="font-weight:700;font-size:12px">Perfil A — A Recompensadora</div><div style="font-size:11px;color:var(--text2)">Usa a comida como prêmio e alívio emocional</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#eff6ff;border-radius:8px;border-left:3px solid var(--indigo)">
+          <span style="font-size:20px">🤖</span>
+          <div><div style="font-weight:700;font-size:12px">Perfil B — Piloto Automático</div><div style="font-size:11px;color:var(--text2)">Come sem perceber — o automático assumiu o controle</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fef9c3;border-radius:8px;border-left:3px solid var(--yellow)">
+          <span style="font-size:20px">⚡</span>
+          <div><div style="font-weight:700;font-size:12px">Perfil C — Prisioneira do Esforço</div><div style="font-size:11px;color:var(--text2)">Esgota o autocontrole e desiste por exaustão mental</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--teal-light);border-radius:8px;border-left:3px solid var(--teal)">
+          <span style="font-size:20px">🌙</span>
+          <div><div style="font-weight:700;font-size:12px">Perfil D — Compensadora Noturna</div><div style="font-size:11px;color:var(--text2)">Restringe o dia todo e perde o controle à noite</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ══════════════ 2. ARQUITETURA ══════════════ -->
+<div class="section" id="s2">
+  <div class="section-title"><div class="num">2</div> Arquitetura Técnica</div>
+
+  <!-- Stack -->
+  <div class="card-grid card-grid-4" style="margin-bottom:20px">
+    <div class="stat-card" style="border-top:3px solid var(--teal)">
+      <div style="font-size:22px;margin-bottom:6px">🖥️</div>
+      <div class="stat-lbl" style="font-size:13px;font-weight:700;color:var(--dark)">Hostinger</div>
+      <div class="stat-sub">PHP 8 · Apache<br>oficialemagreser.com</div>
+    </div>
+    <div class="stat-card" style="border-top:3px solid var(--green)">
+      <div style="font-size:22px;margin-bottom:6px">🗄️</div>
+      <div class="stat-lbl" style="font-size:13px;font-weight:700;color:var(--dark)">Supabase</div>
+      <div class="stat-sub">PostgreSQL 17<br>us-west-2</div>
+    </div>
+    <div class="stat-card" style="border-top:3px solid var(--indigo)">
+      <div style="font-size:22px;margin-bottom:6px">📧</div>
+      <div class="stat-lbl" style="font-size:13px;font-weight:700;color:var(--dark)">Resend</div>
+      <div class="stat-sub">Email transacional<br>via API REST</div>
+    </div>
+    <div class="stat-card" style="border-top:3px solid var(--orange)">
+      <div style="font-size:22px;margin-bottom:6px">💬</div>
+      <div class="stat-lbl" style="font-size:13px;font-weight:700;color:var(--dark)">Z-API</div>
+      <div class="stat-sub">WhatsApp API<br>instância própria</div>
+    </div>
+  </div>
+
+  <!-- Architecture SVG Diagram -->
+  <div class="arch" style="margin-bottom:20px">
+    <div style="font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:20px;text-align:center">Diagrama de Arquitetura — Visão Geral</div>
+    <svg viewBox="0 0 1000 520" style="width:100%;max-width:1000px;display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#94a3b8"/>
+        </marker>
+        <marker id="arr-teal" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#0d9488"/>
+        </marker>
+        <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#6366f1"/>
+        </marker>
+      </defs>
+
+      <!-- USUÁRIO -->
+      <rect x="20" y="200" width="120" height="60" rx="10" fill="#f0fdfa" stroke="#0d9488" stroke-width="1.5"/>
+      <text x="80" y="224" text-anchor="middle" font-size="11" font-weight="700" fill="#0f766e">👤 Visitante</text>
+      <text x="80" y="240" text-anchor="middle" font-size="10" fill="#6b7280">/ Lead</text>
+      <text x="80" y="254" text-anchor="middle" font-size="9" fill="#9ca3af">Browser</text>
+
+      <!-- LANDING PAGE -->
+      <rect x="190" y="160" width="140" height="140" rx="10" fill="#fff7ed" stroke="#f97316" stroke-width="1.5"/>
+      <text x="260" y="185" text-anchor="middle" font-size="11" font-weight="700" fill="#9a3412">🌐 Landing Page</text>
+      <text x="260" y="200" text-anchor="middle" font-size="9" fill="#6b7280">index.html</text>
+      <rect x="205" y="210" width="110" height="22" rx="5" fill="#fff" stroke="#fed7aa" stroke-width="1"/>
+      <text x="260" y="225" text-anchor="middle" font-size="9" fill="#9a3412">Quiz (Perfil A/B/C/D)</text>
+      <rect x="205" y="238" width="110" height="22" rx="5" fill="#fff" stroke="#fed7aa" stroke-width="1"/>
+      <text x="260" y="253" text-anchor="middle" font-size="9" fill="#9a3412">Captura Lead</text>
+      <rect x="205" y="266" width="110" height="22" rx="5" fill="#fff" stroke="#fed7aa" stroke-width="1"/>
+      <text x="260" y="281" text-anchor="middle" font-size="9" fill="#9a3412">Anon Key (leitura)</text>
+
+      <!-- ADMIN PANEL -->
+      <rect x="190" y="20" width="140" height="100" rx="10" fill="#eef2ff" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="260" y="44" text-anchor="middle" font-size="11" font-weight="700" fill="#4338ca">⚙️ Admin Panel</text>
+      <text x="260" y="59" text-anchor="middle" font-size="9" fill="#6b7280">admin.html (SPA)</text>
+      <rect x="205" y="68" width="110" height="18" rx="4" fill="#fff" stroke="#c7d2fe" stroke-width="1"/>
+      <text x="260" y="80" text-anchor="middle" font-size="8" fill="#4338ca">admin_proxy.php</text>
+      <rect x="205" y="91" width="110" height="18" rx="4" fill="#fff" stroke="#c7d2fe" stroke-width="1"/>
+      <text x="260" y="103" text-anchor="middle" font-size="8" fill="#4338ca">Service Key (escrita)</text>
+
+      <!-- SUPABASE -->
+      <rect x="410" y="60" width="160" height="380" rx="10" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+      <text x="490" y="88" text-anchor="middle" font-size="12" font-weight="800" fill="#15803d">🗄️ Supabase</text>
+      <text x="490" y="103" text-anchor="middle" font-size="9" fill="#6b7280">PostgreSQL + PostgREST</text>
+      <!-- tables -->
+      <rect x="425" y="112" width="130" height="22" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+      <text x="490" y="127" text-anchor="middle" font-size="10" font-weight="600" fill="#166534">leads</text>
+      <rect x="425" y="140" width="130" height="22" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+      <text x="490" y="155" text-anchor="middle" font-size="10" font-weight="600" fill="#166534">email_queue</text>
+      <rect x="425" y="168" width="130" height="22" rx="5" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+      <text x="490" y="183" text-anchor="middle" font-size="10" font-weight="600" fill="#166534">whatsapp_queue</text>
+      <rect x="425" y="196" width="130" height="22" rx="5" fill="#dbeafe" stroke="#93c5fd" stroke-width="1"/>
+      <text x="490" y="211" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">email_templates</text>
+      <rect x="425" y="224" width="130" height="22" rx="5" fill="#dbeafe" stroke="#93c5fd" stroke-width="1"/>
+      <text x="490" y="239" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">wpp_templates</text>
+      <rect x="425" y="252" width="130" height="22" rx="5" fill="#fce7f3" stroke="#f9a8d4" stroke-width="1"/>
+      <text x="490" y="267" text-anchor="middle" font-size="10" font-weight="600" fill="#9d174d">sequences</text>
+      <rect x="425" y="280" width="130" height="22" rx="5" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
+      <text x="490" y="295" text-anchor="middle" font-size="10" font-weight="600" fill="#92400e">testimonials</text>
+      <rect x="425" y="308" width="130" height="22" rx="5" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
+      <text x="490" y="323" text-anchor="middle" font-size="10" font-weight="600" fill="#92400e">site_config</text>
+      <rect x="425" y="336" width="130" height="22" rx="5" fill="#fef3c7" stroke="#fcd34d" stroke-width="1"/>
+      <text x="490" y="351" text-anchor="middle" font-size="10" font-weight="600" fill="#92400e">admin_users</text>
+      <rect x="425" y="364" width="130" height="22" rx="5" fill="#f3e8ff" stroke="#d8b4fe" stroke-width="1"/>
+      <text x="490" y="379" text-anchor="middle" font-size="10" font-weight="600" fill="#6b21a8">quiz_questions</text>
+      <rect x="425" y="392" width="130" height="36" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+      <text x="490" y="407" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">mentors</text>
+      <text x="490" y="421" text-anchor="middle" font-size="9" fill="#94a3b8">+ storage (imagens)</text>
+
+      <!-- EMAIL TRIGGER -->
+      <rect x="640" y="160" width="140" height="70" rx="10" fill="#f0fdfa" stroke="#0d9488" stroke-width="1.5"/>
+      <text x="710" y="184" text-anchor="middle" font-size="11" font-weight="700" fill="#0f766e">⚡ email_trigger</text>
+      <text x="710" y="199" text-anchor="middle" font-size="9" fill="#6b7280">.php</text>
+      <text x="710" y="214" text-anchor="middle" font-size="9" fill="#6b7280">Enfileira sequência orgânica</text>
+
+      <!-- EMAIL WORKER -->
+      <rect x="640" y="260" width="140" height="70" rx="10" fill="#eff6ff" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="710" y="284" text-anchor="middle" font-size="11" font-weight="700" fill="#4338ca">⏱ email_worker</text>
+      <text x="710" y="299" text-anchor="middle" font-size="9" fill="#6b7280">.php (cron 5min)</text>
+      <text x="710" y="314" text-anchor="middle" font-size="9" fill="#6b7280">Despacha filas</text>
+
+      <!-- IMPORT LEADS -->
+      <rect x="640" y="360" width="140" height="70" rx="10" fill="#fdf4ff" stroke="#9333ea" stroke-width="1.5"/>
+      <text x="710" y="384" text-anchor="middle" font-size="11" font-weight="700" fill="#7e22ce">📥 import_leads</text>
+      <text x="710" y="399" text-anchor="middle" font-size="9" fill="#6b7280">.php</text>
+      <text x="710" y="414" text-anchor="middle" font-size="9" fill="#6b7280">Upload CSV + sequência</text>
+
+      <!-- RESEND -->
+      <rect x="840" y="200" width="120" height="50" rx="10" fill="#fef9c3" stroke="#d97706" stroke-width="1.5"/>
+      <text x="900" y="222" text-anchor="middle" font-size="11" font-weight="700" fill="#92400e">📧 Resend</text>
+      <text x="900" y="238" text-anchor="middle" font-size="9" fill="#6b7280">Email API</text>
+
+      <!-- ZAPI -->
+      <rect x="840" y="280" width="120" height="50" rx="10" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="900" y="302" text-anchor="middle" font-size="11" font-weight="700" fill="#166534">💬 Z-API</text>
+      <text x="900" y="318" text-anchor="middle" font-size="9" fill="#6b7280">WhatsApp API</text>
+
+      <!-- ARROWS -->
+      <!-- Visitante → LP -->
+      <line x1="140" y1="230" x2="188" y2="230" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+      <!-- LP → Supabase (leads) -->
+      <line x1="330" y1="250" x2="408" y2="180" stroke="#0d9488" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-teal)"/>
+      <!-- LP → email_trigger -->
+      <line x1="330" y1="240" x2="638" y2="190" stroke="#0d9488" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+      <!-- Admin → Supabase -->
+      <line x1="330" y1="90" x2="408" y2="150" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-blue)"/>
+      <!-- email_trigger → Supabase (queue) -->
+      <line x1="640" y1="195" x2="572" y2="180" stroke="#0d9488" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+      <!-- email_worker → Supabase (queue) -->
+      <line x1="640" y1="290" x2="572" y2="230" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-blue)"/>
+      <!-- email_worker → Resend -->
+      <line x1="780" y1="285" x2="838" y2="260" stroke="#d97706" stroke-width="1.5" marker-end="url(#arr)"/>
+      <!-- email_worker → ZAPI -->
+      <line x1="780" y1="300" x2="838" y2="310" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arr)"/>
+      <!-- import_leads → Supabase -->
+      <line x1="640" y1="385" x2="572" y2="280" stroke="#9333ea" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+      <!-- Resend → Visitante (email) -->
+      <path d="M 900 200 Q 900 120 80 120 Q 80 155 80 195" stroke="#d97706" stroke-width="1" fill="none" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+      <!-- ZAPI → Visitante (WPP) -->
+      <path d="M 900 280 Q 960 280 960 450 Q 960 480 80 480 Q 80 460 80 265" stroke="#22c55e" stroke-width="1" fill="none" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+
+      <!-- Legend -->
+      <rect x="20" y="430" width="370" height="70" rx="8" fill="#f8fafc" stroke="#e5e7eb" stroke-width="1"/>
+      <text x="34" y="448" font-size="10" font-weight="700" fill="#6b7280">LEGENDA</text>
+      <line x1="34" y1="460" x2="64" y2="460" stroke="#0d9488" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+      <text x="70" y="464" font-size="9" fill="#374151">Fluxo orgânico (lead do site)</text>
+      <line x1="34" y1="478" x2="64" y2="478" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-blue)"/>
+      <text x="70" y="482" font-size="9" fill="#374151">Admin / leitura/escrita banco</text>
+      <line x1="200" y1="460" x2="230" y2="460" stroke="#9333ea" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+      <text x="236" y="464" font-size="9" fill="#374151">Importação CSV</text>
+      <line x1="200" y1="478" x2="230" y2="478" stroke="#94a3b8" stroke-width="1"/>
+      <text x="236" y="482" font-size="9" fill="#374151">Envio ao usuário (email/WPP)</text>
+    </svg>
+  </div>
+
+  <!-- Files -->
+  <div class="card">
+    <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:12px">Arquivos no servidor (public_html/)</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Arquivo</th><th>Tipo</th><th>Função</th><th>Acesso</th></tr></thead>
+        <tbody>
+          <tr><td><code style="font-size:12px">index.html</code></td><td><span class="badge badge-orange">LP Pública</span></td><td>Landing page, quiz, captura de lead</td><td>Público</td></tr>
+          <tr><td><code style="font-size:12px">admin.html</code></td><td><span class="badge badge-blue">SPA Admin</span></td><td>Painel administrativo completo (Single Page App)</td><td>Login obrigatório</td></tr>
+          <tr><td><code style="font-size:12px">admin_proxy.php</code></td><td><span class="badge badge-blue">API PHP</span></td><td>Backend do admin — autenticação + todas as ações</td><td>Session PHP</td></tr>
+          <tr><td><code style="font-size:12px">email_trigger.php</code></td><td><span class="badge badge-teal">Worker</span></td><td>Enfileira 7 emails + 13 WPP quando lead orgânica chega</td><td>POST interno</td></tr>
+          <tr><td><code style="font-size:12px">email_worker.php</code></td><td><span class="badge badge-teal">Cron</span></td><td>Despacha email_queue (Resend) e whatsapp_queue (Z-API) a cada 5min</td><td>Cron + WORKER_SECRET</td></tr>
+          <tr><td><code style="font-size:12px">import_leads.php</code></td><td><span class="badge badge-purple">Import</span></td><td>Upload CSV, seleção de sequência, suporte a tipo=ira</td><td>HTTP Basic Auth</td></tr>
+          <tr><td><code style="font-size:12px">wpp_receive.php</code></td><td><span class="badge badge-green">Webhook</span></td><td>Recebe respostas WPP da Z-API — grava opt-in/opt-out</td><td>Público (Z-API)</td></tr>
+          <tr><td><code style="font-size:12px">_env.php</code></td><td><span class="badge badge-red">🔒 Secreto</span></td><td>Credenciais de produção — NUNCA vai ao git</td><td>Servidor apenas</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ══════════════ 3. BANCO DE DADOS ══════════════ -->
+<div class="section" id="s3">
+  <div class="section-title"><div class="num">3</div> Banco de Dados Supabase</div>
+
+  <!-- ER-style diagram via SVG -->
+  <div class="arch" style="margin-bottom:20px">
+    <div style="font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:20px;text-align:center">Diagrama de Entidades — Tabelas Principais</div>
+    <svg viewBox="0 0 960 340" style="width:100%;max-width:960px;display:block;margin:0 auto" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="rel" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#94a3b8"/>
+        </marker>
+      </defs>
+
+      <!-- leads -->
+      <rect x="10" y="40" width="170" height="200" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+      <rect x="10" y="40" width="170" height="28" rx="8" fill="#22c55e"/>
+      <text x="95" y="59" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">leads</text>
+      <text x="25" y="86" font-size="10" font-family="monospace" fill="#166534" font-weight="700">🔑 id (uuid)</text>
+      <text x="25" y="102" font-size="10" font-family="monospace" fill="#374151">name</text>
+      <text x="25" y="118" font-size="10" font-family="monospace" fill="#374151">email</text>
+      <text x="25" y="134" font-size="10" font-family="monospace" fill="#374151">phone</text>
+      <text x="25" y="150" font-size="10" font-family="monospace" fill="#374151">sabotador (A/B/C/D)</text>
+      <text x="25" y="166" font-size="10" font-family="monospace" fill="#374151">source (direto/import)</text>
+      <text x="25" y="182" font-size="10" font-family="monospace" fill="#374151">utm_medium</text>
+      <text x="25" y="198" font-size="10" font-family="monospace" fill="#374151">wpp_optout (bool)</text>
+      <text x="25" y="214" font-size="10" font-family="monospace" fill="#374151">sequence_queued_at</text>
+      <text x="25" y="230" font-size="10" font-family="monospace" fill="#94a3b8">+ 8 outros campos</text>
+
+      <!-- email_queue -->
+      <rect x="230" y="10" width="170" height="180" rx="8" fill="#eff6ff" stroke="#6366f1" stroke-width="2"/>
+      <rect x="230" y="10" width="170" height="28" rx="8" fill="#6366f1"/>
+      <text x="315" y="29" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">email_queue</text>
+      <text x="245" y="56" font-size="10" font-family="monospace" fill="#4338ca" font-weight="700">🔑 id (uuid)</text>
+      <text x="245" y="72" font-size="10" font-family="monospace" fill="#4338ca">🔗 lead_id → leads</text>
+      <text x="245" y="88" font-size="10" font-family="monospace" fill="#374151">template_slug</text>
+      <text x="245" y="104" font-size="10" font-family="monospace" fill="#374151">to_email / to_name</text>
+      <text x="245" y="120" font-size="10" font-family="monospace" fill="#374151">extra_vars (jsonb)</text>
+      <text x="245" y="136" font-size="10" font-family="monospace" fill="#374151">scheduled_at</text>
+      <text x="245" y="152" font-size="10" font-family="monospace" fill="#374151">status (pending/sent)</text>
+      <text x="245" y="168" font-size="10" font-family="monospace" fill="#94a3b8">sent_at / error_msg</text>
+
+      <!-- whatsapp_queue -->
+      <rect x="230" y="210" width="170" height="160" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+      <rect x="230" y="210" width="170" height="28" rx="8" fill="#166534"/>
+      <text x="315" y="229" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">whatsapp_queue</text>
+      <text x="245" y="256" font-size="10" font-family="monospace" fill="#166534" font-weight="700">🔑 id (uuid)</text>
+      <text x="245" y="272" font-size="10" font-family="monospace" fill="#166534">🔗 lead_id → leads</text>
+      <text x="245" y="288" font-size="10" font-family="monospace" fill="#374151">to_phone / to_name</text>
+      <text x="245" y="304" font-size="10" font-family="monospace" fill="#374151">message (text)</text>
+      <text x="245" y="320" font-size="10" font-family="monospace" fill="#374151">scheduled_at / status</text>
+
+      <!-- email_templates -->
+      <rect x="450" y="10" width="160" height="130" rx="8" fill="#eef2ff" stroke="#6366f1" stroke-width="1.5"/>
+      <rect x="450" y="10" width="160" height="28" rx="8" fill="#4338ca"/>
+      <text x="530" y="29" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">email_templates</text>
+      <text x="465" y="56" font-size="10" font-family="monospace" fill="#374151" font-weight="700">🔑 id (uuid)</text>
+      <text x="465" y="72" font-size="10" font-family="monospace" fill="#374151">slug (unique)</text>
+      <text x="465" y="88" font-size="10" font-family="monospace" fill="#374151">subject</text>
+      <text x="465" y="104" font-size="10" font-family="monospace" fill="#374151">body_html</text>
+      <text x="465" y="120" font-size="10" font-family="monospace" fill="#374151">active (bool)</text>
+
+      <!-- sequences -->
+      <rect x="450" y="160" width="160" height="120" rx="8" fill="#fdf4ff" stroke="#9333ea" stroke-width="1.5"/>
+      <rect x="450" y="160" width="160" height="28" rx="8" fill="#7e22ce"/>
+      <text x="530" y="179" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">sequences</text>
+      <text x="465" y="206" font-size="10" font-family="monospace" fill="#374151" font-weight="700">🔑 id (uuid)</text>
+      <text x="465" y="222" font-size="10" font-family="monospace" fill="#374151">name / description</text>
+      <text x="465" y="238" font-size="10" font-family="monospace" fill="#374151">items (jsonb [])</text>
+      <text x="465" y="254" font-size="10" font-family="monospace" fill="#374151">is_active</text>
+
+      <!-- admin_users -->
+      <rect x="670" y="10" width="160" height="140" rx="8" fill="#fff7ed" stroke="#f97316" stroke-width="1.5"/>
+      <rect x="670" y="10" width="160" height="28" rx="8" fill="#ea580c"/>
+      <text x="750" y="29" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">admin_users</text>
+      <text x="685" y="56" font-size="10" font-family="monospace" fill="#374151" font-weight="700">🔑 id (uuid)</text>
+      <text x="685" y="72" font-size="10" font-family="monospace" fill="#374151">username / password_hash</text>
+      <text x="685" y="88" font-size="10" font-family="monospace" fill="#374151">role</text>
+      <text x="685" y="104" font-size="10" font-family="monospace" fill="#374151">perms (jsonb)</text>
+      <text x="685" y="120" font-size="10" font-family="monospace" fill="#374151">active (bool)</text>
+
+      <!-- testimonials -->
+      <rect x="670" y="170" width="160" height="130" rx="8" fill="#fefce8" stroke="#eab308" stroke-width="1.5"/>
+      <rect x="670" y="170" width="160" height="28" rx="8" fill="#a16207"/>
+      <text x="750" y="189" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">testimonials</text>
+      <text x="685" y="216" font-size="10" font-family="monospace" fill="#374151" font-weight="700">🔑 id (uuid)</text>
+      <text x="685" y="232" font-size="10" font-family="monospace" fill="#374151">name / quote / result</text>
+      <text x="685" y="248" font-size="10" font-family="monospace" fill="#374151">video_url</text>
+      <text x="685" y="264" font-size="10" font-family="monospace" fill="#374151">order_index / active</text>
+      <text x="685" y="280" font-size="10" font-family="monospace" fill="#374151">type (video/text)</text>
+
+      <!-- Relationships -->
+      <line x1="180" y1="100" x2="228" y2="80" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#rel)"/>
+      <text x="195" y="85" font-size="9" fill="#94a3b8">1:N</text>
+      <line x1="180" y1="160" x2="228" y2="280" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#rel)"/>
+      <text x="185" y="235" font-size="9" fill="#94a3b8">1:N</text>
+      <line x1="400" y1="70" x2="448" y2="70" stroke="#6366f1" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#rel)"/>
+      <text x="408" y="64" font-size="9" fill="#6366f1">slug ref</text>
+      <line x1="400" y1="270" x2="448" y2="200" stroke="#9333ea" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#rel)"/>
+    </svg>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ══════════════ 4. FLUXOS ══════════════ -->
+<div class="section" id="s4">
+  <div class="section-title"><div class="num">4</div> Fluxos de Envio</div>
+
+  <div class="card-grid card-grid-2" style="gap:20px">
+
+    <!-- Fluxo 1 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <span style="background:var(--teal);color:#fff;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700">FLUXO 1</span>
+        <span style="font-weight:700;font-size:13px">Lead Orgânica (Quiz do site)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="background:var(--teal);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">1</div>
+          <div style="font-size:12px">Visitante acessa <code>oficialemagreser.com</code> e faz o quiz</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="background:var(--teal);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">2</div>
+          <div style="font-size:12px"><code>index.html</code> salva lead no Supabase com perfil A/B/C/D via <strong>anon key</strong></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="background:var(--teal);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">3</div>
+          <div style="font-size:12px">POST para <code>/email_trigger.php</code> enfileira 7 emails + 13 WPPs personalizados</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="background:var(--teal);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">4</div>
+          <div style="font-size:12px"><code>email_worker.php</code> (cron 5min) despacha via <strong>Resend</strong> e <strong>Z-API</strong></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="background:var(--teal);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">5</div>
+          <div style="font-size:12px">Respostas WPP (SIM/NÃO) gravadas via <code>wpp_receive.php</code> → campo <code>wpp_optout</code></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fluxo 2 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <span style="background:var(--purple);color:#fff;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700">FLUXO 2</span>
+        <span style="font-weight:700;font-size:13px">Import CSV (Ex-pacientes / Listas)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="background:var(--purple);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">1</div>
+          <div style="font-size:12px">Acessa <code>oficialemagreser.com/import_leads.php</code> com IMPORT_PASS</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="background:var(--purple);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">2</div>
+          <div style="font-size:12px">Upload do CSV (<code>nome, email, telefone, sabotador, <strong>tipo</strong></code>)</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="background:var(--purple);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">3</div>
+          <div style="font-size:12px">Se <code>tipo=ira</code>: injeta vídeo da Ira (WPP + email) <strong>antes</strong> da sequência</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="background:var(--purple);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">4</div>
+          <div style="font-size:12px">20 itens da sequência "Masterclass 2026" enfileirados por lead</div>
+        </div>
+        <div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:8px;padding:8px 10px;margin-top:4px">
+          <div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:3px">CSV com tipo=ira</div>
+          <code style="font-size:10px;color:#374151">nome,email,telefone,tipo<br>Maria,m@x.com,85999991111,<strong>ira</strong></code>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ══════════════ 5. CALENDÁRIO ══════════════ -->
+<div class="section" id="s5">
+  <div class="section-title"><div class="num">5</div> Calendário da Sequência (D+0 → 11/06)</div>
+
+  <div class="card-grid card-grid-2">
+    <div class="card">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">Fase relativa (D+0 a D+6)</div>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot both"></div>
+          <div class="tl-date">D+0 · 09h</div>
+          <div class="tl-head">📱 WPP + 📧 Email</div>
+          <div class="tl-sub">Boas-vindas + perfil sabotador personalizado</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot email"></div>
+          <div class="tl-date">D+1 · 09h</div>
+          <div class="tl-head">📧 Email</div>
+          <div class="tl-sub">Conteúdo profundo do perfil</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot wpp"></div>
+          <div class="tl-date">D+1 · 17h</div>
+          <div class="tl-head">📱 WPP</div>
+          <div class="tl-sub">Pergunta de engajamento (emoji)</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot email"></div>
+          <div class="tl-date">D+3 · 09h</div>
+          <div class="tl-head">📧 Email</div>
+          <div class="tl-sub">Prova social — história real do mesmo perfil</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot wpp"></div>
+          <div class="tl-date">D+3 · 17h</div>
+          <div class="tl-head">📱 WPP</div>
+          <div class="tl-sub">Quebra objeção "já tentei de tudo"</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot both"></div>
+          <div class="tl-date">D+6 · 08h</div>
+          <div class="tl-head">📱 WPP + 📧 Email</div>
+          <div class="tl-sub">Véspera — intensidade máxima ("AMANHÃ é o dia")</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot wpp"></div>
+          <div class="tl-date">D+6 · 19h</div>
+          <div class="tl-head">📱 WPP</div>
+          <div class="tl-sub">Lembrete noturno antes da Masterclass</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">Fase de oferta — datas fixas (08–11/06)</div>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot both"></div>
+          <div class="tl-date">08/06 · 09h</div>
+          <div class="tl-head">📱 WPP + 📧 Email</div>
+          <div class="tl-sub">Pós-Masterclass + oferta com condições especiais</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot wpp"></div>
+          <div class="tl-date">08/06 · 17h</div>
+          <div class="tl-head">📱 WPP</div>
+          <div class="tl-sub">Prova social 2 — comentários da Masterclass</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot wpp"></div>
+          <div class="tl-date">09/06 · 09h</div>
+          <div class="tl-head">📱 WPP</div>
+          <div class="tl-sub">Escassez real — vagas limitadas</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot wpp"></div>
+          <div class="tl-date">09/06 · 19h</div>
+          <div class="tl-head">📱 WPP</div>
+          <div class="tl-sub">Medo de ficar de fora — reflexão 12 semanas</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot email"></div>
+          <div class="tl-date">10/06 · 09h</div>
+          <div class="tl-head">📧 Email</div>
+          <div class="tl-sub">Carta pessoal da Daniely</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot wpp"></div>
+          <div class="tl-date">10/06 · 17h</div>
+          <div class="tl-head">📱 WPP</div>
+          <div class="tl-sub">Penúltimo dia — urgência direta</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot both"></div>
+          <div class="tl-date">11/06 · 08h</div>
+          <div class="tl-head">📱 WPP + 📧 Email</div>
+          <div class="tl-sub" style="color:var(--red);font-weight:600">🔴 ÚLTIMO DIA — encerra meia-noite</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot wpp"></div>
+          <div class="tl-date">11/06 · 14h</div>
+          <div class="tl-head">📱 WPP</div>
+          <div class="tl-sub">Últimas horas — diálogo individual</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot wpp"></div>
+          <div class="tl-date">11/06 · 19h</div>
+          <div class="tl-head">📱 WPP</div>
+          <div class="tl-sub">Encerramento — "5 horas. Estamos esperando."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Distribution bar chart -->
+  <div class="card" style="margin-top:16px">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Distribuição: 20 mensagens por tipo e fase</div>
+    <div class="bar-chart">
+      <div class="bar-row"><div class="bar-label">📧 Emails (total)</div><div class="bar-track"><div class="bar-fill" style="width:35%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div><div class="bar-val">7</div></div>
+      <div class="bar-row"><div class="bar-label">📱 WPPs (total)</div><div class="bar-track"><div class="bar-fill" style="width:65%;background:linear-gradient(90deg,#0d9488,#5eead4)"></div></div><div class="bar-val">13</div></div>
+      <div class="bar-row"><div class="bar-label">Fase relativa (D+0–D+6)</div><div class="bar-track"><div class="bar-fill" style="width:45%;background:linear-gradient(90deg,#f97316,#fb923c)"></div></div><div class="bar-val">9</div></div>
+      <div class="bar-row"><div class="bar-label">Fase fixos (08–11/06)</div><div class="bar-track"><div class="bar-fill" style="width:55%;background:linear-gradient(90deg,#dc2626,#f87171)"></div></div><div class="bar-val">11</div></div>
+      <div class="bar-row"><div class="bar-label">Mensagens duplas (WPP+Email)</div><div class="bar-track"><div class="bar-fill" style="width:15%;background:linear-gradient(90deg,#9333ea,#a855f7)"></div></div><div class="bar-val">3</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ══════════════ 6. MÓDULOS ══════════════ -->
+<div class="section" id="s6">
+  <div class="section-title"><div class="num">6</div> Módulos do Painel Admin</div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Módulo</th><th>Permissão</th><th>O que faz</th><th>CRUD</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--text3)">01</td>
+          <td><strong>📊 Dashboard</strong></td>
+          <td><span class="perm perm-dashboard">dashboard</span></td>
+          <td>Métricas em tempo real: leads/dia, perfis, filas pendentes, distribuição por perfil</td>
+          <td><span class="badge badge-gray">Somente leitura</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>OK</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text3)">02</td>
+          <td><strong>✏️ Textos da LP</strong></td>
+          <td><span class="perm perm-textos">textos</span></td>
+          <td>Edita todos os textos da landing page: hero, benefícios, CTAs, seções, rodapé</td>
+          <td><span class="badge badge-blue">R / U</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>OK</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text3)">03</td>
+          <td><strong>❓ Perguntas do Quiz</strong></td>
+          <td><span class="perm perm-quiz">quiz</span></td>
+          <td>CRUD das perguntas e opções do quiz de mapeamento</td>
+          <td><span class="badge badge-blue">C / R / U / D</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>OK</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text3)">04</td>
+          <td><strong>🎯 Resultados / Perfis</strong></td>
+          <td><span class="perm perm-quiz">quiz</span></td>
+          <td>Textos e imagens de resultado para cada perfil A/B/C/D</td>
+          <td><span class="badge badge-blue">R / U</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>OK</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text3)">05</td>
+          <td><strong>🎬 Depoimentos</strong></td>
+          <td><span class="perm perm-videos">videos</span></td>
+          <td>CRUD de depoimentos em vídeo: nome, resultado, quote, URL YouTube, ordem, ativo/inativo</td>
+          <td><span class="badge badge-blue">C / R / U / D</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>OK + delete</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text3)">06</td>
+          <td><strong>👩‍⚕️ Mentoras</strong></td>
+          <td><span class="perm perm-mentoras">mentoras</span></td>
+          <td>Cards das mentoras: Daniely e Ira — bio, foto, especialidade, posição da foto</td>
+          <td><span class="badge badge-blue">R / U</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>OK</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text3)">07</td>
+          <td><strong>⚙️ Configurações</strong></td>
+          <td><span class="perm perm-config">config</span></td>
+          <td>Configurações gerais do site: links, redes sociais, pixels, integrações</td>
+          <td><span class="badge badge-blue">R / U</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>OK</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text3)">08</td>
+          <td><strong>👥 Leads</strong></td>
+          <td><span class="perm perm-leads">leads</span></td>
+          <td>Lista completa de leads com filtro por perfil, busca, badges de origem (Importado / Ex-Ira / Direto), exportar CSV</td>
+          <td><span class="badge badge-blue">R / Export</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>OK</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text3)">09</td>
+          <td><strong>📧 Templates E-mail</strong></td>
+          <td><span class="perm perm-leads">leads</span></td>
+          <td>CRUD de templates HTML com preview. Variáveis: {{nome_lead}}, {{nome_perfil}}, {{link_vip}}, {{link_hotmart}}</td>
+          <td><span class="badge badge-blue">C / R / U / D</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>OK</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text3)">10</td>
+          <td><strong>📱 WhatsApp (fila)</strong></td>
+          <td><span class="perm perm-leads">leads</span></td>
+          <td>Visualiza fila de WPP pendentes, histórico de envios, reenvio manual, status opt-in/out</td>
+          <td><span class="badge badge-blue">R / Reenvio</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>OK</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text3)">11</td>
+          <td><strong>💬 Templates WPP</strong></td>
+          <td><span class="perm perm-leads">leads</span></td>
+          <td>CRUD de templates de mensagem WPP reutilizáveis para sequências (editor tipo bolha)</td>
+          <td><span class="badge badge-blue">C / R / U / D</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>Corrigido</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text3)">12</td>
+          <td><strong>📥 Leads Importados</strong></td>
+          <td><span class="perm perm-leads">leads</span></td>
+          <td>Lista de leads de import com stats (total/fila/opt-out), filtros (tipo Ira/geral, fila pendente), export CSV, link para import</td>
+          <td><span class="badge badge-blue">R / Export</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>Melhorado</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text3)">13</td>
+          <td><strong>📋 Sequências</strong></td>
+          <td><span class="perm perm-leads">leads</span></td>
+          <td>CRUD de sequências de envio reutilizáveis: cada item define tipo (wpp/email), timing (delay_hours ou fixed_date), conteúdo</td>
+          <td><span class="badge badge-blue">C / R / U / D</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>Corrigido</span></td>
+        </tr>
+        <tr>
+          <td style="color:var(--text3)">14</td>
+          <td><strong>👤 Usuários</strong></td>
+          <td><span class="perm perm-usuarios">usuarios</span></td>
+          <td>CRUD de usuários do admin com RBAC: roles e permissões granulares por módulo</td>
+          <td><span class="badge badge-blue">C / R / U / D</span></td>
+          <td><span class="badge badge-green"><span class="dot dot-green"></span>OK</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ══════════════ 7. HIERARQUIA / PERMISSÕES ══════════════ -->
+<div class="section" id="s7">
+  <div class="section-title"><div class="num">7</div> Hierarquia de Módulos e Permissões</div>
+
+  <!-- Visual tree -->
+  <div class="card" style="margin-bottom:20px">
+    <svg viewBox="0 0 960 300" style="width:100%;display:block" xmlns="http://www.w3.org/2000/svg">
+
+      <!-- super_admin -->
+      <rect x="390" y="10" width="180" height="42" rx="8" fill="#0f172a"/>
+      <text x="480" y="28" text-anchor="middle" font-size="11" font-weight="800" fill="#e2e8f0">⭐ super_admin</text>
+      <text x="480" y="44" text-anchor="middle" font-size="9" fill="#94a3b8">Acesso total — sem restrições</text>
+
+      <!-- line down -->
+      <line x1="480" y1="52" x2="480" y2="78" stroke="#94a3b8" stroke-width="1.5"/>
+
+      <!-- horizontal bar -->
+      <line x1="80" y1="78" x2="880" y2="78" stroke="#e5e7eb" stroke-width="1.5"/>
+
+      <!-- Group lines down -->
+      <line x1="80" y1="78" x2="80" y2="96" stroke="#e5e7eb" stroke-width="1.5"/>
+      <line x1="220" y1="78" x2="220" y2="96" stroke="#e5e7eb" stroke-width="1.5"/>
+      <line x1="360" y1="78" x2="360" y2="96" stroke="#e5e7eb" stroke-width="1.5"/>
+      <line x1="500" y1="78" x2="500" y2="96" stroke="#e5e7eb" stroke-width="1.5"/>
+      <line x1="640" y1="78" x2="640" y2="96" stroke="#e5e7eb" stroke-width="1.5"/>
+      <line x1="780" y1="78" x2="780" y2="96" stroke="#e5e7eb" stroke-width="1.5"/>
+      <line x1="880" y1="78" x2="880" y2="96" stroke="#e5e7eb" stroke-width="1.5"/>
+
+      <!-- Permission groups -->
+      <!-- dashboard -->
+      <rect x="30" y="96" width="100" height="32" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+      <text x="80" y="110" text-anchor="middle" font-size="10" font-weight="700" fill="#475569">📊 dashboard</text>
+      <text x="80" y="122" text-anchor="middle" font-size="9" fill="#94a3b8">Dashboard</text>
+
+      <!-- textos -->
+      <rect x="170" y="96" width="100" height="32" rx="6" fill="#fef9c3" stroke="#fcd34d" stroke-width="1.5"/>
+      <text x="220" y="110" text-anchor="middle" font-size="10" font-weight="700" fill="#713f12">✏️ textos</text>
+      <text x="220" y="122" text-anchor="middle" font-size="9" fill="#94a3b8">LP + Config</text>
+
+      <!-- quiz -->
+      <rect x="310" y="96" width="100" height="32" rx="6" fill="#dcfce7" stroke="#86efac" stroke-width="1.5"/>
+      <text x="360" y="110" text-anchor="middle" font-size="10" font-weight="700" fill="#166534">❓ quiz</text>
+      <text x="360" y="122" text-anchor="middle" font-size="9" fill="#94a3b8">Quiz + Perfis</text>
+
+      <!-- leads -->
+      <rect x="445" y="96" width="110" height="32" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+      <text x="500" y="110" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af">👥 leads</text>
+      <text x="500" y="122" text-anchor="middle" font-size="9" fill="#94a3b8">Leads + Filas + Templates</text>
+
+      <!-- videos -->
+      <rect x="590" y="96" width="100" height="32" rx="6" fill="#fce7f3" stroke="#f9a8d4" stroke-width="1.5"/>
+      <text x="640" y="110" text-anchor="middle" font-size="10" font-weight="700" fill="#9d174d">🎬 videos</text>
+      <text x="640" y="122" text-anchor="middle" font-size="9" fill="#94a3b8">Depoimentos</text>
+
+      <!-- mentoras -->
+      <rect x="730" y="96" width="100" height="32" rx="6" fill="#f0fdfa" stroke="#5eead4" stroke-width="1.5"/>
+      <text x="780" y="110" text-anchor="middle" font-size="10" font-weight="700" fill="#0f766e">👩 mentoras</text>
+      <text x="780" y="122" text-anchor="middle" font-size="9" fill="#94a3b8">Mentoras</text>
+
+      <!-- usuarios -->
+      <rect x="830" y="96" width="100" height="32" rx="6" fill="#ffedd5" stroke="#fdba74" stroke-width="1.5"/>
+      <text x="880" y="110" text-anchor="middle" font-size="10" font-weight="700" fill="#9a3412">👤 usuarios</text>
+      <text x="880" y="122" text-anchor="middle" font-size="9" fill="#94a3b8">Usuários</text>
+
+      <!-- Módulos under each permission -->
+      <!-- under leads -->
+      <line x1="500" y1="128" x2="500" y2="150" stroke="#93c5fd" stroke-width="1"/>
+      <line x1="370" y1="150" x2="630" y2="150" stroke="#93c5fd" stroke-width="1"/>
+      <line x1="370" y1="150" x2="370" y2="162" stroke="#93c5fd" stroke-width="1"/>
+      <line x1="440" y1="150" x2="440" y2="162" stroke="#93c5fd" stroke-width="1"/>
+      <line x1="500" y1="150" x2="500" y2="162" stroke="#93c5fd" stroke-width="1"/>
+      <line x1="560" y1="150" x2="560" y2="162" stroke="#93c5fd" stroke-width="1"/>
+      <line x1="630" y1="150" x2="630" y2="162" stroke="#93c5fd" stroke-width="1"/>
+
+      <rect x="325" y="162" width="90" height="22" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+      <text x="370" y="177" text-anchor="middle" font-size="9" fill="#1e40af">📋 Leads</text>
+      <rect x="395" y="162" width="90" height="22" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+      <text x="440" y="177" text-anchor="middle" font-size="9" fill="#1e40af">📧 Templates</text>
+      <rect x="455" y="162" width="90" height="22" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+      <text x="500" y="177" text-anchor="middle" font-size="9" fill="#1e40af">💬 Templates WPP</text>
+      <rect x="515" y="162" width="90" height="22" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+      <text x="560" y="177" text-anchor="middle" font-size="9" fill="#1e40af">📥 Importados</text>
+      <rect x="585" y="162" width="90" height="22" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+      <text x="630" y="177" text-anchor="middle" font-size="9" fill="#1e40af">📋 Sequências</text>
+
+      <!-- under textos -->
+      <line x1="220" y1="128" x2="220" y2="150" stroke="#fcd34d" stroke-width="1"/>
+      <line x1="175" y1="150" x2="265" y2="150" stroke="#fcd34d" stroke-width="1"/>
+      <line x1="175" y1="150" x2="175" y2="162" stroke="#fcd34d" stroke-width="1"/>
+      <line x1="265" y1="150" x2="265" y2="162" stroke="#fcd34d" stroke-width="1"/>
+      <rect x="130" y="162" width="90" height="22" rx="5" fill="#fefce8" stroke="#fde68a" stroke-width="1"/>
+      <text x="175" y="177" text-anchor="middle" font-size="9" fill="#713f12">✏️ Textos LP</text>
+      <rect x="220" y="162" width="90" height="22" rx="5" fill="#fefce8" stroke="#fde68a" stroke-width="1"/>
+      <text x="265" y="177" text-anchor="middle" font-size="9" fill="#713f12">⚙️ Config</text>
+
+      <!-- under quiz -->
+      <line x1="360" y1="128" x2="360" y2="162" stroke="#86efac" stroke-width="1"/>
+      <!-- quiz has own modules already -->
+      <rect x="315" y="196" width="90" height="22" rx="5" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1"/>
+      <text x="360" y="211" text-anchor="middle" font-size="9" fill="#166534">❓ Perguntas</text>
+      <rect x="315" y="220" width="90" height="22" rx="5" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1"/>
+      <text x="360" y="235" text-anchor="middle" font-size="9" fill="#166534">🎯 Resultados</text>
+      <line x1="360" y1="162" x2="360" y2="196" stroke="#86efac" stroke-width="1"/>
+      <line x1="360" y1="218" x2="360" y2="220" stroke="#86efac" stroke-width="1"/>
+
+      <!-- WhatsApp fila (under leads, separate) -->
+      <rect x="325" y="196" width="90" height="22" rx="5" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+      <text x="370" y="211" text-anchor="middle" font-size="9" fill="#1e40af">📱 WPP Fila</text>
+      <line x1="370" y1="184" x2="370" y2="196" stroke="#93c5fd" stroke-width="1"/>
+    </svg>
+  </div>
+
+  <!-- Role matrix -->
+  <div class="card">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Matriz de Permissões por Perfil</div>
+    <div class="tbl-wrap">
+      <table class="role-matrix">
+        <thead>
+          <tr>
+            <th style="text-align:left">Módulo</th>
+            <th>⭐ super_admin</th>
+            <th>👤 Usuário personalizado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Dashboard</td><td class="ck">✅</td><td style="font-size:11px;color:var(--text2)">Se tem perm <code>dashboard</code></td></tr>
+          <tr><td>Textos da LP</td><td class="ck">✅</td><td style="font-size:11px;color:var(--text2)">Se tem perm <code>textos</code></td></tr>
+          <tr><td>Quiz + Resultados</td><td class="ck">✅</td><td style="font-size:11px;color:var(--text2)">Se tem perm <code>quiz</code></td></tr>
+          <tr><td>Depoimentos</td><td class="ck">✅</td><td style="font-size:11px;color:var(--text2)">Se tem perm <code>videos</code></td></tr>
+          <tr><td>Mentoras</td><td class="ck">✅</td><td style="font-size:11px;color:var(--text2)">Se tem perm <code>mentoras</code></td></tr>
+          <tr><td>Configurações</td><td class="ck">✅</td><td style="font-size:11px;color:var(--text2)">Se tem perm <code>config</code></td></tr>
+          <tr><td>Leads + Templates + Filas + Sequências</td><td class="ck">✅</td><td style="font-size:11px;color:var(--text2)">Se tem perm <code>leads</code></td></tr>
+          <tr><td>Usuários</td><td class="ck">✅</td><td style="font-size:11px;color:var(--text2)">Se tem perm <code>usuarios</code></td></tr>
+          <tr style="background:#fef2f2"><td>Ações sensíveis (criar admin, ver credenciais)</td><td class="ck">✅</td><td class="xx">❌ Nunca</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-info" style="margin-top:12px;margin-bottom:0">
+      <div class="callout-icon">🔒</div>
+      <div class="callout-body">
+        <strong>Dupla proteção</strong>
+        As permissões são verificadas tanto no <strong>frontend</strong> (itens de menu ocultos, goPage() bloqueado) quanto no <strong>backend</strong> (<code>require_perm()</code> em todos os endpoints sensíveis do admin_proxy.php). Um usuário sem permissão não consegue nem ver o menu nem executar ações diretamente via API.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ══════════════ 8. TEMPLATES ══════════════ -->
+<div class="section" id="s8">
+  <div class="section-title"><div class="num">8</div> Templates de E-mail da Campanha</div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Slug</th><th>Assunto</th><th>Timing</th><th>Gatilho psicológico</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><code>mc_boas_vindas</code></td><td>"{{nome_lead}}, seu mapeamento está pronto — e ele muda tudo ✅"</td><td>D+0</td><td>Curiosidade + identidade</td></tr>
+        <tr><td>2</td><td><code>mc_conteudo_perfil</code></td><td>"O que o {{nome_perfil}} revela sobre você, {{nome_lead}}"</td><td>D+1 09h</td><td>Aprofundamento + empatia</td></tr>
+        <tr><td>3</td><td><code>mc_prova_social</code></td><td>"{{nome_lead}}, ela tinha o mesmo perfil que você"</td><td>D+3 09h</td><td>Identificação + prova</td></tr>
+        <tr><td>4</td><td><code>mc_vespera</code></td><td>"⏰ Amanhã às 20h, {{nome_lead}} — você vai estar lá?"</td><td>D+6 08h</td><td>Antecipação + medo</td></tr>
+        <tr><td>5</td><td><code>mc_objecao_tempo</code></td><td>"{{nome_lead}}, sobre o 'não tenho tempo'"</td><td>08/06 09h</td><td>Quebra objeção</td></tr>
+        <tr><td>6</td><td><code>mc_carta_daniely</code></td><td>"Uma carta da Daniely para você, {{nome_lead}}"</td><td>10/06 09h</td><td>Relacionamento + autoridade</td></tr>
+        <tr><td>7</td><td><code>mc_ultimo_dia</code></td><td>"🔴 Hoje encerra, {{nome_lead}} — condições especiais até meia-noite"</td><td>11/06 08h</td><td>Urgência + escassez real</td></tr>
+        <tr style="background:#fdf4ff"><td>+</td><td><code>ira_video_boas_vindas</code></td><td>"Um recado especial da Ira para você, {{nome_lead}} 🌿"</td><td>D+0 (ex-pac.)</td><td>Relacionamento pessoal</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">Variáveis disponíveis em todos os templates</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <code style="background:#f0fdfa;border:1px solid var(--teal-border);color:var(--teal2);padding:4px 10px;border-radius:6px;font-size:12px">{{nome_lead}}</code>
+      <code style="background:#f0fdfa;border:1px solid var(--teal-border);color:var(--teal2);padding:4px 10px;border-radius:6px;font-size:12px">{{nome_perfil}}</code>
+      <code style="background:#f0fdfa;border:1px solid var(--teal-border);color:var(--teal2);padding:4px 10px;border-radius:6px;font-size:12px">{{link_vip}}</code>
+      <code style="background:#f0fdfa;border:1px solid var(--teal-border);color:var(--teal2);padding:4px 10px;border-radius:6px;font-size:12px">{{link_hotmart}}</code>
+      <code style="background:#f0fdfa;border:1px solid var(--teal-border);color:var(--teal2);padding:4px 10px;border-radius:6px;font-size:12px">{{link_video_ira}}</code>
+      <code style="background:#f0fdfa;border:1px solid var(--teal-border);color:var(--teal2);padding:4px 10px;border-radius:6px;font-size:12px">{{link_descadastro}}</code>
+      <code style="background:#f0fdfa;border:1px solid var(--teal-border);color:var(--teal2);padding:4px 10px;border-radius:6px;font-size:12px">{{email}}</code>
+      <code style="background:#f0fdfa;border:1px solid var(--teal-border);color:var(--teal2);padding:4px 10px;border-radius:6px;font-size:12px">{{tipo}}</code>
+    </div>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ══════════════ 9. ESTADO ATUAL ══════════════ -->
+<div class="section" id="s9">
+  <div class="section-title"><div class="num">9</div> Estado Atual do Sistema</div>
+
+  <div class="card-grid card-grid-4" style="margin-bottom:20px">
+    <div class="stat-card"><div class="stat-val" style="color:var(--teal)">7</div><div class="stat-lbl">Leads totais</div><div class="stat-sub">6 orgânicos · 1 importado</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--indigo)">63</div><div class="stat-lbl">Emails na fila</div><div class="stat-sub">status: pending</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--green)">49</div><div class="stat-lbl">WPPs na fila</div><div class="stat-sub">status: pending</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--orange)">25</div><div class="stat-lbl">Templates email</div><div class="stat-sub">6 templates WPP</div></div>
+  </div>
+
+  <!-- Distribuição de perfis -->
+  <div class="card" style="margin-bottom:20px">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Distribuição de perfis (base atual)</div>
+    <div class="bar-chart">
+      <div class="bar-row">
+        <div class="bar-label">🍫 A — Recompensadora</div>
+        <div class="bar-track"><div class="bar-fill" style="width:43%;background:linear-gradient(90deg,#f97316,#fb923c)"></div></div>
+        <div class="bar-val">3 (43%)</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">🤖 B — Piloto Automático</div>
+        <div class="bar-track"><div class="bar-fill" style="width:0%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
+        <div class="bar-val">0 (0%)</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">⚡ C — Prisioneira do Esforço</div>
+        <div class="bar-track"><div class="bar-fill" style="width:43%;background:linear-gradient(90deg,#eab308,#fbbf24)"></div></div>
+        <div class="bar-val">3 (43%)</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">🌙 D — Compensadora Noturna</div>
+        <div class="bar-track"><div class="bar-fill" style="width:0%;background:linear-gradient(90deg,#0d9488,#5eead4)"></div></div>
+        <div class="bar-val">0 (0%)</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">— Sem perfil</div>
+        <div class="bar-track"><div class="bar-fill" style="width:14%;background:#e5e7eb"></div></div>
+        <div class="bar-val">1 (14%)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bugs corrigidos -->
+  <div class="card">
+    <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Bugs corrigidos neste projeto</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Problema</th><th>Causa</th><th>Solução</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Login quebrado após subir permissões</td><td><code>_env.php</code> procurava fora do public_html</td><td>Dual-path loader: testa <code>__DIR__</code> e <code>__DIR__/../</code></td></tr>
+          <tr><td>2</td><td>Usuário "Trafego" via tudo no admin</td><td>Sem filtro de permissões no frontend</td><td><code>PAGE_PERMS</code> + <code>hasPerm()</code> + <code>require_perm()</code> no backend</td></tr>
+          <tr><td>3</td><td>Templates WPP apareciam vazios</td><td>Proxy consultava <code>is_active</code> (coluna é <code>active</code>); IDs inteiros rejeitados por <code>is_valid_uuid()</code></td><td>Corrigido para <code>active</code>; adicionado <code>is_valid_id()</code></td></tr>
+          <tr><td>4</td><td>Botão Editar da sequência não funcionava</td><td>JSON de 20 mensagens longas no atributo <code>onclick</code> corrompia HTML</td><td>Cache <code>_seqCache{}</code>; botão passa só o ID</td></tr>
+          <tr><td>5</td><td>PHP fatal no email_trigger</td><td>Constante <code>HOTMART_LINK</code> usada sem <code>define()</code></td><td>Adicionado <code>define('HOTMART_LINK', getenv(...))</code></td></tr>
+          <tr><td>6</td><td>Depoimentos sem Excluir</td><td>Função e rota inexistentes</td><td><code>deleteDepo()</code> no JS + <code>delete_testimonial</code> no proxy</td></tr>
+          <tr><td>7</td><td>Sequência INSERT falhou</td><td>Sem constraint UNIQUE em <code>sequences.name</code></td><td>INSERT simples sem <code>ON CONFLICT</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ══════════════ 10. PENDÊNCIAS ══════════════ -->
+<div class="section" id="s10">
+  <div class="section-title"><div class="num">10</div> Pendências e Próximos Passos</div>
+
+  <div class="card-grid card-grid-2" style="gap:16px">
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
+        <span style="background:#ef4444;color:#fff;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700">URGENTE · antes de 07/06</span>
+      </div>
+      <ul class="checklist">
+        <li class="urgent">Subir ZIP v4 no Hostinger (admin.html, admin_proxy.php, email_trigger.php, email_worker.php, import_leads.php)</li>
+        <li class="urgent">Confirmar cron do Hostinger para email_worker.php a cada 5 min</li>
+        <li class="urgent">Configurar IRA_VIDEO_URL no _env.php do servidor quando tiver o link do YouTube</li>
+        <li class="urgent">Importar lista de ex-pacientes da Ira com coluna tipo=ira</li>
+        <li class="urgent">Teste real de envio WPP via Z-API (1 contato de teste)</li>
+        <li>Atualizar os 6 templates WPP antigos para conteúdo da Masterclass 2026</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
+        <span style="background:var(--yellow);color:#713f12;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700">MÉDIO PRAZO</span>
+      </div>
+      <ul class="checklist">
+        <li>Pausa/cancelamento de sequência por lead individual no admin</li>
+        <li>Re-importação de leads com sequence_queued_at preenchido (hoje bloqueado)</li>
+        <li>Open rate via Resend webhook ou pixel de rastreamento</li>
+        <li>Retry automático de WPP com status "failed"</li>
+        <li>Relatório de conversão: leads → fila → clique Hotmart</li>
+        <li>Rate limiting no email_worker.php para evitar spam score alto</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
+        <span style="background:var(--indigo);color:#fff;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700">TÉCNICO</span>
+      </div>
+      <ul class="checklist">
+        <li>Resolver GitHub push 403 — deploy ainda é manual via ZIP</li>
+        <li>Adicionar UNIQUE constraint em sequences.name para evitar duplicatas</li>
+        <li>Webhook Z-API para receber status de entrega (delivered/read) das mensagens WPP</li>
+        <li>Paginação na tabela de leads (hoje limita 1000)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">
+        <span style="background:var(--teal);color:#fff;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700">OPORTUNIDADES</span>
+      </div>
+      <ul class="checklist">
+        <li>Segmentação automática por perfil nas sequências (mensagem diferente para A/B/C/D)</li>
+        <li>Dashboard de conversão: leads → opt-in WPP → clique email → venda</li>
+        <li>Agendamento de broadcast manual (enviar para todos de uma vez)</li>
+        <li>Integração com Hotmart Webhook para marcar lead como comprador</li>
+        <li>A/B test de assuntos de email via variante em email_templates</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Security reminder -->
+  <div class="callout callout-danger" style="margin-top:20px">
+    <div class="callout-icon">🔒</div>
+    <div class="callout-body">
+      <strong>Regras de segurança permanentes — nunca violar</strong>
+      A <code>service_role key</code> do Supabase fica <strong>apenas</strong> no <code>admin_proxy.php</code> no servidor, carregada via <code>_env.php</code>. A <code>anon key</code> fica no <code>index.html</code> (leitura pública). O arquivo <code>_env.php</code> nunca vai ao git (<code>.gitignore</code>) — upload manual para o Hostinger. Todos os fallbacks de credenciais em código são <code>''</code> (string vazia).
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div style="text-align:center;padding:32px 0 16px;color:var(--text3);font-size:12px;border-top:1px solid var(--border);margin-top:40px">
+  <strong style="color:var(--teal)">EmagreSer 2.0</strong> — Briefing Técnico Completo · Gerado em 26/05/2026<br>
+  Branch: <code>claude/build-emagre-ser-landing-xzSnP</code> · Supabase: <code>drgrwpmhmrrhxuwxabow</code>
+</div>
+
+</div><!-- /page -->
+</body>
+</html>
