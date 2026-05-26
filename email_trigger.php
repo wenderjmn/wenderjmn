@@ -23,6 +23,7 @@ define('SITE_URL',             'https://www.oficialemagreser.com');
 define('WPP_LINK',             'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ');
 define('ZAPI_INSTANCE',        getenv('ZAPI_INSTANCE')        ?: '');
 define('ZAPI_TOKEN',           getenv('ZAPI_TOKEN')           ?: '');
+define('HOTMART_LINK',         getenv('HOTMART_LINK')         ?: 'https://pay.hotmart.com/emagreser');
 // ────────────────────────────────────────────────────────────────
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['error' => 'POST only']); exit; }
@@ -62,12 +63,16 @@ $p = $perfis[$perfil] ?? ['emoji'=>'🎯','tipo'=>'Perfil identificado','titulo'
 
 $vars = [
     '{{nome}}'             => htmlspecialchars($name),
+    '{{nome_lead}}'        => htmlspecialchars($name),
+    '{{nome_perfil}}'      => htmlspecialchars($p['tipo']),
     '{{email}}'            => $email,
     '{{emoji}}'            => $p['emoji'],
     '{{tipo}}'             => $p['tipo'],
     '{{titulo}}'           => $p['titulo'],
     '{{descricao}}'        => '',
+    '{{link_vip}}'         => WPP_LINK,
     '{{link_wpp}}'         => WPP_LINK,
+    '{{link_hotmart}}'     => HOTMART_LINK,
     '{{link_site}}'        => SITE_URL,
     '{{link_descadastro}}' => SITE_URL . '/descadastro.php?email=' . urlencode($email),
 ];
@@ -88,44 +93,28 @@ if ($email) {
     }
 }
 
-// ── DATAS FIXAS ───────────────────────────────────────────────────
-$masterclass      = new DateTime('2026-06-11 08:00:00', new DateTimeZone('America/Sao_Paulo'));
-$masterclass_1h   = new DateTime('2026-06-11 19:00:00', new DateTimeZone('America/Sao_Paulo'));
-$masterclass_3d   = new DateTime('2026-06-08 09:00:00', new DateTimeZone('America/Sao_Paulo'));
-$masterclass_eve  = new DateTime('2026-06-10 09:00:00', new DateTimeZone('America/Sao_Paulo'));
-// Intensificação pré-masterclass (05/06 a 09/06)
-$intensifica_d5   = new DateTime('2026-06-05 10:00:00', new DateTimeZone('America/Sao_Paulo'));
-$intensifica_d6   = new DateTime('2026-06-06 10:00:00', new DateTimeZone('America/Sao_Paulo'));
-$intensifica_d7   = new DateTime('2026-06-07 10:00:00', new DateTimeZone('America/Sao_Paulo'));
-$intensifica_d9   = new DateTime('2026-06-09 10:00:00', new DateTimeZone('America/Sao_Paulo'));
-// Tardes e noites — 4 dias pré-masterclass (2x/dia mínimo)
-$d7_tarde         = new DateTime('2026-06-07 18:00:00', new DateTimeZone('America/Sao_Paulo'));
-$d7_noite         = new DateTime('2026-06-07 21:00:00', new DateTimeZone('America/Sao_Paulo'));
-$d8_tarde         = new DateTime('2026-06-08 14:00:00', new DateTimeZone('America/Sao_Paulo'));
-$d8_noite         = new DateTime('2026-06-08 19:00:00', new DateTimeZone('America/Sao_Paulo'));
-$d9_tarde         = new DateTime('2026-06-09 14:00:00', new DateTimeZone('America/Sao_Paulo'));
-$d9_noite         = new DateTime('2026-06-09 19:00:00', new DateTimeZone('America/Sao_Paulo'));
-$d10_tarde        = new DateTime('2026-06-10 14:00:00', new DateTimeZone('America/Sao_Paulo'));
-$d10_noite        = new DateTime('2026-06-10 19:00:00', new DateTimeZone('America/Sao_Paulo'));
+// ── DATAS FIXAS (Masterclass 11/06/2026) ─────────────────────────
+$tz = new DateTimeZone('America/Sao_Paulo');
+$dt_07_09h = new DateTime('2026-06-07 09:00:00', $tz);
+$dt_08_09h = new DateTime('2026-06-08 09:00:00', $tz);
+$dt_08_17h = new DateTime('2026-06-08 17:00:00', $tz);
+$dt_09_09h = new DateTime('2026-06-09 09:00:00', $tz);
+$dt_09_19h = new DateTime('2026-06-09 19:00:00', $tz);
+$dt_10_09h = new DateTime('2026-06-10 09:00:00', $tz);
+$dt_10_17h = new DateTime('2026-06-10 17:00:00', $tz);
+$dt_11_08h = new DateTime('2026-06-11 08:00:00', $tz);
+$dt_11_14h = new DateTime('2026-06-11 14:00:00', $tz);
+$dt_11_19h = new DateTime('2026-06-11 19:00:00', $tz);
 
-// ── SEQUÊNCIA DE E-MAILS (15 e-mails) ───────────────────────────
+// ── SEQUÊNCIA DE E-MAILS (7 e-mails) ────────────────────────────
 $email_sequence = [
-    ['slug' => 'boas_vindas',           'delay_hours' => 0],
-    ['slug' => 'nutricao_d1',           'delay_hours' => 24],
-    ['slug' => 'prova_social_d2',       'delay_hours' => 48],
-    ['slug' => 'urgencia_d3',           'delay_hours' => 72],
-    ['slug' => 'conteudo_d5',           'delay_hours' => 120],
-    ['slug' => 'depoimento_d7',         'delay_hours' => 168],
-    ['slug' => 'antecipacao_d10',       'delay_hours' => 240],
-    // Intensificação pré-masterclass (datas fixas)
-    ['slug' => 'intensificacao_d5',     'scheduled_at' => $intensifica_d5->format(DateTime::ATOM)],
-    ['slug' => 'intensificacao_d6',     'scheduled_at' => $intensifica_d6->format(DateTime::ATOM)],
-    ['slug' => 'intensificacao_d7',     'scheduled_at' => $intensifica_d7->format(DateTime::ATOM)],
-    ['slug' => 'lembrete_3dias',        'scheduled_at' => $masterclass_3d->format(DateTime::ATOM)],
-    ['slug' => 'intensificacao_d9',     'scheduled_at' => $intensifica_d9->format(DateTime::ATOM)],
-    ['slug' => 'amanha_masterclass',    'scheduled_at' => $masterclass_eve->format(DateTime::ATOM)],
-    ['slug' => 'masterclass_hoje',      'scheduled_at' => $masterclass->format(DateTime::ATOM)],
-    ['slug' => 'masterclass_1h',        'scheduled_at' => $masterclass_1h->format(DateTime::ATOM)],
+    ['slug' => 'mc_boas_vindas',     'delay_hours' => 0],    // D+0 09h
+    ['slug' => 'mc_conteudo_perfil', 'delay_hours' => 24],   // D+1 09h
+    ['slug' => 'mc_prova_social',    'delay_hours' => 72],   // D+3 09h
+    ['slug' => 'mc_vespera',         'delay_hours' => 143],  // D+6 08h
+    ['slug' => 'mc_objecao_tempo',   'scheduled_at' => $dt_08_09h->format(DateTime::ATOM)],
+    ['slug' => 'mc_carta_daniely',   'scheduled_at' => $dt_10_09h->format(DateTime::ATOM)],
+    ['slug' => 'mc_ultimo_dia',      'scheduled_at' => $dt_11_08h->format(DateTime::ATOM)],
 ];
 
 $email_rows = [];
@@ -161,218 +150,83 @@ foreach ($email_rows as $row) {
     if ($ok) $emails_queued++;
 }
 
-// ── SEQUÊNCIA DE WHATSAPP (7 mensagens) ──────────────────────────
+// ── SEQUÊNCIA WPP (13 mensagens — Masterclass 2026) ──────────────
 if ($phone && strlen($phone) >= 10) {
     $wpp_rows = [];
     $tel = '55' . $phone;
+    $perfil_nome = $p['tipo']; // ex: "Perfil A — A Recompensadora"
 
-    // WA 1 — D+0 imediato: resultado do perfil
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "Oi, {$name}! 🎉\n\nSeu mapeamento revelou que você é:\n\n*{$p['emoji']} {$p['tipo']}*\n\n_{$p['titulo']}_\n\nIsso não é fraqueza — é o seu cérebro operando de um jeito que você nunca aprendeu a gerenciar.\n\nA Masterclass *\"O Código dos Sabotadores\"* é dia 11/06 às 20h e vai mostrar exatamente o que fazer para quebrar esse ciclo. 🔓\n\nEntre no grupo VIP para receber o link da transmissão 👇\n" . WPP_LINK,
-        'scheduled_at' => $now->format(DateTime::ATOM),
-        'status'       => 'pending',
+    // WPP 1 — D+0 09h · Boas-vindas + perfil
+    $wpp_rows[] = ['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'scheduled_at'=>$now->format(DateTime::ATOM),'status'=>'pending',
+        'message' => "Olá, *{$name}*! 🌱\n\nAqui é a Daniely do Programa EmagreSer.\n\nVocê acabou de descobrir algo que a maioria das mulheres leva anos para entender — ou nunca entende.\n\nVocê é o *{$perfil_nome}*.\n\nIsso significa que o seu cérebro tem um padrão específico que comanda suas escolhas alimentares. Não é falta de força de vontade. É neurobiologia.\n\nGuarda esse nome: *{$perfil_nome}*.\n\nNa Masterclass do dia *11/06 às 20h*, a Daniely vai explicar ao vivo o que esse padrão faz com você — e o que muda quando você finalmente entende ele.\n\nGarante sua vaga no Grupo VIP agora 👇\n" . WPP_LINK,
     ];
 
-    // WA 2 — D+1: dica rápida do perfil
-    $d1 = clone $now; $d1->modify('+26 hours');
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name}, uma coisa rápida 💡\n\nQuem tem o *{$p['tipo']}* geralmente sente que \"já sabe o que precisa fazer\" mas trava na hora de executar.\n\nO problema não é falta de informação. É o *padrão neurológico* por trás das suas escolhas.\n\nNa Masterclass vamos falar exatamente sobre como quebrar isso. Já garantiu seu lugar no grupo? 👇\n" . WPP_LINK,
-        'scheduled_at' => $d1->format(DateTime::ATOM),
-        'status'       => 'pending',
+    // WPP 2 — D+1 17h · Engajamento
+    $d1_17 = clone $now; $d1_17->modify('+32 hours');
+    $wpp_rows[] = ['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'scheduled_at'=>$d1_17->format(DateTime::ATOM),'status'=>'pending',
+        'message' => "{$name}, uma pergunta rápida 👇\n\nQuando você tenta manter a alimentação em dia e escorrega... o que você sente primeiro?\n\n😔 Culpa — \"eu estraguei tudo de novo\"\n😤 Raiva — \"não tenho força de vontade\"\n😶 Nada — \"já esperava isso de mim\"\n\nResponde com o emoji que mais te representa.\n\nPergunto porque a resposta diz muito sobre como o seu perfil opera — e o que a Daniely vai mostrar na Masterclass do dia *11/06* vai fazer muito sentido pra você.",
     ];
 
-    // WA 3 — D+3: prova social / depoimento
-    $d3 = clone $now; $d3->modify('+74 hours');
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name}, deixa eu te contar algo 🙌\n\nA Carla, que também tem o *{$p['tipo']}*, me escreveu essa semana:\n\n_\"Eu tentei tudo. Dieta, academia, aplicativos. Nada funcionava porque eu não entendia por que eu sabotava. Depois que entendi meu padrão, tudo mudou.\"_\n\nÉ exatamente sobre isso que a Dra. Daniely vai falar na Masterclass dia 11/06. 🎯\n\nEstá no grupo VIP? O link da live vai sair lá 👇\n" . WPP_LINK,
-        'scheduled_at' => $d3->format(DateTime::ATOM),
-        'status'       => 'pending',
+    // WPP 3 — D+3 17h · Quebra objeção "já tentei de tudo"
+    $d3_17 = clone $now; $d3_17->modify('+80 hours');
+    $wpp_rows[] = ['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'scheduled_at'=>$d3_17->format(DateTime::ATOM),'status'=>'pending',
+        'message' => "{$name}, deixa eu ser direta com você 👇\n\nToda mulher que chega até o EmagreSer já tentou de tudo.\n\nLow carb ✅\nJejum intermitente ✅\nReeducação alimentar ✅\nPersonal trainer ✅\nAplicativo de calorias ✅\n\nE sabe o que todas essas tentativas têm em comum?\n\nIgnoram completamente o *{$perfil_nome}*.\n\nNenhuma delas foi feita pra você. Foram feitas para um modelo genérico de pessoa que não existe.\n\nÉ por isso que funcionaram por um tempo e pararam.\n\nNa Masterclass do dia *11/06 às 20h*, a Daniely vai mostrar exatamente o que precisa ser diferente desta vez.\n\nJá está no grupo VIP? " . WPP_LINK,
     ];
 
-    // WA 4 — D+5: pergunta de engajamento
-    $d5 = clone $now; $d5->modify('+122 hours');
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name}, me conta uma coisa 👇\n\nQual dessas situações te identifica mais?\n\n🍫 *A* — Você come bem o dia todo e à noite desanda\n⚡ *B* — Você começa a semana firme e na quarta já desistiu\n🤖 *C* — Você come sem nem perceber, no automático\n🌙 *D* — Você restringe muito e compensa depois\n\nResponde aqui com a letra! Vou te mandar uma dica personalizada 😊",
-        'scheduled_at' => $d5->format(DateTime::ATOM),
-        'status'       => 'pending',
+    // WPP 4 — D+6 08h · Véspera intensidade
+    $d6_08 = clone $now; $d6_08->modify('+143 hours');
+    $wpp_rows[] = ['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'scheduled_at'=>$d6_08->format(DateTime::ATOM),'status'=>'pending',
+        'message' => "*{$name}*, AMANHÃ é o dia. 🔥\n\n11/06 às 20h — Masterclass \"O Código dos Sabotadores: Fim do Efeito Sanfona\"\n\nEu sei que você está ocupada. Eu sei que você já viu muita promessa.\n\nMas me responde uma coisa:\n\nQuantos anos você já está nesse ciclo de tentar, conseguir por um tempo e voltar para o começo?\n\nA Masterclass de amanhã não é mais uma aula de dieta.\n\nÉ a primeira vez que alguém vai olhar diretamente para o *{$perfil_nome}* e te mostrar o que está acontecendo no seu cérebro.\n\nO link de acesso está no Grupo VIP 👇\n" . WPP_LINK . "\n\nAmanhã às 20h. Não deixa pra última hora.",
     ];
 
-    // WA 5 — 05/06: quebra de objeção + instagram
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name}, preciso te contar uma coisa importante 💚\n\nO que você chama de *falta de força de vontade* tem nome científico. E tem solução.\n\nSeu cérebro não é seu inimigo — ele só aprendeu estratégias erradas para lidar com o estresse e as emoções.\n\nNa Masterclass *\"O Código dos Sabotadores\"* (11/06 às 20h), a Daniely vai explicar ao vivo exatamente como o *{$p['tipo']}* funciona — e o que fazer nos primeiros 7 dias.\n\n📲 Nos acompanhe no Instagram:\n→ @psidanielyalbuquerque\n→ @irasorayanutri\n→ @oficialemagreser\n\nEntrada pelo grupo VIP 👇\n" . WPP_LINK,
-        'scheduled_at' => $intensifica_d5->format(DateTime::ATOM),
-        'status'       => 'pending',
+    // WPP 5 — D+6 19h · Lembrete noturno
+    $d6_19 = clone $now; $d6_19->modify('+154 hours');
+    $wpp_rows[] = ['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'scheduled_at'=>$d6_19->format(DateTime::ATOM),'status'=>'pending',
+        'message' => "Uma coisa antes de dormir, *{$name}* 🌙\n\nAmanhã às 20h é a Masterclass.\n\nJá separou o horário? Já avisou que vai estar online?\n\nEsse é o tipo de coisa que a gente sempre deixa pra depois — e depois não vem.\n\nO link está no grupo VIP 👇\n" . WPP_LINK . "\n\nAté amanhã. 🌿\n*Daniely e Ira*",
     ];
 
-    // WA 6 — 06/06: projeção futura + medo
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name}, uma pergunta direta 👇\n\nDaqui a 1 ano — você quer ainda estar tentando a próxima dieta? Ou quer ter finalmente entendido *por que* você se sabota?\n\nA diferença entre esses dois cenários não é força de vontade.\n\n*É um método.* E ele vai ser entregue ao vivo no dia 11/06.\n\nFaltam apenas *5 dias*. O grupo VIP já está quase cheio 👇\n" . WPP_LINK,
-        'scheduled_at' => $intensifica_d6->format(DateTime::ATOM),
-        'status'       => 'pending',
+    // WPP 6 — 08/06 09h · Pós-masterclass + oferta
+    $wpp_rows[] = ['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'scheduled_at'=>$dt_08_09h->format(DateTime::ATOM),'status'=>'pending',
+        'message' => "*{$name}*, a Masterclass foi ontem.\n\nSe você assistiu: você sabe o que fazer agora.\n\nSe você não conseguiu assistir: as vagas do Programa ainda estão abertas por poucos dias — e quem veio pelo mapeamento do perfil entra com condições que não aparecem em nenhum outro canal.\n\nMas essas condições têm data para acabar.\n\nEnquanto você lê essa mensagem, outras mulheres com o *{$perfil_nome}* estão tomando a decisão.\n\nA pergunta não é se você quer mudar.\nA pergunta é: você vai agir agora ou vai esperar mais um recomeço?\n\n👉 " . HOTMART_LINK,
     ];
 
-    // WA 7 — 07/06: prova social
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name} 🌟\n\nA Carolina tinha o mesmo perfil que você: *{$p['tipo']}*.\n\nMesmo ciclo, mesma culpa, mesmas tentativas.\n\nDepois que ela entendeu o mecanismo por trás do comportamento dela, algo mudou. Não foi magia. Foi compreensão real + estratégia certa.\n\n_\"Pela primeira vez na minha vida, eu escolhi. De verdade.\"_ — Carolina, 38 anos\n\nÉ exatamente isso que a Daniely e a Ira vão entregar na Masterclass. Está no grupo? 👇\n" . WPP_LINK,
-        'scheduled_at' => $intensifica_d7->format(DateTime::ATOM),
-        'status'       => 'pending',
+    // WPP 7 — 08/06 17h · Prova social 2
+    $wpp_rows[] = ['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'scheduled_at'=>$dt_08_17h->format(DateTime::ATOM),'status'=>'pending',
+        'message' => "*{$name}*, deixa eu te contar o que aconteceu na Masterclass 👇\n\nTinham mulheres de todo o Brasil. Professoras, médicas, mães, empreendedoras.\n\nTodas com histórias diferentes. Todas com o mesmo cansaço: de tentar, conseguir por um tempo, e voltar ao começo.\n\nSabe o que mais apareceu nos comentários ao vivo?\n\n*\"Finalmente alguém explicou o que acontece comigo de verdade.\"*\n\nIsso é o EmagreSer.\n\nAs vagas com condições especiais ainda estão abertas — por pouco tempo.\n\n👉 " . HOTMART_LINK,
     ];
 
-    // WA 8 — 3 dias antes da masterclass
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "⚠️ {$name}, faltam *3 dias* para a Masterclass!\n\n📅 *11 de junho, 20h*\n\n\"O Código dos Sabotadores\" com a Psicóloga Daniely e a Nutri Ira Soraya\n\nSerá online, ao vivo e *gratuito*. Mas o link só vai para quem está no grupo VIP 👇\n" . WPP_LINK,
-        'scheduled_at' => $masterclass_3d->format(DateTime::ATOM),
-        'status'       => 'pending',
+    // WPP 8 — 09/06 09h · Escassez
+    $wpp_rows[] = ['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'scheduled_at'=>$dt_09_09h->format(DateTime::ATOM),'status'=>'pending',
+        'message' => "*{$name}*, atualização importante 👇\n\nAs vagas com as condições especiais para quem fez o mapeamento estão acabando.\n\nNão é pressão. É a realidade do programa — o acompanhamento é próximo e o número de participantes por turma é limitado.\n\nQuando fechar, fecha.\n\nA próxima oportunidade de entrar no EmagreSer será com valor cheio e sem os bônus de quem veio pelo perfil sabotador.\n\nVocê tem o mapa. Falta só dar o próximo passo.\n\n👉 " . HOTMART_LINK,
     ];
 
-    // WA 9 — 09/06: escassez 48h
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "🔴 {$name}, *48 horas* — depois disso, acabou.\n\nO Grupo VIP fecha antes da transmissão e não reabre.\n\nQuem entrar recebe:\n✅ Link da live ao vivo\n✅ Protocolo dos 4 perfis de sabotagem\n✅ Técnica do Confronto Gentil\n✅ Condições especiais do Programa EmagreSer\n\nA transmissão é ao vivo. *Não há garantia de gravação.*\n\n👉 Último aviso 👇\n" . WPP_LINK,
-        'scheduled_at' => $intensifica_d9->format(DateTime::ATOM),
-        'status'       => 'pending',
+    // WPP 9 — 09/06 19h · Medo de ficar de fora
+    $wpp_rows[] = ['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'scheduled_at'=>$dt_09_19h->format(DateTime::ATOM),'status'=>'pending',
+        'message' => "*{$name}*, uma última coisa hoje 🌙\n\nPensa comigo:\n\nDaqui a 12 semanas, onde você quer estar?\n\nNo mesmo ciclo — tentando, conseguindo por um tempo, recomeçando?\n\nOu com um mapa real do que acontece no seu cérebro, e uma estratégia feita especificamente para o *{$perfil_nome}*?\n\nA decisão de hoje determina qual das duas respostas vai ser verdade.\n\nAs vagas fecham em breve.\n\n👉 " . HOTMART_LINK,
     ];
 
-    // WA 6 — véspera da masterclass
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name}! 🔥 *Amanhã é o grande dia!*\n\nMasterclass *\"O Código dos Sabotadores\"*\n📅 11/06 às 20h — ao vivo\n\nSepara um cantinho tranquilo, bloqueia sua agenda e venha aprender o que nenhuma dieta te ensinou.\n\nO link da transmissão vai sair amanhã no grupo VIP 👇\n" . WPP_LINK,
-        'scheduled_at' => $masterclass_eve->format(DateTime::ATOM),
-        'status'       => 'pending',
+    // WPP 10 — 10/06 17h · Penúltimo dia
+    $wpp_rows[] = ['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'scheduled_at'=>$dt_10_17h->format(DateTime::ATOM),'status'=>'pending',
+        'message' => "*{$name}*, amanhã as vagas fecham. 🔴\n\nNão vou encher de texto.\n\nVocê fez o mapeamento. Você sabe qual é o seu perfil. Você esteve na Masterclass (ou viu o conteúdo).\n\nA única pergunta que fica é:\n\n*Você vai agir ou vai esperar mais um recomeço?*\n\n👉 " . HOTMART_LINK . "\n\nDaniely e Ira",
     ];
 
-    // WA 7 — dia da masterclass (manhã)
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "🔴 *HOJE É O DIA*, {$name}!\n\nMasterclass *\"O Código dos Sabotadores\"*\n⏰ Hoje às 20h — ao vivo\n\nO link da transmissão vai sair no grupo VIP antes do início.\n\nNão esquece: anota as dúvidas que você quer tirar ao vivo! ✏️\n\n👇\n" . WPP_LINK,
-        'scheduled_at' => $masterclass->format(DateTime::ATOM),
-        'status'       => 'pending',
+    // WPP 11 — 11/06 08h · Último dia
+    $wpp_rows[] = ['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'scheduled_at'=>$dt_11_08h->format(DateTime::ATOM),'status'=>'pending',
+        'message' => "*{$name}* — hoje é o último dia. 🚨\n\nAs vagas com condições especiais para quem fez o mapeamento encerram hoje à meia-noite.\n\nDepois disso: valor cheio, sem os bônus exclusivos, sem a condição de quem veio pelo perfil sabotador.\n\nVocê tem o mapa. Você sabe o que está travando você.\n\nA decisão é só sua — e ela é agora.\n\n👉 " . HOTMART_LINK,
     ];
 
-    // WA 8 — 1h antes
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "⏰ *Em 1 hora começa!*\n\n{$name}, corre que falta pouco!\n\nO link da live está no grupo VIP agora 👇\n" . WPP_LINK,
-        'scheduled_at' => $masterclass_1h->format(DateTime::ATOM),
-        'status'       => 'pending',
+    // WPP 12 — 11/06 14h · Últimas horas
+    $wpp_rows[] = ['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'scheduled_at'=>$dt_11_14h->format(DateTime::ATOM),'status'=>'pending',
+        'message' => "*{$name}*, últimas horas ⏳\n\nFaltam menos de 10h para as vagas fecharem.\n\nSe você ainda está em dúvida, me responde uma coisa:\n\nO que te impede de dar esse passo agora?\n\nResponde aqui — leio todas as mensagens.\n\n👉 " . HOTMART_LINK,
     ];
 
-    // ── Intensificação tarde/noite — 4 dias pré-masterclass ──────────
-    // 07/06 tarde
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name}, boa tarde! ☀️\n\nO que te impediu de emagrecer nas últimas tentativas?\n\n🔴 Começa bem mas não consegue manter\n🔴 Fica restringindo demais e depois compensa\n🔴 Sabe o que fazer mas não faz\n🔴 Emagrece e depois recupera tudo\n\nSe foi qualquer uma dessas — a Masterclass *\"O Código dos Sabotadores\"* é pra você.\n\n📅 11/06 às 20h | Gratuita | Ao vivo 👇\n" . WPP_LINK,
-        'scheduled_at' => $d7_tarde->format(DateTime::ATOM),
-        'status'       => 'pending',
-    ];
-
-    // 07/06 noite
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name}, boa noite! 🌙\n\nÀ noite é quando mais sabotamos — e não é por acaso.\n\nO cérebro cansado busca recompensa. É neurológico. É previsível. *E tem solução.*\n\nNa Masterclass você vai entender exatamente esse mecanismo — e como quebrar o ciclo de vez.\n\n📅 11/06 às 20h | Gratuita 👇\n" . WPP_LINK,
-        'scheduled_at' => $d7_noite->format(DateTime::ATOM),
-        'status'       => 'pending',
-    ];
-
-    // 08/06 tarde
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name}, boa tarde! ☀️\n\nA Psicóloga Daniely descobriu que todos os perfis de sabotagem têm uma coisa em comum:\n\n*O cérebro usa a comida como estratégia de regulação emocional.*\n\nNão é falta de vontade. É neurologia. E o que é neurológico, pode ser *reprogramado*.\n\nA Masterclass mostra como. Faltam 3 dias! 📅 11/06 às 20h 👇\n" . WPP_LINK,
-        'scheduled_at' => $d8_tarde->format(DateTime::ATOM),
-        'status'       => 'pending',
-    ];
-
-    // 08/06 noite
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name} 🌙\n\nUma pergunta honesta:\n\nHá quanto tempo você tenta emagrecer do mesmo jeito e obtém o mesmo resultado?\n\nEinstein dizia que loucura é repetir a mesma ação esperando resultados diferentes.\n\nA Masterclass *\"O Código dos Sabotadores\"* oferece um caminho diferente. Ao vivo, domingo.\n\n📅 11/06 às 20h 👇\n" . WPP_LINK,
-        'scheduled_at' => $d8_noite->format(DateTime::ATOM),
-        'status'       => 'pending',
-    ];
-
-    // 09/06 tarde
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name}, boa tarde! ☀️\n\nSabe o que é o *Confronto Gentil*?\n\nÉ uma técnica da Daniely que ensina como dialogar com o sabotador interno — *sem culpa e sem repressão*.\n\nÉ uma das partes mais transformadoras da Masterclass.\n\nAmanhã não! Domingo, 11/06 às 20h 👇\n" . WPP_LINK,
-        'scheduled_at' => $d9_tarde->format(DateTime::ATOM),
-        'status'       => 'pending',
-    ];
-
-    // 09/06 noite
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name} 🌙\n\nFaltam *2 dias* para a Masterclass.\n\nO que vai acontecer na transmissão:\n\n✅ Os 4 perfis de sabotagem revelados\n✅ A técnica do *Confronto Gentil*\n✅ Por que força de vontade não funciona\n✅ Estratégias práticas para os primeiros 7 dias\n\nPrepara o caderninho! 📓 11/06 às 20h 👇\n" . WPP_LINK,
-        'scheduled_at' => $d9_noite->format(DateTime::ATOM),
-        'status'       => 'pending',
-    ];
-
-    // 10/06 tarde
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name}, boa tarde! ☀️\n\n🔴 Amanhã, 11/06 às 20h!\n\nEsta pode ser a noite que muda o seu relacionamento com a comida para sempre.\n\nO link sai no grupo VIP antes do início. Se ainda não está lá, corre! ⬇️\n\n👇\n" . WPP_LINK,
-        'scheduled_at' => $d10_tarde->format(DateTime::ATOM),
-        'status'       => 'pending',
-    ];
-
-    // 10/06 noite
-    $wpp_rows[] = [
-        'lead_id'      => $lead_id,
-        'to_phone'     => $tel,
-        'to_name'      => $name,
-        'message'      => "{$name} 🌟\n\nA véspera de uma coisa importante tem um sabor especial.\n\nAmanhã às 20h, você vai entender de uma vez por todas por que se sabota — e o que fazer para parar.\n\n*Anota no celular: 11/06 às 20h*\n\nO link estará no grupo VIP amanhã 👇\n" . WPP_LINK,
-        'scheduled_at' => $d10_noite->format(DateTime::ATOM),
-        'status'       => 'pending',
+    // WPP 13 — 11/06 19h · Encerramento
+    $wpp_rows[] = ['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'scheduled_at'=>$dt_11_19h->format(DateTime::ATOM),'status'=>'pending',
+        'message' => "*{$name}*, em breve as vagas fecham definitivamente. 🔴\n\n5 horas.\n\nNão existe momento perfeito para começar. Existe o momento em que você decide que chega.\n\nSe esse é o momento — estamos esperando por você.\n\n👉 " . HOTMART_LINK . "\n\nCom carinho,\n*Daniely e Ira* 🌿",
     ];
 
     // Remove mensagens com data já passada (janela de 60s)
     $wpp_rows = array_filter($wpp_rows, fn($r) => strtotime($r['scheduled_at']) >= time() - 60);
-    // Insere WPP um por um para não perder todo o batch por um erro
     $wpp_queued = 0;
     foreach (array_values($wpp_rows) as $wrow) {
         if (sb_post_check('whatsapp_queue', [$wrow])) $wpp_queued++;

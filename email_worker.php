@@ -78,8 +78,12 @@ foreach ($pending as $item) {
     if (is_string($extra)) $extra = json_decode($extra, true) ?: [];
     $vars = array_merge([
         '{{nome}}'             => htmlspecialchars($item['to_name'] ?? 'você'),
+        '{{nome_lead}}'        => htmlspecialchars($item['to_name'] ?? 'você'),
+        '{{nome_perfil}}'      => '',
         '{{link_descadastro}}' => 'https://www.oficialemagreser.com/descadastro.php?email=' . urlencode($item['to_email']),
+        '{{link_vip}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
         '{{link_wpp}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
+        '{{link_hotmart}}'     => 'https://pay.hotmart.com/emagreser',
         '{{link_site}}'        => 'https://www.oficialemagreser.com',
         '{{emoji}}'            => '',
         '{{tipo}}'             => '',
