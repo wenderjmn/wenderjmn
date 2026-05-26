@@ -67,6 +67,7 @@ switch ($action) {
     case 'update_config':         require_auth(); update_config();         break;
     case 'update_quiz_question':  require_auth(); update_quiz_question();  break;
     case 'update_testimonial':    require_auth(); update_testimonial();    break;
+    case 'delete_testimonial':    require_auth(); delete_testimonial();    break;
     case 'update_mentor':         require_auth(); update_mentor();         break;
     case 'upload_file':           require_auth(); upload_file();           break;
     case 'list_email_templates':  require_auth(); list_email_templates();  break;
@@ -270,6 +271,17 @@ function update_testimonial() {
         $res = sb_request('PATCH', 'testimonials?id=eq.' . rawurlencode($id), $data);
         echo json_encode(['ok' => ($res['status'] >= 200 && $res['status'] < 300)]);
     }
+}
+
+function delete_testimonial() {
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $user = $_SESSION['admin'];
+    if (!$user['perms']['videos'] && !$user['perms']['textos'] && $user['role'] !== 'super_admin') {
+        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Sem permissão']); return;
+    }
+    $res = sb_request('DELETE', 'testimonials?id=eq.' . rawurlencode($id));
+    echo json_encode(['ok' => $res['status'] >= 200 && $res['status'] < 300]);
 }
 
 function update_mentor() {
@@ -651,13 +663,13 @@ function wpp_cancel_msg() {
 // ── WPP TEMPLATES ────────────────────────────────────────────────────────────
 function list_wpp_templates() {
     require_perm('leads');
-    $r = sb_request('GET', 'wpp_templates', null, 'select=id,name,slug,message,is_active,created_at&order=created_at.asc');
+    $r = sb_request('GET', 'wpp_templates', null, 'select=id,name,slug,message,active,created_at&order=created_at.asc');
     echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
 }
 function get_wpp_template() {
     require_perm('leads');
     $id = trim($_POST['id'] ?? '');
-    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    if (!is_valid_id($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
     $r  = sb_request('GET', 'wpp_templates', null, 'id=eq.' . rawurlencode($id) . '&limit=1');
     echo json_encode(['ok' => !empty($r['body'][0]), 'data' => $r['body'][0] ?? null]);
 }
@@ -669,11 +681,11 @@ function save_wpp_template() {
     $message = $_POST['message'] ?? '';
     if (!$name || !$message) { echo json_encode(['ok'=>false,'error'=>'Nome e mensagem obrigatórios']); return; }
     $data = ['name'=>$name,'slug'=>$slug,'message'=>$message,'updated_at'=>date('c')];
-    if ($id && is_valid_uuid($id)) {
+    if ($id && is_valid_id($id)) {
         $r = sb_request('PATCH', 'wpp_templates?id=eq.' . rawurlencode($id), $data);
         echo json_encode(['ok' => $r['status'] < 300, 'action'=>'updated']);
     } else {
-        $data['is_active'] = true; $data['created_at'] = date('c');
+        $data['active'] = true; $data['created_at'] = date('c');
         $r = sb_request('POST', 'wpp_templates', [$data]);
         echo json_encode(['ok' => $r['status'] < 300, 'action'=>'created']);
     }
@@ -681,14 +693,14 @@ function save_wpp_template() {
 function toggle_wpp_template() {
     require_perm('leads');
     $id = trim($_POST['id'] ?? ''); $active = ($_POST['active'] ?? '0') === '1';
-    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
-    $r = sb_request('PATCH', 'wpp_templates?id=eq.' . rawurlencode($id), ['is_active'=>$active,'updated_at'=>date('c')]);
+    if (!is_valid_id($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r = sb_request('PATCH', 'wpp_templates?id=eq.' . rawurlencode($id), ['active'=>$active,'updated_at'=>date('c')]);
     echo json_encode(['ok' => $r['status'] < 300]);
 }
 function delete_wpp_template() {
     require_perm('leads');
     $id = trim($_POST['id'] ?? '');
-    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    if (!is_valid_id($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
     $r = sb_request('DELETE', 'wpp_templates?id=eq.' . rawurlencode($id));
     echo json_encode(['ok' => $r['status'] < 300]);
 }
@@ -752,6 +764,10 @@ function require_auth() {
 
 function is_valid_uuid($str) {
     return (bool)preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $str);
+}
+// Accepts UUID or positive integer (for tables like wpp_templates that use serial IDs)
+function is_valid_id($str) {
+    return is_valid_uuid($str) || (ctype_digit((string)$str) && (int)$str > 0);
 }
 
 function sb_request(string $method, string $path, ?array $body = null, string $query = '', array $extra_headers = []): array {

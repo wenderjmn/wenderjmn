@@ -733,7 +733,10 @@ async function loadDepos() {
             <td style="font-size:.75rem;word-break:break-all;max-width:200px">${escHtml(d.video_url||'')}</td>
             <td>${d.order_index}</td>
             <td>${d.active ? '✅' : '❌'}</td>
-            <td><button class="btn-edit-q" onclick="editDepo('${d.id}', ${escHtml(JSON.stringify(d))})">✏️ Editar</button></td>
+            <td style="white-space:nowrap">
+              <button class="btn-edit-q" onclick="editDepo('${d.id}', ${escHtml(JSON.stringify(d))})">✏️ Editar</button>
+              <button class="btn-edit-q" onclick="deleteDepo('${d.id}','${escHtml(d.name||'').replace(/'/g,"\\'")}') " style="background:#fff1f2;color:#dc2626;border-color:#fecaca;margin-left:6px">🗑 Excluir</button>
+            </td>
           </tr>
           <tr><td colspan="6"><div id="depo-form-${d.id}" class="hidden" style="padding:16px 0"></div></td></tr>`).join('')}
       </tbody>
@@ -766,6 +769,13 @@ function depoFormHtml(id, d) {
     <button class="btn-save" onclick="saveDepo('${id}')">Salvar</button>
     <button class="inline-cancel" style="margin-left:12px" onclick="document.getElementById('${id==='new'?'add-depo-form':'depo-form-'+id}').classList.add('hidden')">Cancelar</button>
   </div>`;
+}
+
+async function deleteDepo(id, name) {
+  if (!confirm(`Excluir o depoimento de "${name}"? Esta ação não pode ser desfeita.`)) return;
+  const res = await proxyWrite({ action: 'delete_testimonial', id });
+  if (res.ok) { toast('Depoimento excluído!'); await loadDepos(); }
+  else toast(res.error || 'Erro ao excluir', 'error');
 }
 
 async function saveDepo(id) {
@@ -1107,10 +1117,19 @@ function renderLeads(rows) {
         <thead><tr><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>Perfil</th><th>Faixa Etária</th><th>Renda</th><th>Cidade/UF</th><th>Origem</th><th>Data</th></tr></thead>
         <tbody>
           ${rows.length ? rows.map(l => {
-            const src = l.source && l.source !== 'site' ? l.source : null;
-            const med = l.utm_medium || null;
+            const src = l.source || 'direto';
+            const isImport = src === 'import';
+            const isIra    = isImport && (l.utm_medium||'').toLowerCase() === 'ira';
             const srcIcons = {'instagram':'📸','facebook':'📘','google':'🔍','whatsapp':'💬','youtube':'▶️'};
-            const icon = src ? (srcIcons[src.toLowerCase()] || '🌐') : '🌐';
+            let srcBadge;
+            if (isIra) {
+              srcBadge = '<span style="background:#fdf4ff;color:#7c3aed;border-radius:8px;padding:2px 7px;font-size:.72rem;font-weight:700">📥 Imp · Ira</span>';
+            } else if (isImport) {
+              srcBadge = '<span style="background:#eff6ff;color:#1d4ed8;border-radius:8px;padding:2px 7px;font-size:.72rem;font-weight:700">📥 Importado</span>';
+            } else {
+              const icon = srcIcons[src.toLowerCase()] || '🌐';
+              srcBadge = `<span style="font-size:.75rem">${icon} ${escHtml(src)}</span>`;
+            }
             return `
             <tr>
               <td style="font-weight:600;font-size:.85rem">${escHtml(l.name||'')}</td>
@@ -1120,7 +1139,7 @@ function renderLeads(rows) {
               <td style="font-size:.78rem;color:var(--text2)">${escHtml(l.faixa_etaria||'—')}</td>
               <td style="font-size:.78rem;color:var(--text2)">${escHtml(l.faixa_renda||'—')}</td>
               <td style="font-size:.78rem;color:var(--text3)">${escHtml((l.cidade||'')+(l.estado?' / '+l.estado:''))}</td>
-              <td style="font-size:.75rem">${icon} ${escHtml(src||'direto')}${med?`<br><span style="color:var(--text3);font-size:.7rem">${escHtml(med)}</span>`:''}</td>
+              <td>${srcBadge}</td>
               <td style="font-size:.75rem;color:var(--text3);white-space:nowrap">${l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '—'}</td>
             </tr>`;
           }).join('') : '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">Nenhum lead encontrado</td></tr>'}
@@ -1882,14 +1901,17 @@ async function wptLoadList() {
   const list = document.getElementById('wpt-list');
   if (!list) return;
   if (!r.ok || !r.data?.length) { list.innerHTML = '<p style="padding:12px;color:#9ca3af;font-size:13px">Nenhum template</p>'; return; }
-  list.innerHTML = r.data.map(t => `
+  list.innerHTML = r.data.map(t => {
+    const isActive = !!(t.active ?? t.is_active);
+    return `
     <div onclick="wptLoad(${t.id})" id="wpt-item-${t.id}"
-      style="padding:10px 14px;border-radius:8px;cursor:pointer;margin-bottom:4px;transition:background .15s;opacity:${t.active?1:.5}"
+      style="padding:10px 14px;border-radius:8px;cursor:pointer;margin-bottom:4px;transition:background .15s;opacity:${isActive?1:.5}"
       onmouseover="this.style.background='#f4f3ef'" onmouseout="this.style.background=_wptActive===${t.id}?'#f0fdfa':''">
       <div style="font-size:13px;font-weight:600;color:#1c1917">${escHtml(t.name)}</div>
       <div style="font-size:11px;font-family:monospace;color:#6b7280;margin-top:2px">${escHtml(t.slug)}</div>
-      <div style="font-size:11px;color:${t.active?'var(--green)':'var(--text3)'};margin-top:2px">${t.active?'● Ativo':'○ Inativo'}</div>
-    </div>`).join('');
+      <div style="font-size:11px;color:${isActive?'var(--green)':'var(--text3)'};margin-top:2px">${isActive?'● Ativo':'○ Inativo'}</div>
+    </div>`;
+  }).join('');
 }
 
 async function wptLoad(id) {
