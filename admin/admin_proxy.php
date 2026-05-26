@@ -94,6 +94,13 @@ switch ($action) {
     case 'wpp_reset_stuck':   require_auth(); wpp_reset_stuck();   break;
     case 'wpp_retry_failed':  require_auth(); wpp_retry_failed();  break;
     case 'wpp_cancel_msg':    require_auth(); wpp_cancel_msg();    break;
+    case 'wpp_queue_import':  require_auth(); wpp_queue_import();  break;
+
+    // Gestão de leads importados
+    case 'toggle_email_block': require_auth(); toggle_email_block(); break;
+    case 'set_optin_status':   require_auth(); set_optin_status();   break;
+    case 'send_optin_wpp':     require_auth(); send_optin_wpp();     break;
+    case 'cancel_lead_emails': require_auth(); cancel_lead_emails(); break;
 
     // Gestão de usuários (apenas super_admin ou perm_usuarios)
     case 'list_users':    require_auth(); list_users();    break;
@@ -751,6 +758,94 @@ function toggle_sequence() {
     if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
     $r = sb_request('PATCH', 'sequences?id=eq.' . rawurlencode($id), ['is_active'=>$active,'updated_at'=>date('c')]);
     echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+// ── GESTÃO DE LEADS IMPORTADOS ────────────────────────────────────────────────
+
+function toggle_email_block() {
+    require_perm('leads');
+    $id      = trim($_POST['id']      ?? '');
+    $blocked = ($_POST['blocked']     ?? '0') === '1';
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r = sb_request('PATCH', 'leads?id=eq.' . rawurlencode($id), ['email_blocked'=>$blocked]);
+    echo json_encode(['ok' => $r['status'] < 300, 'email_blocked' => $blocked]);
+}
+
+function set_optin_status() {
+    require_perm('leads');
+    $id     = trim($_POST['id']     ?? '');
+    $status = trim($_POST['status'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $allowed = ['pending','confirmed','refused',''];
+    if (!in_array($status, $allowed, true)) { echo json_encode(['ok'=>false,'error'=>'Status inválido']); return; }
+    $r = sb_request('PATCH', 'leads?id=eq.' . rawurlencode($id), ['optin_status' => $status ?: null]);
+    echo json_encode(['ok' => $r['status'] < 300, 'optin_status' => $status ?: null]);
+}
+
+function send_optin_wpp() {
+    require_perm('leads');
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+
+    $leads = sb_get('leads?id=eq.' . rawurlencode($id) . '&select=id,name,phone,wpp_optout,optin_status&limit=1');
+    if (empty($leads)) { echo json_encode(['ok'=>false,'error'=>'Lead não encontrado']); return; }
+    $lead = $leads[0];
+    if (empty($lead['phone'])) { echo json_encode(['ok'=>false,'error'=>'Lead sem telefone']); return; }
+    if ($lead['wpp_optout'] === true) { echo json_encode(['ok'=>false,'error'=>'Lead com opt-out ativo']); return; }
+
+    $nome = $lead['name'] ?? 'você';
+    $msg  = "Olá, *{$nome}*! 👋\n\nSou da equipe do Programa *EmagreSer* com a Dra. Daniely.\n\nVocê está na nossa lista e gostaríamos de compartilhar conteúdos gratuitos sobre emagrecimento saudável, incluindo acesso à nossa Masterclass *\"O Código dos Sabotadores\"* em 11/06.\n\n✅ Para continuar recebendo, *responda SIM*.\n🚫 Para não receber mais, *responda NÃO* e não entraremos mais em contato.";
+
+    $now = gmdate('Y-m-d\TH:i:s\Z');
+    $r = sb_request('POST', 'whatsapp_queue', [[
+        'lead_id'      => $lead['id'],
+        'to_phone'     => $lead['phone'],
+        'to_name'      => $nome,
+        'message'      => $msg,
+        'scheduled_at' => $now,
+        'status'       => 'pending',
+    ]]);
+
+    if ($r['status'] < 300) {
+        // Marca opt-in como pendente
+        sb_request('PATCH', 'leads?id=eq.' . rawurlencode($id), ['optin_status' => 'pending']);
+        echo json_encode(['ok' => true]);
+    } else {
+        echo json_encode(['ok'=>false,'error'=>'Erro ao enfileirar WPP']);
+    }
+}
+
+function cancel_lead_emails() {
+    require_perm('leads');
+    $id = trim($_POST['id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+    $r = sb_request('DELETE', 'email_queue?lead_id=eq.' . rawurlencode($id) . '&status=in.(pending,processing)');
+    echo json_encode(['ok' => $r['status'] < 300]);
+}
+
+function wpp_queue_import() {
+    // Retorna fila WPP apenas para leads importados (source = 'import')
+    require_perm('leads');
+    $pending = sb_get(
+        'whatsapp_queue?status=in.(pending,processing,failed)' .
+        '&order=scheduled_at.asc&limit=500' .
+        '&select=id,lead_id,to_name,to_phone,message,status,scheduled_at,attempts,error_msg'
+    );
+    $sent = sb_get(
+        'whatsapp_queue?status=eq.sent' .
+        '&order=sent_at.desc&limit=200' .
+        '&select=id,lead_id,to_name,to_phone,message,status,sent_at,delivery_status,read_at,delivered_at,zapi_message_id'
+    );
+
+    // Busca IDs dos leads importados
+    $import_leads = sb_get('leads?source=eq.import&select=id&limit=5000');
+    $import_ids = array_column($import_leads, 'id');
+    $import_set = array_flip($import_ids);
+
+    $pending_filtered = array_values(array_filter($pending, fn($m) => isset($import_set[$m['lead_id']])));
+    $sent_filtered    = array_values(array_filter($sent,    fn($m) => isset($import_set[$m['lead_id']])));
+
+    echo json_encode(['ok'=>true, 'queue'=>$pending_filtered, 'sent'=>$sent_filtered]);
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────

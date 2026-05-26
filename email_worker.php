@@ -62,6 +62,15 @@ $now_iso = gmdate('Y-m-d\TH:i:s\Z'); // sem '+' no timezone, evita quebra de URL
 $pending = sb_get("email_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=lt.3&order=scheduled_at.asc&limit=" . BATCH_SIZE);
 
 foreach ($pending as $item) {
+    // Verifica se o email do lead está bloqueado
+    if (!empty($item['lead_id'])) {
+        $lcheck = sb_get("leads?id=eq.{$item['lead_id']}&select=email_blocked&limit=1");
+        if (!empty($lcheck[0]['email_blocked'])) {
+            sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>'failed','error_msg'=>'email_blocked']);
+            continue;
+        }
+    }
+
     // Trava atômica: muda para 'processing' — cron paralelo não pega este item
     sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>'processing', 'attempts' => ($item['attempts'] + 1)]);
 

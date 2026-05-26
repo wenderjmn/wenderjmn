@@ -2077,22 +2077,23 @@ async function leadsImportadosPage() {
       <div class="page-title" style="margin-bottom:0">Leads Importados</div>
       <a href="/import_leads.php" target="_blank" style="background:var(--cta);color:#fff;padding:9px 18px;border-radius:var(--r);font-weight:700;font-size:.85rem;text-decoration:none">📤 Importar novo CSV</a>
     </div>
-    <div class="page-sub" style="margin-bottom:16px">Leads vindos de importação CSV. Acompanhe opt-in WPP e status das filas.</div>
+    <div class="page-sub" style="margin-bottom:16px">Leads vindos de importação CSV. Gerencie opt-in WPP, bloqueio de e-mail e status das filas.</div>
 
     <div id="imp-stats" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px"></div>
 
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
       <input id="imp-search" type="search" class="search-bar" style="max-width:240px;margin-bottom:0" placeholder="Nome, e-mail ou telefone…" oninput="impFilter()">
-      <select id="imp-wpp-filter" onchange="impFilter()" style="border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.85rem;background:#fff">
-        <option value="">Todos WPP</option>
-        <option value="ok">✅ WPP ativo</option>
-        <option value="out">🚫 Opt-out</option>
-        <option value="pending">⏳ Aguardando</option>
+      <select id="imp-optin-filter" onchange="impFilter()" style="border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.85rem;background:#fff">
+        <option value="">Todos opt-in</option>
+        <option value="none">Opt-in não enviado</option>
+        <option value="pending">⏳ Aguardando resposta</option>
+        <option value="confirmed">✅ Confirmado</option>
+        <option value="refused">🚫 Recusou</option>
       </select>
-      <select id="imp-fila-filter" onchange="impFilter()" style="border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.85rem;background:#fff">
-        <option value="">Todas as filas</option>
-        <option value="com">Com mensagens pendentes</option>
-        <option value="sem">Sem mensagens pendentes</option>
+      <select id="imp-email-filter" onchange="impFilter()" style="border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.85rem;background:#fff">
+        <option value="">Todos e-mails</option>
+        <option value="active">E-mail ativo</option>
+        <option value="blocked">🔒 E-mail bloqueado</option>
       </select>
       <select id="imp-tipo-filter" onchange="impFilter()" style="border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.85rem;background:#fff">
         <option value="">Todos os tipos</option>
@@ -2101,12 +2102,14 @@ async function leadsImportadosPage() {
       </select>
       <button onclick="impExportCsv()" style="background:#f0fdf4;border:1px solid #86efac;color:#166534;padding:9px 14px;border-radius:var(--r);cursor:pointer;font-size:.82rem;font-weight:600;margin-left:auto">⬇️ Exportar CSV</button>
     </div>
-    <div id="imp-table-wrap"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+    <div id="imp-table-wrap"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>
+    <div id="imp-wpp-section" style="margin-top:20px"></div>`;
 
-  const [leads, wppQ, emailQ] = await Promise.all([
-    sb('leads', 'select=id,name,email,phone,sabotador,utm_medium,wpp_optout,source_campaign,created_at&source=eq.import&order=created_at.desc&limit=1000'),
+  const [leads, wppQ, emailQ, wppImport] = await Promise.all([
+    sb('leads', 'select=id,name,email,phone,sabotador,utm_medium,wpp_optout,email_blocked,optin_status,source_campaign,created_at&source=eq.import&order=created_at.desc&limit=1000'),
     sb('whatsapp_queue', 'select=lead_id,status&status=in.(pending,processing)&limit=5000'),
     sb('email_queue',    'select=lead_id,status&status=in.(pending,processing)&limit=5000'),
+    proxyWrite({ action: 'wpp_queue_import' }),
   ]);
 
   const wppCount   = {};
@@ -2121,11 +2124,11 @@ async function leadsImportadosPage() {
   }));
 
   // Estatísticas rápidas
-  const total    = window._impLeads.length;
-  const comFila  = window._impLeads.filter(l => l.wpp_pending > 0 || l.email_pending > 0).length;
-  const optout   = window._impLeads.filter(l => l.wpp_optout === true).length;
-  const ativo    = window._impLeads.filter(l => l.wpp_optout === false && !!l.phone).length;
-  const statsEl  = document.getElementById('imp-stats');
+  const total      = window._impLeads.length;
+  const confirmed  = window._impLeads.filter(l => l.optin_status === 'confirmed').length;
+  const optinNone  = window._impLeads.filter(l => !l.optin_status).length;
+  const emailBlk   = window._impLeads.filter(l => l.email_blocked).length;
+  const statsEl    = document.getElementById('imp-stats');
   if (statsEl) {
     const stat = (label, val, bg, fg) =>
       `<div style="background:${bg};border-radius:var(--r);padding:10px 18px;min-width:90px;text-align:center">
@@ -2134,19 +2137,30 @@ async function leadsImportadosPage() {
       </div>`;
     statsEl.innerHTML =
       stat('Total', total, '#f3f4f6', '#374151') +
-      stat('Com fila', comFila, '#eff6ff', '#2563eb') +
-      stat('WPP ativo', ativo, '#f0fdf4', '#16a34a') +
-      stat('Opt-out', optout, '#fff1f2', '#dc2626');
+      stat('Opt-in confirmado', confirmed, '#f0fdf4', '#16a34a') +
+      stat('Sem opt-in', optinNone, '#fff7ed', '#c2410c') +
+      stat('Email bloqueado', emailBlk, '#fff1f2', '#dc2626');
   }
 
   impRender(window._impLeads);
+  impRenderWppSection(wppImport);
 }
 
 function impWppStatus(lead) {
   if (lead.wpp_optout === true)  return '<span style="color:#ef4444;font-size:.75rem;font-weight:600">🚫 Opt-out</span>';
   if (lead.wpp_optout === false && lead.phone) return '<span style="color:#10b981;font-size:.75rem;font-weight:600">✅ Ativo</span>';
-  if (!lead.phone)               return '<span style="color:#9ca3af;font-size:.75rem">Sem telefone</span>';
+  if (!lead.phone)               return '<span style="color:#9ca3af;font-size:.75rem">Sem tel</span>';
   return '<span style="color:#f59e0b;font-size:.75rem;font-weight:600">⏳ Aguardando</span>';
+}
+
+function impOptinBadge(status) {
+  if (!status) return '<span style="color:#9ca3af;font-size:.72rem">Não enviado</span>';
+  const map = {
+    pending:   '<span style="background:#fff7ed;color:#c2410c;border-radius:8px;padding:2px 7px;font-size:.72rem;font-weight:700">⏳ Aguardando</span>',
+    confirmed: '<span style="background:#f0fdf4;color:#16a34a;border-radius:8px;padding:2px 7px;font-size:.72rem;font-weight:700">✅ Confirmado</span>',
+    refused:   '<span style="background:#fff1f2;color:#dc2626;border-radius:8px;padding:2px 7px;font-size:.72rem;font-weight:700">🚫 Recusou</span>',
+  };
+  return map[status] || status;
 }
 
 function impRender(leads) {
@@ -2154,41 +2168,60 @@ function impRender(leads) {
   if (!wrap) return;
   if (!leads.length) { wrap.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af">Nenhum lead encontrado.</div>'; return; }
   wrap.innerHTML = `<div class="card" style="padding:0;overflow:hidden;overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;font-size:.83rem;min-width:780px">
+    <table style="width:100%;border-collapse:collapse;font-size:.83rem;min-width:960px">
       <thead>
         <tr style="background:#f9fafb;border-bottom:2px solid var(--border)">
           <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--text2)">Nome</th>
           <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--text2)">E-mail / Telefone</th>
-          <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--text2)">Perfil</th>
           <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--text2)">Tipo</th>
-          <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--text2)">WPP</th>
-          <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--text2)">📧</th>
-          <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--text2)">💬</th>
-          <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--text2)">Importado</th>
+          <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--text2)">Opt-in WPP</th>
+          <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--text2)">📧 Fila</th>
+          <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--text2)">💬 Fila</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--text2)">Ações</th>
         </tr>
       </thead>
       <tbody>
         ${leads.map((l,i) => {
           const isIra = (l.utm_medium||'').toLowerCase() === 'ira';
+          const emailTd = l.email_blocked
+            ? `<span style="color:#dc2626;font-size:.73rem">${escHtml(l.email||'')}</span> <span style="background:#fff1f2;color:#dc2626;border-radius:6px;padding:1px 5px;font-size:.67rem;font-weight:700">🔒 bloq.</span>`
+            : `<span style="color:var(--text3)">${escHtml(l.email||'')}</span>`;
           return `<tr style="border-bottom:1px solid var(--border);background:${i%2===0?'#fff':'#fafafa'}">
             <td style="padding:9px 14px;font-weight:500">${escHtml(l.name||'—')}</td>
-            <td style="padding:9px 14px;color:var(--text3);font-size:.78rem;line-height:1.6">
-              ${l.email ? escHtml(l.email) : ''}<br>${l.phone ? escHtml(l.phone) : ''}
+            <td style="padding:9px 14px;font-size:.78rem;line-height:1.7">
+              ${emailTd}<br>
+              <span style="color:var(--text3)">${escHtml(l.phone||'—')}</span>
             </td>
-            <td style="padding:9px 14px">${l.sabotador ? `<span class="lead-sabotador">${escHtml(l.sabotador)}</span>` : '<span style="color:#d1d5db">—</span>'}</td>
             <td style="padding:9px 14px">
               ${isIra
                 ? '<span style="background:#fdf4ff;color:#7c3aed;border-radius:8px;padding:2px 8px;font-size:.72rem;font-weight:700">🌿 Ex-pac. Ira</span>'
                 : '<span style="color:#9ca3af;font-size:.75rem">Geral</span>'}
             </td>
-            <td style="padding:9px 14px;text-align:center">${impWppStatus(l)}</td>
+            <td style="padding:9px 14px;text-align:center">${impOptinBadge(l.optin_status)}</td>
             <td style="padding:9px 14px;text-align:center">
               ${l.email_pending > 0 ? `<span style="background:#eff6ff;color:#2563eb;border-radius:10px;padding:2px 8px;font-weight:600;font-size:.75rem">${l.email_pending}</span>` : '<span style="color:#d1d5db">0</span>'}
             </td>
             <td style="padding:9px 14px;text-align:center">
               ${l.wpp_pending > 0 ? `<span style="background:#f0fdf4;color:#16a34a;border-radius:10px;padding:2px 8px;font-weight:600;font-size:.75rem">${l.wpp_pending}</span>` : '<span style="color:#d1d5db">0</span>'}
             </td>
-            <td style="padding:9px 14px;color:var(--text3);white-space:nowrap">${l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '—'}</td>
+            <td style="padding:9px 14px">
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                ${l.phone && l.wpp_optout !== true && l.optin_status !== 'confirmed'
+                  ? `<button onclick="impSendOptin('${l.id}','${escHtml(l.name||'')}',this)" style="background:#f0fdf4;border:1px solid #86efac;color:#166534;border-radius:6px;padding:4px 9px;font-size:.72rem;cursor:pointer;font-weight:600" title="Envia mensagem WPP de confirmação de opt-in">✉️ Opt-in WPP</button>`
+                  : ''}
+                ${l.optin_status === 'pending'
+                  ? `<button onclick="impSetOptin('${l.id}','confirmed',this)" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:6px;padding:4px 9px;font-size:.72rem;cursor:pointer" title="Marcar como confirmado manualmente">✅</button>
+                     <button onclick="impSetOptin('${l.id}','refused',this)" style="background:#fff1f2;border:1px solid #fecaca;color:#dc2626;border-radius:6px;padding:4px 9px;font-size:.72rem;cursor:pointer" title="Marcar como recusou">🚫</button>`
+                  : ''}
+                ${l.email
+                  ? `<button onclick="impToggleEmailBlock('${l.id}',${l.email_blocked?'false':'true'},this)" style="background:${l.email_blocked?'#f0fdf4':'#fff1f2'};border:1px solid ${l.email_blocked?'#86efac':'#fecaca'};color:${l.email_blocked?'#166534':'#dc2626'};border-radius:6px;padding:4px 9px;font-size:.72rem;cursor:pointer" title="${l.email_blocked?'Desbloquear e-mail':'Bloquear e-mail deste lead'}">
+                    ${l.email_blocked ? '🔓 Desbloquear email' : '🔒 Bloquear email'}</button>`
+                  : ''}
+                ${l.email_pending > 0
+                  ? `<button onclick="impCancelEmails('${l.id}','${escHtml(l.name||'')}',this)" style="background:#fff7ed;border:1px solid #fed7aa;color:#c2410c;border-radius:6px;padding:4px 9px;font-size:.72rem;cursor:pointer" title="Cancelar todos e-mails pendentes">🗑 Emails</button>`
+                  : ''}
+              </div>
+            </td>
           </tr>`;
         }).join('')}
       </tbody>
@@ -2198,32 +2231,138 @@ function impRender(leads) {
 }
 
 function impFilter() {
-  const q      = (document.getElementById('imp-search')?.value || '').toLowerCase();
-  const wppF   = document.getElementById('imp-wpp-filter')?.value || '';
-  const filaF  = document.getElementById('imp-fila-filter')?.value || '';
-  const tipoF  = document.getElementById('imp-tipo-filter')?.value || '';
+  const q       = (document.getElementById('imp-search')?.value || '').toLowerCase();
+  const optinF  = document.getElementById('imp-optin-filter')?.value || '';
+  const emailF  = document.getElementById('imp-email-filter')?.value || '';
+  const tipoF   = document.getElementById('imp-tipo-filter')?.value || '';
   let filtered = (window._impLeads || []).filter(l => {
     const matchQ = !q || (l.name||'').toLowerCase().includes(q) || (l.email||'').toLowerCase().includes(q) || (l.phone||'').includes(q);
-    let matchW = true;
-    if (wppF === 'out')     matchW = l.wpp_optout === true;
-    else if (wppF === 'ok') matchW = l.wpp_optout === false && !!l.phone;
-    else if (wppF === 'pending') matchW = l.wpp_optout !== true && !!l.phone;
-    const matchFila = !filaF || (filaF === 'com' ? (l.wpp_pending > 0 || l.email_pending > 0) : (l.wpp_pending === 0 && l.email_pending === 0));
-    const isIra     = (l.utm_medium||'').toLowerCase() === 'ira';
-    const matchTipo = !tipoF || (tipoF === 'ira' ? isIra : !isIra);
-    return matchQ && matchW && matchFila && matchTipo;
+    const matchOptin = !optinF || (
+      optinF === 'none'      ? !l.optin_status :
+      optinF === 'pending'   ? l.optin_status === 'pending' :
+      optinF === 'confirmed' ? l.optin_status === 'confirmed' :
+      optinF === 'refused'   ? l.optin_status === 'refused' : true
+    );
+    const matchEmail = !emailF || (emailF === 'blocked' ? l.email_blocked : !l.email_blocked);
+    const isIra      = (l.utm_medium||'').toLowerCase() === 'ira';
+    const matchTipo  = !tipoF || (tipoF === 'ira' ? isIra : !isIra);
+    return matchQ && matchOptin && matchEmail && matchTipo;
   });
   impRender(filtered);
+}
+
+async function impSendOptin(id, name, btn) {
+  if (!confirm(`Enviar mensagem de opt-in WPP para "${name}"?`)) return;
+  btn.disabled = true; btn.textContent = '…';
+  const r = await proxyWrite({ action: 'send_optin_wpp', id });
+  if (r.ok) {
+    toast('Mensagem de opt-in enfileirada!');
+    const lead = (window._impLeads||[]).find(l => l.id === id);
+    if (lead) { lead.optin_status = 'pending'; lead.wpp_pending = (lead.wpp_pending||0) + 1; }
+    impFilter();
+  } else toast(r.error || 'Erro ao enviar opt-in', 'error');
+}
+
+async function impSetOptin(id, status, btn) {
+  btn.disabled = true;
+  const r = await proxyWrite({ action: 'set_optin_status', id, status });
+  if (r.ok) {
+    toast('Status de opt-in atualizado!');
+    const lead = (window._impLeads||[]).find(l => l.id === id);
+    if (lead) lead.optin_status = status;
+    impFilter();
+  } else toast(r.error || 'Erro', 'error');
+}
+
+async function impToggleEmailBlock(id, block, btn) {
+  const lead = (window._impLeads||[]).find(l => l.id === id);
+  const nome = lead?.name || id;
+  const msg  = block ? `Bloquear todos os e-mails de "${nome}"?` : `Desbloquear e-mails de "${nome}"?`;
+  if (!confirm(msg)) return;
+  btn.disabled = true;
+  const r = await proxyWrite({ action: 'toggle_email_block', id, blocked: block ? '1' : '0' });
+  if (r.ok) {
+    toast(block ? 'E-mail bloqueado!' : 'E-mail desbloqueado!');
+    if (lead) lead.email_blocked = block;
+    impFilter();
+  } else toast(r.error || 'Erro', 'error');
+}
+
+async function impCancelEmails(id, name, btn) {
+  if (!confirm(`Cancelar todos os e-mails pendentes de "${name}"?`)) return;
+  btn.disabled = true;
+  const r = await proxyWrite({ action: 'cancel_lead_emails', id });
+  if (r.ok) {
+    toast('E-mails cancelados!');
+    const lead = (window._impLeads||[]).find(l => l.id === id);
+    if (lead) lead.email_pending = 0;
+    impFilter();
+  } else toast(r.error || 'Erro', 'error');
+}
+
+function impRenderWppSection(r) {
+  const el = document.getElementById('imp-wpp-section');
+  if (!el) return;
+  const queue = r?.queue || [];
+  const sent  = r?.sent  || [];
+  if (!queue.length && !sent.length) {
+    el.innerHTML = `<div class="card" style="color:var(--text3);text-align:center;padding:20px;font-size:.85rem">💬 Nenhuma mensagem WPP para leads importados</div>`;
+    return;
+  }
+  const statusColor = {pending:'#6b7280', processing:'#f59e0b', failed:'#ef4444'};
+  const statusLabel = {pending:'⏳ Pendente', processing:'🔄 Processando', failed:'❌ Falha'};
+  el.innerHTML = `
+    ${queue.length ? `<div class="card">
+      <div class="card-title">💬 Fila WPP — Importados <span>${queue.length}</span></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Lead</th><th>Telefone</th><th>Mensagem</th><th>Status</th><th>Agendado</th><th></th></tr></thead>
+        <tbody>
+          ${queue.map(m => {
+            const isOverdue = m.status === 'pending' && m.scheduled_at && new Date(m.scheduled_at) < new Date();
+            return `<tr>
+              <td style="font-weight:600;font-size:.85rem">${escHtml(m.to_name||'—')}</td>
+              <td style="font-size:.8rem;color:var(--text3)">${escHtml(m.to_phone||'')}</td>
+              <td style="font-size:.78rem;color:var(--text2);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml((m.message||'').slice(0,100))}${(m.message||'').length>100?'…':''}</td>
+              <td><span style="font-size:.75rem;font-weight:600;color:${statusColor[m.status]||'#6b7280'}">${statusLabel[m.status]||m.status}</span></td>
+              <td style="font-size:.78rem;color:${isOverdue?'var(--red)':'var(--text3)'}${isOverdue?';font-weight:600':''}">${m.scheduled_at ? new Date(m.scheduled_at).toLocaleString('pt-BR') : '—'}${isOverdue?' ⚠️':''}</td>
+              <td><button onclick="wppCancel('${m.id}')" style="font-size:.72rem;color:var(--red);background:none;border:none;cursor:pointer;padding:4px" title="Cancelar">✕</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>
+    </div>` : ''}
+    ${sent.length ? `<div class="card">
+      <div class="card-title">✅ WPP Enviados — Importados <span>${sent.length}</span></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Lead</th><th>Telefone</th><th>Mensagem</th><th>Enviado em</th><th>Status</th></tr></thead>
+        <tbody>
+          ${sent.map(m => {
+            const ds = (m.delivery_status||'').toLowerCase();
+            const badge = (m.read_at||ds==='read') ? '<span style="background:#d1fae5;color:#065f46;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px">👁 Lido</span>'
+              : (m.delivered_at||ds==='received') ? '<span style="background:#dbeafe;color:#1e40af;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px">✅ Entregue</span>'
+              : '<span style="background:#f3f4f6;color:#6b7280;font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:20px">📤 Enviado</span>';
+            return `<tr>
+              <td style="font-weight:600;font-size:.85rem">${escHtml(m.to_name||'—')}</td>
+              <td style="font-size:.8rem;color:var(--text3)">${escHtml(m.to_phone||'')}</td>
+              <td style="font-size:.78rem;color:var(--text2);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml((m.message||'').slice(0,100))}${(m.message||'').length>100?'…':''}</td>
+              <td style="font-size:.78rem;color:var(--text3);white-space:nowrap">${m.sent_at ? new Date(m.sent_at).toLocaleString('pt-BR') : '—'}</td>
+              <td>${badge}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>
+    </div>` : ''}`;
 }
 
 function impExportCsv() {
   const leads = window._impLeads || [];
   if (!leads.length) { alert('Nenhum lead para exportar.'); return; }
-  const cols = ['nome','email','telefone','sabotador','tipo','wpp_status','emails_pendentes','wpp_pendentes','importado_em'];
+  const cols = ['nome','email','telefone','sabotador','tipo','optin_status','email_bloqueado','emails_pendentes','wpp_pendentes','importado_em'];
   const rows = leads.map(l => [
     l.name||'', l.email||'', l.phone||'', l.sabotador||'',
     (l.utm_medium||'').toLowerCase() === 'ira' ? 'ira' : 'geral',
-    l.wpp_optout === true ? 'opt-out' : l.wpp_optout === false && l.phone ? 'ativo' : 'aguardando',
+    l.optin_status || 'nao_enviado',
+    l.email_blocked ? 'sim' : 'nao',
     l.email_pending, l.wpp_pending,
     l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '',
   ]);
