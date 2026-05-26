@@ -116,6 +116,17 @@ switch ($action) {
     case 'toggle_user':   require_auth(); toggle_user();   break;
     case 'delete_user':   require_auth(); delete_user();   break;
 
+    // Painel — diagnóstico e gestão de filas
+    case 'painel_stats':         require_auth(); painel_stats();         break;
+    case 'painel_maintenance':   require_auth(); require_perm('config'); painel_maintenance();   break;
+    case 'painel_queue_list':    require_auth(); painel_queue_list();    break;
+    case 'painel_force_send':    require_auth(); require_perm('config'); painel_force_send();    break;
+    case 'painel_process_now':   require_auth(); require_perm('config'); painel_process_now();   break;
+    case 'painel_worker_status': require_auth(); painel_worker_status(); break;
+
+    // Importação com sequência
+    case 'import_with_sequence': require_auth(); require_perm('leads'); import_with_sequence(); break;
+
     default:
         http_response_code(400);
         echo json_encode(['ok'=>false,'error'=>'Ação desconhecida']);
