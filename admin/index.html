@@ -146,6 +146,23 @@ tbody td{padding:10px 12px;vertical-align:top}
 .lead-sabotador{display:inline-block;background:rgba(232,119,58,.1);color:var(--cta);font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:10px}
 .search-bar{width:100%;border:1px solid var(--border);border-radius:var(--r);padding:9px 14px;font-size:.88rem;margin-bottom:16px}
 .search-bar:focus{outline:none;border-color:var(--cta)}
+
+/* NAV GROUPS */
+.nav-group{margin-bottom:2px}
+.nav-group-header{display:flex;align-items:center;justify-content:space-between;padding:9px 20px;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--sidebar-text);cursor:pointer;transition:color .15s;user-select:none;border-left:3px solid transparent}
+.nav-group-header:hover{color:var(--sidebar-active)}
+.nav-group-header.has-active{color:var(--sidebar-active)}
+.nav-group-header-left{display:flex;align-items:center;gap:8px}
+.nav-group-arrow{font-size:.6rem;transition:transform .2s;display:inline-block;margin-left:2px}
+.nav-group.open .nav-group-arrow{transform:rotate(90deg)}
+.nav-group-body{overflow:hidden;max-height:0;transition:max-height .25s ease}
+.nav-group.open .nav-group-body{max-height:600px}
+.nav-sub-item{display:flex;align-items:center;gap:10px;padding:9px 20px 9px 32px;font-size:.83rem;color:var(--sidebar-text);cursor:pointer;transition:all .15s;border-left:3px solid transparent}
+.nav-sub-item:hover{color:var(--sidebar-active);background:rgba(255,255,255,.04)}
+.nav-sub-item.active{color:var(--sidebar-active);background:rgba(255,255,255,.06);border-left-color:var(--cta)}
+.nav-top-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:.85rem;color:var(--sidebar-text);cursor:pointer;transition:all .15s;border-left:3px solid transparent}
+.nav-top-item:hover{color:var(--sidebar-active);background:rgba(255,255,255,.04)}
+.nav-top-item.active{color:var(--sidebar-active);background:rgba(255,255,255,.06);border-left-color:var(--cta)}
 </style>
 </head>
 <body>
@@ -176,20 +193,81 @@ tbody td{padding:10px 12px;vertical-align:top}
       <div class="sidebar-user" id="sidebar-user">admin</div>
     </div>
     <nav class="sidebar-nav" id="sidebar-nav">
-      <div class="nav-item active" data-page="dashboard" onclick="goPage('dashboard')"><span class="nav-item-icon">📊</span> Dashboard</div>
-      <div class="nav-item" data-page="textos" onclick="goPage('textos')"><span class="nav-item-icon">✏️</span> Textos da LP</div>
-      <div class="nav-item" data-page="quiz" onclick="goPage('quiz')"><span class="nav-item-icon">❓</span> Perguntas do Quiz</div>
-      <div class="nav-item" data-page="resultados" onclick="goPage('resultados')"><span class="nav-item-icon">🎯</span> Resultados / Perfis</div>
-      <div class="nav-item" data-page="depoimentos" onclick="goPage('depoimentos')"><span class="nav-item-icon">🎬</span> Depoimentos</div>
-      <div class="nav-item" data-page="mentoras" onclick="goPage('mentoras')"><span class="nav-item-icon">👩</span> Mentoras</div>
-      <div class="nav-item" data-page="config" onclick="goPage('config')"><span class="nav-item-icon">⚙️</span> Configurações</div>
-      <div class="nav-item" data-page="leads" onclick="goPage('leads')"><span class="nav-item-icon">👥</span> Leads</div>
-      <div class="nav-item" data-page="templates" onclick="goPage('templates')"><span class="nav-item-icon">📧</span> Templates E-mail</div>
-      <div class="nav-item" data-page="whatsapp" onclick="goPage('whatsapp')"><span class="nav-item-icon">📱</span> WhatsApp</div>
-      <div class="nav-item" data-page="wpp_templates" onclick="goPage('wpp_templates')"><span class="nav-item-icon">💬</span> Templates WPP</div>
-      <div class="nav-item" data-page="leads_importados" onclick="goPage('leads_importados')"><span class="nav-item-icon">📥</span> Leads Importados</div>
-      <div class="nav-item" data-page="sequencias" onclick="goPage('sequencias')"><span class="nav-item-icon">📋</span> Sequências</div>
-      <div class="nav-item" data-page="usuarios" onclick="goPage('usuarios')"><span class="nav-item-icon">👤</span> Usuários</div>
+
+      <!-- 1. Dashboard (top-level) + Leads sub-item -->
+      <div class="nav-group open" id="nav-group-dashboard">
+        <div class="nav-group-header" onclick="toggleNavGroup('nav-group-dashboard')">
+          <span class="nav-group-header-left">📊 Dashboard</span>
+          <span class="nav-group-arrow">▶</span>
+        </div>
+        <div class="nav-group-body">
+          <div class="nav-sub-item active" data-page="dashboard" onclick="goPage('dashboard')"><span class="nav-item-icon">📊</span> Dashboard</div>
+          <div class="nav-sub-item" data-page="leads" onclick="goPage('leads')"><span class="nav-item-icon">👥</span> Leads</div>
+        </div>
+      </div>
+
+      <!-- 2. Gestão -->
+      <div class="nav-group open" id="nav-group-gestao">
+        <div class="nav-group-header" onclick="toggleNavGroup('nav-group-gestao')">
+          <span class="nav-group-header-left">Gestão</span>
+          <span class="nav-group-arrow">▶</span>
+        </div>
+        <div class="nav-group-body">
+          <div class="nav-sub-item" data-page="textos" onclick="goPage('textos')"><span class="nav-item-icon">✏️</span> Textos LP</div>
+          <div class="nav-sub-item" data-page="depoimentos" onclick="goPage('depoimentos')"><span class="nav-item-icon">🎬</span> Depoimentos</div>
+          <div class="nav-sub-item" data-page="mentoras" onclick="goPage('mentoras')"><span class="nav-item-icon">👩</span> Mentoras</div>
+          <div class="nav-sub-item" data-page="quiz" onclick="goPage('quiz')"><span class="nav-item-icon">❓</span> Perguntas Quiz</div>
+          <div class="nav-sub-item" data-page="resultados" onclick="goPage('resultados')"><span class="nav-item-icon">🎯</span> Resultados/Perfis</div>
+          <div class="nav-sub-item" data-page="config" onclick="goPage('config')"><span class="nav-item-icon">⚙️</span> Config Geral</div>
+        </div>
+      </div>
+
+      <!-- 3. Configuração -->
+      <div class="nav-group open" id="nav-group-configuracao">
+        <div class="nav-group-header" onclick="toggleNavGroup('nav-group-configuracao')">
+          <span class="nav-group-header-left">Configuração</span>
+          <span class="nav-group-arrow">▶</span>
+        </div>
+        <div class="nav-group-body">
+          <div class="nav-sub-item" data-page="templates" onclick="goPage('templates')"><span class="nav-item-icon">📧</span> Templates E-mail</div>
+          <div class="nav-sub-item" data-page="wpp_templates" onclick="goPage('wpp_templates')"><span class="nav-item-icon">💬</span> Templates WPP</div>
+          <div class="nav-sub-item" data-page="sequencias" onclick="goPage('sequencias')"><span class="nav-item-icon">📋</span> Sequências</div>
+        </div>
+      </div>
+
+      <!-- 4. Importação -->
+      <div class="nav-group open" id="nav-group-importacao">
+        <div class="nav-group-header" onclick="toggleNavGroup('nav-group-importacao')">
+          <span class="nav-group-header-left">Importação</span>
+          <span class="nav-group-arrow">▶</span>
+        </div>
+        <div class="nav-group-body">
+          <div class="nav-sub-item" data-page="leads_importados" onclick="goPage('leads_importados')"><span class="nav-item-icon">📥</span> Lista Importados</div>
+        </div>
+      </div>
+
+      <!-- 5. Painel -->
+      <div class="nav-group open" id="nav-group-painel">
+        <div class="nav-group-header" onclick="toggleNavGroup('nav-group-painel')">
+          <span class="nav-group-header-left">Painel</span>
+          <span class="nav-group-arrow">▶</span>
+        </div>
+        <div class="nav-group-body">
+          <div class="nav-sub-item" data-page="whatsapp" onclick="goPage('whatsapp')"><span class="nav-item-icon">📱</span> WhatsApp</div>
+        </div>
+      </div>
+
+      <!-- 6. Usuários -->
+      <div class="nav-group open" id="nav-group-usuarios">
+        <div class="nav-group-header" onclick="toggleNavGroup('nav-group-usuarios')">
+          <span class="nav-group-header-left">Usuários</span>
+          <span class="nav-group-arrow">▶</span>
+        </div>
+        <div class="nav-group-body">
+          <div class="nav-sub-item" data-page="usuarios" onclick="goPage('usuarios')"><span class="nav-item-icon">👤</span> Painel Usuários</div>
+        </div>
+      </div>
+
     </nav>
     <div class="sidebar-footer">
       <button class="btn-logout" onclick="doLogout()">🚪 Sair</button>
@@ -239,9 +317,19 @@ function hasPerm(page) {
 }
 
 function applyPermissions() {
-  // Filtra itens do nav
+  // Filtra sub-itens do nav (novo layout hierárquico)
+  document.querySelectorAll('.nav-sub-item[data-page]').forEach(el => {
+    el.style.display = hasPerm(el.dataset.page) ? '' : 'none';
+  });
+  // Também filtra .nav-item[data-page] para compatibilidade
   document.querySelectorAll('.nav-item[data-page]').forEach(el => {
     el.style.display = hasPerm(el.dataset.page) ? '' : 'none';
+  });
+  // Oculta grupos onde todos os sub-itens estão ocultos
+  document.querySelectorAll('.nav-group').forEach(group => {
+    const subItems = group.querySelectorAll('.nav-sub-item[data-page]');
+    const allHidden = Array.from(subItems).every(el => el.style.display === 'none');
+    group.style.display = allHidden ? 'none' : '';
   });
   // Redireciona para o primeiro módulo permitido se dashboard bloqueado
   if (!hasPerm('dashboard')) {
@@ -310,6 +398,32 @@ async function checkSession() {
 }
 
 /* ── NAVIGATION ───────────────────── */
+function toggleNavGroup(groupId) {
+  const group = document.getElementById(groupId);
+  if (group) group.classList.toggle('open');
+}
+
+function updateNavActive(name) {
+  // Clear active on all sub-items
+  document.querySelectorAll('.nav-sub-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === name);
+  });
+  // Clear active highlight on all group headers
+  document.querySelectorAll('.nav-group-header').forEach(h => {
+    h.classList.remove('has-active');
+  });
+  // Find the active sub-item and highlight + expand its parent group
+  const activeEl = document.querySelector(`.nav-sub-item[data-page="${name}"]`);
+  if (activeEl) {
+    const group = activeEl.closest('.nav-group');
+    if (group) {
+      group.classList.add('open');
+      const header = group.querySelector('.nav-group-header');
+      if (header) header.classList.add('has-active');
+    }
+  }
+}
+
 function goPage(name) {
   if (!hasPerm(name)) {
     document.getElementById('main-content').innerHTML = `
@@ -321,9 +435,11 @@ function goPage(name) {
     return;
   }
   currentPage = name;
+  // Legacy selector kept for any external callers that rely on .nav-item.active
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === name);
   });
+  updateNavActive(name);
   const pages = { dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras, config: configPage, leads, templates: emailTemplates, whatsapp: wppPage, wpp_templates: wppTemplatesPage, leads_importados: leadsImportadosPage, sequencias: sequenciasPage, usuarios: usuariosPage };
   if (pages[name]) pages[name]();
 }
@@ -340,8 +456,17 @@ async function sb(table, params = '') {
 async function proxyWrite(data) {
   const fd = new FormData();
   Object.entries(data).forEach(([k, v]) => fd.append(k, v));
-  const r = await fetch(PROXY, { method: 'POST', body: fd, credentials: 'same-origin' });
-  return r.json();
+  try {
+    const r = await fetch(PROXY, { method: 'POST', body: fd, credentials: 'same-origin' });
+    if (r.status === 401) return { ok: false, error: 'Sessão expirada. Faça login novamente.' };
+    if (r.status === 403) return { ok: false, error: 'Sem permissão para esta ação.' };
+    if (!r.ok) return { ok: false, error: `Erro HTTP ${r.status}` };
+    const text = await r.text();
+    try { return JSON.parse(text); }
+    catch { return { ok: false, error: 'Resposta inválida do servidor. Verifique se a sessão está ativa.' }; }
+  } catch (e) {
+    return { ok: false, error: `Erro de conexão: ${e.message}` };
+  }
 }
 
 /* ── PROXY UPLOAD ─────────────────── */
@@ -351,8 +476,15 @@ async function proxyUpload(file, bucket, path) {
   fd.append('file', file);
   fd.append('bucket', bucket);
   if (path) fd.append('path', path);
-  const r = await fetch(PROXY, { method: 'POST', body: fd, credentials: 'same-origin' });
-  return r.json();
+  try {
+    const r = await fetch(PROXY, { method: 'POST', body: fd, credentials: 'same-origin' });
+    if (!r.ok) return { ok: false, error: `Erro HTTP ${r.status}` };
+    const text = await r.text();
+    try { return JSON.parse(text); }
+    catch { return { ok: false, error: 'Resposta inválida do servidor.' }; }
+  } catch (e) {
+    return { ok: false, error: `Erro de conexão: ${e.message}` };
+  }
 }
 
 /* ── TOAST ─────────────────────── */

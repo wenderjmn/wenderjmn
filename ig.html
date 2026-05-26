@@ -208,11 +208,13 @@ section[id]{scroll-margin-top:68px}
 #quiz-opt-section{background:var(--teal-bg);border-top:1px solid var(--teal-border);border-bottom:1px solid var(--teal-border);padding:72px 0}
 .quiz-cta-inner{max-width:640px;margin:0 auto;text-align:center}
 
-/* QUIZ — inline (não modal) */
-#quiz-section{display:block!important;position:static!important;background:transparent!important;backdrop-filter:none!important;z-index:auto!important;padding:80px 0;border-top:1px solid var(--border);overflow-y:visible!important}
-#quiz-section.hidden{display:none!important}
-#quiz-section>.container{background:none!important;box-shadow:none!important;border-radius:0!important;padding:0 20px!important;max-width:680px;width:100%;margin:0 auto}
-.quiz-close{display:none!important}
+/* QUIZ — modal */
+#quiz-section{display:none;position:fixed;inset:0;background:rgba(15,23,42,.75);z-index:2400;padding:20px;align-items:flex-start;justify-content:center;backdrop-filter:blur(5px);overflow-y:auto}
+#quiz-section.open{display:flex}
+#quiz-section>.container{max-width:680px;width:100%;background:var(--white);border-radius:var(--rl);padding:38px 28px;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;margin:auto}
+@media(max-width:560px){#quiz-section>.container{padding:26px 16px}}
+.quiz-close{position:absolute;top:10px;right:12px;font-size:1.4rem;color:var(--text3);background:none;border:none;cursor:pointer;padding:6px 10px;border-radius:8px;z-index:2;line-height:1}
+.quiz-close:hover{background:var(--bg2);color:var(--text)}
 .quiz-wrap{max-width:620px;margin:0 auto}
 .quiz-header{text-align:center;margin-bottom:36px}
 .quiz-prog-bar{height:4px;background:var(--border);border-radius:4px;margin-bottom:10px;overflow:hidden}
@@ -389,17 +391,17 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
 <section class="hero fade-up">
   <div class="container">
     <div class="hero-grid">
+      <!-- Coluna esquerda: texto + formulário de captura -->
       <div>
         <div class="hero-eye"><div class="hero-dot"></div><span class="hero-eye-text" data-key="programa_nome">Programa EmagreSer</span></div>
         <h1 class="hero-headline" data-key="hero_headline">Você lidera tudo na sua vida. Menos isso.</h1>
         <p class="hero-sub" data-key="hero_subheadline">Descubra qual padrão está fazendo você repetir ciclos, mesmo sabendo exatamente o que deveria fazer.</p>
-        <div class="hero-pills">
+        <div class="hero-pills" style="margin-bottom:24px">
           <span class="hero-pill" data-key="promessa_item1">12 semanas de programa</span>
           <span class="hero-pill" data-key="promessa_item2">Encontros ao vivo semanais</span>
           <span class="hero-pill" data-key="promessa_item3">Suporte contínuo no WhatsApp</span>
         </div>
-      </div>
-      <div>
+        <!-- Formulário direto — sem quiz obrigatório -->
         <div class="ig-capture-card">
           <div class="ig-capture-label">Acesso gratuito · Link exclusivo para seguidores</div>
           <form id="ig-hero-form" novalidate>
@@ -417,6 +419,19 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               ENTRAR NO GRUPO VIP
             </a>
+          </div>
+        </div>
+      </div>
+      <!-- Coluna direita: vídeos das mentoras -->
+      <div>
+        <div class="hero-videos">
+          <div class="hero-video-wrap" id="hero-video-wrap">
+            <div class="vph"><span style="font-size:1.8rem">🎥</span><span style="font-size:.72rem">Daniely</span></div>
+            <div class="hero-video-label">Psicóloga Daniely</div>
+          </div>
+          <div class="hero-video-wrap" id="hero-video-ira">
+            <div class="vph"><span style="font-size:1.8rem">🎥</span><span style="font-size:.72rem">Ira</span></div>
+            <div class="hero-video-label">Nutricionista Ira</div>
           </div>
         </div>
       </div>
@@ -525,7 +540,7 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
       <div class="perfil-card locked" data-letter="C"><span class="perfil-revealed-badge">SEU PERFIL</span><span class="perfil-emoji">⚡</span><div class="perfil-tipo" data-key="resultado_C_tipo">Perfil C — A Prisioneira do Esforço</div><div class="perfil-sabotador" data-key="resultado_C_sabotador">Fadiga de Decisão</div><div class="perfil-short" data-key="resultado_C_titulo">Você esgota seu autocontrole e desiste por exaustão mental</div></div>
       <div class="perfil-card locked" data-letter="D"><span class="perfil-revealed-badge">SEU PERFIL</span><span class="perfil-emoji">🌙</span><div class="perfil-tipo" data-key="resultado_D_tipo">Perfil D — A Compensadora Noturna</div><div class="perfil-sabotador" data-key="resultado_D_sabotador">Ciclo de Restrição</div><div class="perfil-short" data-key="resultado_D_titulo">Você restringe o dia todo e perde o controle à noite</div></div>
     </div>
-    <button class="btn btn-teal lg" style="margin-top:8px" onclick="showOptionalQuiz()">DESCOBRIR MEU PERFIL →</button>
+    <button class="btn btn-teal lg" style="margin-top:8px" onclick="goToQuiz()">DESCOBRIR MEU PERFIL →</button>
   </div>
 </section>
 
@@ -537,14 +552,15 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
       <h2 style="margin-bottom:14px">Quer descobrir seu perfil sabotador?</h2>
       <p style="color:var(--text2);font-size:.97rem;line-height:1.75;margin-bottom:8px">10 perguntas · Resultado imediato · 100% gratuito</p>
       <p style="color:var(--text3);font-size:.82rem;margin-bottom:24px">Quem faz o mapeamento aproveita muito mais a Masterclass.</p>
-      <button class="btn btn-teal lg" onclick="showOptionalQuiz()">DESCOBRIR MEU PERFIL →</button>
+      <button class="btn btn-teal lg" onclick="goToQuiz()">DESCOBRIR MEU PERFIL →</button>
     </div>
   </div>
 </section>
 
-<!-- QUIZ — inline, oculto por padrão -->
-<section id="quiz-section" class="hidden">
+<!-- QUIZ — modal opcional -->
+<section id="quiz-section">
   <div class="container">
+    <button class="quiz-close" onclick="closeQuizModal()" aria-label="Fechar">✕</button>
     <div class="quiz-wrap">
       <div class="quiz-header">
         <div class="section-label">MAPEAMENTO COMPORTAMENTAL</div>
@@ -777,6 +793,27 @@ function nl2p(text){
 function k(key){return cfg[key]||'';}
 function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
+function buildHeroSlot(elId,url,label){
+  const wrap=document.getElementById(elId);
+  if(!wrap)return;
+  const id=(url||'').match(/(?:shorts\/|youtu\.be\/|watch\?v=|embed\/)([a-zA-Z0-9_-]{11})/)?.[1];
+  if(id){
+    const iframe=document.createElement('iframe');
+    iframe.src=`https://www.youtube.com/embed/${id}?playsinline=1&rel=0`;
+    iframe.allow='accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture';
+    iframe.allowFullscreen=true;iframe.loading='lazy';
+    iframe.style.cssText='width:100%;height:100%;border:none;display:block';
+    wrap.innerHTML='';wrap.appendChild(iframe);
+    wrap.insertAdjacentHTML('beforeend',`<div class="hero-video-label">${label}</div>`);
+  }else{
+    wrap.innerHTML=`<div class="vph"><span style="font-size:1.6rem">🎥</span><span style="font-size:.72rem;color:var(--text3)">Em breve</span></div><div class="hero-video-label">${label}</div>`;
+  }
+}
+function buildHeroVideo(){
+  buildHeroSlot('hero-video-wrap',k('hero_video_url')||k('video_promessa_daniely'),'Psicóloga Daniely');
+  buildHeroSlot('hero-video-ira',k('video_promessa_ira'),'Nutricionista Ira');
+}
+
 async function init(){
   try{
     const[cfgRows,qRows,testRows,mentorRows]=await Promise.all([
@@ -788,6 +825,7 @@ async function init(){
     cfgRows.forEach(r=>{cfg[r.key]=r.value;});
     questions=qRows;
     applyConfig();
+    buildHeroVideo();
     buildMentors(mentorRows);
     buildTestimonials(testRows);
     buildPrintDepos();
@@ -798,6 +836,7 @@ async function init(){
   initAnims();
   initFloating();
   initTracking();
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeQuizModal();});
 }
 
 function safeHtml(v){
@@ -1009,7 +1048,10 @@ function nextQ(){
   if(cur>=questions.length-1){finishQuiz();return;}
   quizState.current=cur+1;
   renderQ(quizState.current);
-  document.getElementById('quiz-section').scrollIntoView({behavior:'smooth',block:'start'});
+  const sec=document.getElementById('quiz-section');
+  sec.scrollTop=0;
+  const cont=sec.querySelector('.container');
+  if(cont)cont.scrollTop=0;
 }
 
 function prevQ(){
@@ -1091,7 +1133,10 @@ function finishQuiz(){
       ${leadBlock}
     </div>`;
 
-  document.getElementById('quiz-section').scrollIntoView({behavior:'smooth',block:'start'});
+  const sec=document.getElementById('quiz-section');
+  sec.scrollTop=0;
+  const cont=sec.querySelector('.container');
+  if(cont)cont.scrollTop=0;
 
   if(leadData){
     saveLead(leadData,profile,p.sabotador,counts);
@@ -1218,10 +1263,27 @@ function scrollToIgForm(){
   if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function showOptionalQuiz(){
-  const qs=document.getElementById('quiz-section');
-  if(qs){qs.classList.remove('hidden');qs.scrollIntoView({behavior:'smooth',block:'start'});}
+function openQuizModal(){
+  const sec=document.getElementById('quiz-section');
+  sec.classList.add('open');
+  document.body.style.overflow='hidden';
+  setTimeout(()=>{sec.scrollTop=0;const c=sec.querySelector('.container');if(c)c.scrollTop=0;},50);
 }
+
+function closeQuizModal(){
+  document.getElementById('quiz-section').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+function goToQuiz(){
+  if(quizState.done){
+    openQuizModal();
+    return;
+  }
+  openQuizModal();
+}
+
+function showOptionalQuiz(){openQuizModal();}
 
 /* ── COUNTDOWN ── */
 function startCountdown(){
