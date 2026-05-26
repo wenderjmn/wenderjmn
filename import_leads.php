@@ -355,6 +355,7 @@ foreach ($rows as $i => $row) {
             'sabotador'       => $sab    ?: null,
             'source'          => 'import',
             'source_campaign' => 'reengajamento_2026',
+            'utm_medium'      => $tipo   ?: null,
         ]);
         if (empty($created[0]['id'])) {
             $errors[] = "Linha " . ($i+2) . ": falha ao criar lead {$email}";
