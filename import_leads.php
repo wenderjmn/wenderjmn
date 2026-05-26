@@ -25,6 +25,8 @@ define('ZAPI_TOKEN',           getenv('ZAPI_TOKEN')           ?: '');
 define('ZAPI_CLIENT_TOKEN',    getenv('ZAPI_CLIENT_TOKEN')    ?: '');
 define('SITE_URL',             'https://www.oficialemagreser.com');
 define('WPP_LINK',             'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ');
+define('HOTMART_LINK',         getenv('HOTMART_LINK')         ?: 'https://pay.hotmart.com/emagreser');
+define('IRA_VIDEO_URL',        getenv('IRA_VIDEO_URL')        ?: '');
 
 $is_cli = php_sapi_name() === 'cli';
 
@@ -323,6 +325,7 @@ foreach ($rows as $i => $row) {
     $cidade = trim($row['cidade']   ?? '');
     $estado = strtoupper(trim($row['estado'] ?? ''));
     $sab    = strtoupper(trim($row['sabotador'] ?? $row['perfil'] ?? ''));
+    $tipo   = strtolower(trim($row['tipo'] ?? $row['origem'] ?? ''));
 
     // Validações por canal
     if (in_array($canal, ['email', 'ambos']) && (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL))) {
@@ -375,6 +378,7 @@ foreach ($rows as $i => $row) {
         '{{link_wpp}}'         => WPP_LINK,
         '{{link_vip}}'         => WPP_LINK,
         '{{link_hotmart}}'     => HOTMART_LINK,
+        '{{link_video_ira}}'   => IRA_VIDEO_URL,
         '{{link_descadastro}}' => SITE_URL . '/descadastro.php?email=' . urlencode($email),
         '{{emoji}}'            => '🎯',
         '{{tipo}}'             => $nome_perfil,
@@ -383,6 +387,35 @@ foreach ($rows as $i => $row) {
     ];
 
     $tel = $phone ? '55' . ltrim($phone, '0') : '';
+
+    // ── Mensagem especial da Ira (ex-pacientes) ───────────────────
+    // Ativado pela coluna "tipo=ira" (ou "origem=ira") no CSV
+    if ($tipo === 'ira' && IRA_VIDEO_URL) {
+        $send_now = $base->format(DateTime::ATOM);
+
+        if ($tel && strlen($phone) >= 10 && in_array($canal, ['wpp', 'ambos'])) {
+            sb_post('whatsapp_queue', [[
+                'lead_id'      => $lead_id,
+                'to_phone'     => $tel,
+                'to_name'      => $name,
+                'message'      => "Olá, *{$name}*! 🌿\n\nA Ira gravou um recado especial para você — para quem esteve junto nessa jornada.\n\nAssiste com atenção 👇\n\n" . IRA_VIDEO_URL,
+                'scheduled_at' => $send_now,
+                'status'       => 'pending',
+            ]]);
+        }
+
+        if ($email && filter_var($email, FILTER_VALIDATE_EMAIL) && in_array($canal, ['email', 'ambos'])) {
+            sb_post('email_queue', [[
+                'lead_id'       => $lead_id,
+                'template_slug' => 'ira_video_boas_vindas',
+                'to_email'      => $email,
+                'to_name'       => $name,
+                'extra_vars'    => $vars_email,
+                'scheduled_at'  => $send_now,
+                'status'        => 'pending',
+            ]]);
+        }
+    }
 
     foreach ($seq_items as $item) {
         $type = $item['type'] ?? '';
