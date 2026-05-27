@@ -67,6 +67,7 @@ table{width:100%;border-collapse:collapse;font-size:.85rem}
 thead th{text-align:left;padding:10px 12px;background:var(--bg);font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);border-bottom:1px solid var(--border)}
 tbody tr{border-bottom:1px solid var(--border)}
 tbody tr:last-child{border-bottom:none}
+.tr-hover:hover{background:#f0fdf4;cursor:pointer}
 tbody td{padding:10px 12px;vertical-align:top}
 .key-cell{font-weight:600;color:var(--text);font-family:monospace;font-size:.8rem;white-space:nowrap}
 .val-cell{color:var(--text2);max-width:400px}
@@ -557,78 +558,252 @@ const SABOTADOR_NAMES = {
 };
 
 async function dashboard() {
+  _clearActiveIntervals();
   const main = document.getElementById('main-content');
-  main.innerHTML = `<div class="page-title">Dashboard</div><div class="page-sub">Visão geral do Programa EmagreSer</div>
-    <div style="text-align:center;padding:40px;color:var(--text3)">Carregando dados…</div>
-    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+  main.innerHTML = `
+    <div class="page-title">Dashboard</div>
+    <div class="page-sub">Visão geral do Programa EmagreSer</div>
+    <div style="text-align:center;padding:40px;color:var(--text3)"><div class="spinner" style="margin:0 auto 12px"></div>Carregando dados…</div>`;
   try {
-    const hdrs = { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}`, Prefer: 'count=exact' };
-    const [rAll, rToday, rCfg, rLeadsRecent] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/leads?select=id&limit=1`, {headers: hdrs}),
-      fetch(`${SUPABASE_URL}/rest/v1/leads?select=id&limit=1&created_at=gte.${new Date().toISOString().slice(0,10)}`, {headers: hdrs}),
-      sb('site_config', 'select=key,value&limit=500'),
-      sb('leads', 'select=id,name,email,sabotador,created_at&order=created_at.desc&limit=10'),
+    // Carrega tudo em paralelo: stats de filas, últimos e-mails enviados, últimos WPPs enviados, leads recentes
+    const [rStats, rEmailSent, rWppSent, rEmailFail, rWppFail, rLeadsRecent] = await Promise.all([
+      proxyWrite({ action: 'painel_stats' }),
+      proxyWrite({ action: 'painel_queue_list', queue: 'email_sent' }),
+      proxyWrite({ action: 'painel_queue_list', queue: 'wpp_sent' }),
+      proxyWrite({ action: 'painel_queue_list', queue: 'email_failed' }),
+      proxyWrite({ action: 'painel_queue_list', queue: 'wpp_failed' }),
+      sb('leads', 'select=id,name,email,sabotador,funnel_stage,created_at&order=created_at.desc&limit=8'),
     ]);
-    const totalLeads = parseInt((rAll.headers.get('content-range')||'0/0').split('/')[1]) || 0;
-    const todayLeads = parseInt((rToday.headers.get('content-range')||'0/0').split('/')[1]) || 0;
-    rCfg.forEach(r => { allConfig[r.key] = r.value; });
-    const masterclass = allConfig['masterclass_data'] || allConfig['live_data'] || '—';
 
-    // Load all leads for distribution chart (500 limit to be safe)
-    const allLeadsForChart = await sb('leads', 'select=sabotador&limit=1000');
-    const dist = {A:0,B:0,C:0,D:0};
-    allLeadsForChart.forEach(l => {
-      const s = (l.sabotador||'').trim().toUpperCase();
-      if (dist[s] !== undefined) dist[s]++;
-      else if (/Recompensadora|Hedônica/i.test(l.sabotador)) dist.A++;
-      else if (/Piloto|Amn/i.test(l.sabotador)) dist.B++;
-      else if (/Prisioneira|Fadiga/i.test(l.sabotador)) dist.C++;
-      else if (/Compensadora|Restri/i.test(l.sabotador)) dist.D++;
-    });
-    const distTotal = Object.values(dist).reduce((a,b)=>a+b,0) || 1;
-    const topSab = Object.entries(dist).sort((a,b)=>b[1]-a[1])[0];
-    const topName = topSab ? (SABOTADOR_NAMES[topSab[0]] || topSab[0]) : '—';
+    const s         = rStats.ok ? rStats : {};
+    const emailSent = rEmailSent.items || [];
+    const wppSent   = rWppSent.items   || [];
+    const emailFail = rEmailFail.items || [];
+    const wppFail   = rWppFail.items   || [];
+
+    // helper: colored stat card
+    const statCard = (val, label, color='var(--cta)') =>
+      `<div class="stat-card"><div class="stat-num" style="color:${color}">${val}</div><div class="stat-label">${label}</div></div>`;
+
+    // helper: queue mgmt action
+    const qBtn = (label, op, danger=false) =>
+      `<button onclick="dashQueueAction('${op}')"
+        style="background:${danger?'#fff1f2':'#f3f4f6'};border:1px solid ${danger?'#fca5a5':'var(--border)'};
+        color:${danger?'#b91c1c':'var(--text2)'};border-radius:var(--r);padding:6px 12px;font-size:.75rem;
+        font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px">
+        ${label}
+      </button>`;
 
     main.innerHTML = `
       <div class="page-title">Dashboard</div>
-      <div class="page-sub">Visão geral do Programa EmagreSer</div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-num">${totalLeads}</div><div class="stat-label">Total de leads</div></div>
-        <div class="stat-card"><div class="stat-num">${todayLeads}</div><div class="stat-label">Leads hoje</div></div>
-        <div class="stat-card" style="overflow:hidden"><div class="stat-num" style="font-size:1rem;margin-top:4px">${topName}</div><div class="stat-label">Perfil mais comum</div></div>
-        <div class="stat-card"><div class="stat-num" style="font-size:1.1rem">📅</div><div class="stat-label">Masterclass: ${escHtml(masterclass)}</div></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+        <div class="page-sub" style="margin:0;flex:1">Visão geral do Programa EmagreSer</div>
+        <button onclick="dashboard()" style="background:#f3f4f6;border:1px solid var(--border);border-radius:var(--r);padding:7px 14px;font-size:.8rem;cursor:pointer">↻ Atualizar</button>
       </div>
-      <div class="card">
-        <div class="card-title">Distribuição por perfil sabotador <span>${allLeadsForChart.length} leads</span></div>
-        ${Object.entries(dist).map(([k,v]) => {
-          const pct = Math.round(v/distTotal*100);
-          return `<div class="dist-row">
-            <div class="dist-label">${SABOTADOR_NAMES[k]}</div>
-            <div class="dist-bar-wrap"><div class="dist-bar" style="width:${pct}%"></div></div>
-            <div class="dist-pct">${v} <span style="color:var(--text3);font-weight:400">(${pct}%)</span></div>
-          </div>`;
-        }).join('')}
-      </div>
-      <div class="card">
-        <div class="card-title">Últimos 10 leads</div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Data</th></tr></thead>
-            <tbody>
-              ${rLeadsRecent.map(l => `
-                <tr>
-                  <td style="font-weight:600;font-size:.85rem">${escHtml(l.name||'—')}</td>
-                  <td style="font-size:.8rem;color:var(--text2)">${escHtml(l.email||'—')}</td>
-                  <td><span class="lead-sabotador">${escHtml(l.sabotador||'—')}</span></td>
-                  <td style="font-size:.78rem;color:var(--text3)">${l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '—'}</td>
-                </tr>`).join('')}
-            </tbody>
-          </table>
+
+      <!-- ── Controles de fila (E-mail + WPP) ── -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <!-- E-mail -->
+        <div class="card" style="padding:16px 18px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:1rem">📧</span>
+            <span style="font-weight:700;font-size:.92rem">E-mail</span>
+          </div>
+          <div style="display:flex;gap:18px;margin-bottom:12px;font-size:.82rem">
+            <span>Travados: <strong style="color:${(s.email_stuck||0)>0?'#d97706':'#16a34a'}">${s.email_stuck||0}</strong></span>
+            <span>Com falha: <strong style="color:${(s.email_fail||0)>0?'var(--red)':'#16a34a'}">${s.email_fail||0}</strong></span>
+          </div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap">
+            ${qBtn('↺ Resetar travados','reset_stuck_email')}
+            ${qBtn('↺ Retentar falhas','retry_failed_email')}
+            ${qBtn('🗑 Excluir falhas','delete_failed_email',true)}
+          </div>
         </div>
+        <!-- WhatsApp -->
+        <div class="card" style="padding:16px 18px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:1rem">💬</span>
+            <span style="font-weight:700;font-size:.92rem">WhatsApp</span>
+          </div>
+          <div style="display:flex;gap:18px;margin-bottom:12px;font-size:.82rem">
+            <span>Travados: <strong style="color:${(s.wpp_stuck||0)>0?'#d97706':'#16a34a'}">${s.wpp_stuck||0}</strong></span>
+            <span>Com falha: <strong style="color:${(s.wpp_fail||0)>0?'var(--red)':'#16a34a'}">${s.wpp_fail||0}</strong></span>
+          </div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap">
+            ${qBtn('↺ Resetar travados','reset_stuck_wpp')}
+            ${qBtn('↺ Retentar falhas','retry_failed_wpp')}
+            ${qBtn('🗑 Excluir falhas','delete_failed_wpp',true)}
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Stats grid ── -->
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+        ${statCard(s.leads_total||0,    'Leads cadastradas')}
+        ${statCard(s.leads_queued||0,   'Na automação', '#0d9488')}
+        ${statCard(s.email_sent||0,     'E-mails enviados', '#16a34a')}
+        ${statCard(s.email_pend||0,     'E-mails pendentes', '#d97706')}
+        ${statCard(s.email_fail||0,     'E-mails com falha', (s.email_fail||0)>0?'var(--red)':'#16a34a')}
+        ${statCard(s.wpp_sent||0,       'WPP enviados', '#16a34a')}
+        ${statCard(s.wpp_pend||0,       'WPP pendentes', '#d97706')}
+        ${statCard(s.wpp_fail||0,       'WPP com falha', (s.wpp_fail||0)>0?'var(--red)':'#16a34a')}
+      </div>
+
+      <!-- ── E-mails com falha ── -->
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div onclick="_accordionToggle('dash-email-fail')"
+             style="display:flex;align-items:center;gap:10px;padding:13px 18px;cursor:pointer;background:${emailFail.length?'#fff1f2':'var(--white)'}">
+          <span id="arr-dash-email-fail" style="font-size:.7rem;transition:transform .2s;color:var(--text3)">▶</span>
+          <span style="font-weight:700;font-size:.87rem">📧 E-mails com falha</span>
+          <span style="background:${emailFail.length?'var(--red)':'#d1fae5'};color:${emailFail.length?'#fff':'#065f46'};
+                border-radius:20px;padding:1px 9px;font-size:.72rem;font-weight:700">${emailFail.length}</span>
+        </div>
+        <div id="acc-dash-email-fail" style="display:none;border-top:1px solid var(--border)">
+          ${emailFail.length ? `
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:#fff1f2">
+              <th style="text-align:left;padding:7px 18px;font-size:.7rem;color:#b91c1c;font-weight:700">LEAD</th>
+              <th style="text-align:left;padding:7px 12px;font-size:.7rem;color:#b91c1c;font-weight:700">TEMPLATE</th>
+              <th style="text-align:left;padding:7px 12px;font-size:.7rem;color:#b91c1c;font-weight:700">TENTATIVAS</th>
+              <th style="text-align:left;padding:7px 12px;font-size:.7rem;color:#b91c1c;font-weight:700">ERRO</th>
+            </tr></thead>
+            <tbody>
+              ${emailFail.map(m=>`<tr style="border-top:1px solid #fee2e2">
+                <td style="padding:8px 18px;font-size:.8rem;font-weight:600">${escHtml(m.to_name||'—')}<br><span style="color:var(--text3);font-weight:400;font-size:.72rem">${escHtml(m.to_email||'')}</span></td>
+                <td style="padding:8px 12px;font-size:.78rem;color:var(--text2)">${escHtml(m.template_slug||'—')}</td>
+                <td style="padding:8px 12px;font-size:.8rem;text-align:center">${m.attempts||0}</td>
+                <td style="padding:8px 12px;font-size:.72rem;color:var(--red);max-width:200px">${escHtml((m.error_msg||'').slice(0,80))}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>` : `<div style="padding:18px;text-align:center;color:var(--text3);font-size:.85rem">Nenhum e-mail com falha</div>`}
+        </div>
+      </div>
+
+      <!-- ── WhatsApp com falha ── -->
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div onclick="_accordionToggle('dash-wpp-fail')"
+             style="display:flex;align-items:center;gap:10px;padding:13px 18px;cursor:pointer;background:${wppFail.length?'#fff1f2':'var(--white)'}">
+          <span id="arr-dash-wpp-fail" style="font-size:.7rem;transition:transform .2s;color:var(--text3)">▶</span>
+          <span style="font-weight:700;font-size:.87rem">💬 WhatsApp com falha</span>
+          <span style="background:${wppFail.length?'var(--red)':'#d1fae5'};color:${wppFail.length?'#fff':'#065f46'};
+                border-radius:20px;padding:1px 9px;font-size:.72rem;font-weight:700">${wppFail.length}</span>
+        </div>
+        <div id="acc-dash-wpp-fail" style="display:none;border-top:1px solid var(--border)">
+          ${wppFail.length ? `
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:#fff1f2">
+              <th style="text-align:left;padding:7px 18px;font-size:.7rem;color:#b91c1c;font-weight:700">LEAD</th>
+              <th style="text-align:left;padding:7px 12px;font-size:.7rem;color:#b91c1c;font-weight:700">TENTATIVAS</th>
+              <th style="text-align:left;padding:7px 12px;font-size:.7rem;color:#b91c1c;font-weight:700">ERRO</th>
+            </tr></thead>
+            <tbody>
+              ${wppFail.map(m=>`<tr style="border-top:1px solid #fee2e2">
+                <td style="padding:8px 18px;font-size:.8rem;font-weight:600">${escHtml(m.to_name||'—')}<br><span style="color:var(--text3);font-weight:400;font-size:.72rem">${escHtml(m.to_phone||'')}</span></td>
+                <td style="padding:8px 12px;font-size:.8rem;text-align:center">${m.attempts||0}</td>
+                <td style="padding:8px 12px;font-size:.72rem;color:var(--red);max-width:260px">${escHtml((m.error_msg||'').slice(0,80))}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>` : `<div style="padding:18px;text-align:center;color:var(--text3);font-size:.85rem">Nenhum WhatsApp com falha</div>`}
+        </div>
+      </div>
+
+      <!-- ── Últimos envios (email + wpp lado a lado) ── -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <span style="font-weight:700;font-size:.87rem">📧 Últimos e-mails enviados</span>
+            <span style="font-size:.72rem;color:var(--text3)">${emailSent.length} registros</span>
+          </div>
+          ${emailSent.length ? `
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:#f8faff">
+              <th style="text-align:left;padding:6px 18px;font-size:.68rem;color:#1e40af;font-weight:700;letter-spacing:.04em">LEAD</th>
+              <th style="text-align:left;padding:6px 10px;font-size:.68rem;color:#1e40af;font-weight:700;letter-spacing:.04em">TEMPLATE</th>
+              <th style="text-align:left;padding:6px 10px;font-size:.68rem;color:#1e40af;font-weight:700;letter-spacing:.04em">ENVIADO</th>
+            </tr></thead>
+            <tbody>
+              ${emailSent.slice(0,12).map(m=>`<tr style="border-top:1px solid var(--border)">
+                <td style="padding:7px 18px;font-size:.79rem;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(m.to_name||'—')}</td>
+                <td style="padding:7px 10px;font-size:.72rem;color:var(--text2);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(m.template_slug||'—')}</td>
+                <td style="padding:7px 10px;font-size:.7rem;color:var(--text3);white-space:nowrap">${m.sent_at?new Date(m.sent_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>` : `<div style="padding:24px;text-align:center;color:var(--text3);font-size:.85rem">Nenhum e-mail enviado ainda</div>`}
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <span style="font-weight:700;font-size:.87rem">💬 Últimos WPPs enviados</span>
+            <span style="font-size:.72rem;color:var(--text3)">${wppSent.length} registros</span>
+          </div>
+          ${wppSent.length ? `
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:#f0fdf4">
+              <th style="text-align:left;padding:6px 18px;font-size:.68rem;color:#166534;font-weight:700;letter-spacing:.04em">LEAD</th>
+              <th style="text-align:left;padding:6px 10px;font-size:.68rem;color:#166534;font-weight:700;letter-spacing:.04em">STATUS</th>
+              <th style="text-align:left;padding:6px 10px;font-size:.68rem;color:#166534;font-weight:700;letter-spacing:.04em">ENVIADO</th>
+            </tr></thead>
+            <tbody>
+              ${wppSent.slice(0,12).map(m=>{
+                const ds = m.delivery_status||'sent';
+                const dsLabel = ds==='read'?'👁 Lido':ds==='received'?'✅ Recebido':'📤 Enviado';
+                return `<tr style="border-top:1px solid var(--border)">
+                  <td style="padding:7px 18px;font-size:.79rem;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(m.to_name||'—')}</td>
+                  <td style="padding:7px 10px;font-size:.72rem">${dsLabel}</td>
+                  <td style="padding:7px 10px;font-size:.7rem;color:var(--text3);white-space:nowrap">${m.sent_at?new Date(m.sent_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—'}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>` : `<div style="padding:24px;text-align:center;color:var(--text3);font-size:.85rem">Nenhum WPP enviado ainda</div>`}
+        </div>
+      </div>
+
+      <!-- ── Últimos leads ── -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;font-size:.87rem">👥 Últimas cadastradas</span>
+          <button onclick="goPage('leads')" style="font-size:.75rem;color:var(--cta);background:none;border:none;cursor:pointer;font-weight:600">Ver todas →</button>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#fafaf8">
+            <th style="text-align:left;padding:7px 18px;font-size:.68rem;color:var(--text3);font-weight:700;letter-spacing:.04em">NOME</th>
+            <th style="text-align:left;padding:7px 12px;font-size:.68rem;color:var(--text3);font-weight:700;letter-spacing:.04em">E-MAIL</th>
+            <th style="text-align:left;padding:7px 12px;font-size:.68rem;color:var(--text3);font-weight:700;letter-spacing:.04em">PERFIL</th>
+            <th style="text-align:left;padding:7px 12px;font-size:.68rem;color:var(--text3);font-weight:700;letter-spacing:.04em">ESTÁGIO</th>
+            <th style="text-align:left;padding:7px 12px;font-size:.68rem;color:var(--text3);font-weight:700;letter-spacing:.04em">DATA</th>
+          </tr></thead>
+          <tbody>
+            ${rLeadsRecent.map(l=>{
+              const st = FUNNEL_STAGES[l.funnel_stage||'novo'] || FUNNEL_STAGES['novo'];
+              return `<tr style="border-top:1px solid var(--border)" onclick="openLeadDetail('${l.id}')" class="tr-hover">
+                <td style="padding:8px 18px;font-size:.82rem;font-weight:600;cursor:pointer;color:var(--cta)">${escHtml(l.name||'—')}</td>
+                <td style="padding:8px 12px;font-size:.78rem;color:var(--text2)">${escHtml(l.email||'—')}</td>
+                <td style="padding:8px 12px"><span class="lead-sabotador" style="font-size:.72rem">${escHtml(l.sabotador||'—')}</span></td>
+                <td style="padding:8px 12px"><span style="background:${st.bg};color:${st.color};border-radius:20px;padding:2px 9px;font-size:.7rem;font-weight:700">${st.label}</span></td>
+                <td style="padding:8px 12px;font-size:.75rem;color:var(--text3)">${l.created_at?new Date(l.created_at).toLocaleDateString('pt-BR'):'—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
       </div>`;
+
   } catch(e) {
     main.innerHTML = `<div class="page-title">Dashboard</div><div class="card" style="color:var(--red)">Erro ao carregar dados: ${escHtml(e.message)}</div>`;
   }
+}
+
+async function dashQueueAction(op) {
+  const labels = {
+    reset_stuck_email:   'Resetar e-mails travados?',
+    retry_failed_email:  'Retentar todos os e-mails com falha?',
+    delete_failed_email: 'Excluir TODOS os e-mails com falha? Esta ação é irreversível.',
+    reset_stuck_wpp:     'Resetar WPPs travados?',
+    retry_failed_wpp:    'Retentar todos os WPPs com falha?',
+    delete_failed_wpp:   'Excluir TODOS os WPPs com falha? Esta ação é irreversível.',
+  };
+  if (!confirm(labels[op] || 'Confirmar?')) return;
+  const r = await proxyWrite({ action: 'painel_maintenance', op });
+  toast(r.msg || (r.ok ? 'Concluído' : r.error || 'Erro'));
+  if (r.ok) setTimeout(dashboard, 800);
 }
 
 /* ── TEXTOS (site_config editor) ─── */
