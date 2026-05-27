@@ -135,8 +135,10 @@ switch ($action) {
     case 'lead_profile':        require_auth(); require_perm('leads'); lead_profile();        break;
     case 'lead_update_stage':   require_auth(); require_perm('leads'); lead_update_stage();   break;
     case 'lead_send_now':       require_auth(); require_perm('leads'); lead_send_now();       break;
-    case 'lead_pause_sequence': require_auth(); require_perm('leads'); lead_pause_sequence(); break;
-    case 'leads_list':          require_auth(); require_perm('leads'); leads_list();          break;
+    case 'lead_pause_sequence':      require_auth(); require_perm('leads'); lead_pause_sequence();      break;
+    case 'lead_unsubscribe_email':   require_auth(); require_perm('leads'); lead_unsubscribe_email();   break;
+    case 'lead_unsubscribe_wpp':     require_auth(); require_perm('leads'); lead_unsubscribe_wpp();     break;
+    case 'leads_list':               require_auth(); require_perm('leads'); leads_list();               break;
 
     default:
         http_response_code(400);
@@ -1692,6 +1694,45 @@ function lead_pause_sequence() {
     $r = sb_request('PATCH', 'leads?id=eq.' . rawurlencode($lead_id), ['sequence_paused' => $pause]);
     $ok = $r['status'] >= 200 && $r['status'] < 300;
     echo json_encode(['ok'=>$ok, 'paused'=>$pause, 'http_status'=>$r['status']]);
+}
+
+function lead_unsubscribe_email() {
+    $lead_id = trim($_POST['lead_id'] ?? '');
+    if (!is_valid_uuid($lead_id)) { echo json_encode(['ok'=>false,'error'=>'lead_id inválido']); return; }
+
+    // Seta email_optout = true
+    $r1 = sb_request('PATCH', 'leads?id=eq.' . rawurlencode($lead_id), ['email_optout' => true]);
+
+    // Cancela todos os e-mails pendentes
+    $r2 = sb_request('PATCH',
+        'email_queue?lead_id=eq.' . rawurlencode($lead_id) . '&status=eq.pending',
+        ['status' => 'cancelled', 'error_msg' => 'descadastro manual pelo admin']
+    );
+
+    // Conta quantos foram cancelados
+    $pending = sb_get('email_queue?lead_id=eq.' . rawurlencode($lead_id) .
+        '&status=eq.cancelled&error_msg=eq.' . rawurlencode('descadastro manual pelo admin') .
+        '&select=id&limit=200');
+
+    $ok = $r1['status'] >= 200 && $r1['status'] < 300;
+    echo json_encode(['ok' => $ok, 'cancelled' => count((array)$pending)]);
+}
+
+function lead_unsubscribe_wpp() {
+    $lead_id = trim($_POST['lead_id'] ?? '');
+    if (!is_valid_uuid($lead_id)) { echo json_encode(['ok'=>false,'error'=>'lead_id inválido']); return; }
+
+    // Seta wpp_optout = true
+    $r1 = sb_request('PATCH', 'leads?id=eq.' . rawurlencode($lead_id), ['wpp_optout' => true]);
+
+    // Cancela todos os WPP pendentes
+    sb_request('PATCH',
+        'whatsapp_queue?lead_id=eq.' . rawurlencode($lead_id) . '&status=eq.pending',
+        ['status' => 'cancelled', 'error_msg' => 'descadastro manual pelo admin']
+    );
+
+    $ok = $r1['status'] >= 200 && $r1['status'] < 300;
+    echo json_encode(['ok' => $ok]);
 }
 
 function leads_list() {

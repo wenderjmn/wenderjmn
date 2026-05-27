@@ -85,16 +85,38 @@ if ($text === 'SIM') {
     exit;
 }
 
-// Resposta NÃO ao pedido de consentimento
-if ($text === 'NÃO' || $text === 'NAO' || $text === 'N') {
+// Descadastro / opt-out — detecta qualquer intenção de sair da lista
+$optout_words = [
+    'NÃO', 'NAO', 'N',
+    'PARAR', 'PARA',
+    'STOP',
+    'CANCELAR', 'CANCELA', 'CANCEL',
+    'SAIR', 'SAIO',
+    'REMOVER', 'REMOVE',
+    'DESCADASTRAR', 'DESCADASTRE', 'DESCADASTRO',
+    'CHEGA',
+    'NAO QUERO', 'NÃO QUERO',
+    'NAO QUERO MAIS', 'NÃO QUERO MAIS',
+    'PODE PARAR', 'PODE CANCELAR',
+    'ME REMOVE', 'ME REMOVA',
+    'SAIR DA LISTA', 'REMOVER DA LISTA',
+    'EXCLUIR', 'EXCLUI',
+    'DESINSCREVER', 'DESINSCRITO',
+    'UNSUBSCRIBE',
+];
+
+if (in_array($text, $optout_words, true)) {
     if ($lead !== null) {
         sb_patch("leads?id=eq.{$lead['id']}", ['wpp_optout' => true]);
         // Cancela todos os WPP pendentes deste lead
-        sb_patch("whatsapp_queue?lead_id=eq.{$lead['id']}&status=eq.pending", ['status' => 'cancelled', 'error_msg' => 'opt-out via WPP']);
+        sb_patch(
+            "whatsapp_queue?lead_id=eq.{$lead['id']}&status=eq.pending",
+            ['status' => 'cancelled', 'error_msg' => 'opt-out via WPP: ' . $text]
+        );
     }
-    $msg_nao = "Entendido, {$nome}. Não enviaremos mais mensagens para este número. 🙏\n\nSe mudar de ideia, pode acessar nosso site a qualquer momento:\n👉 " . $site_url;
+    $msg_nao = "Entendido, {$nome}. 🙏 Removemos seu número da nossa lista.\n\nNão receberá mais mensagens nossas.\n\nSe mudar de ideia, acesse: 👉 " . $site_url;
     zapi_send($phone, $msg_nao);
-    echo json_encode(['ok' => true, 'replied' => true, 'action' => 'optout_confirmed']);
+    echo json_encode(['ok' => true, 'replied' => true, 'action' => 'optout_confirmed', 'word' => $text]);
     exit;
 }
 

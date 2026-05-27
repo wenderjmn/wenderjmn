@@ -1472,9 +1472,13 @@ async function leadDetailPage(leadId) {
           <div><span style="color:var(--text3)">Próximo e-mail</span><br><strong style="font-size:.78rem">${nextEmail?new Date(nextEmail.scheduled_at).toLocaleString('pt-BR'):'—'}</strong></div>
           <div><span style="color:var(--text3)">Próximo WPP</span><br><strong style="font-size:.78rem">${nextWpp?new Date(nextWpp.scheduled_at).toLocaleString('pt-BR'):'—'}</strong></div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
           <button onclick="ldSendModal('${leadId}','email')" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer">📧 Enviar e-mail agora</button>
           <button onclick="ldSendModal('${leadId}','wpp')"   style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer">💬 Enviar WPP agora</button>
+        </div>
+        <div style="border-top:1px solid #fee2e2;padding-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="ldUnsubscribe('${leadId}','email')" style="background:#fff1f2;border:1px solid #fecaca;color:#b91c1c;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer" title="Remove da fila e impede futuros envios de e-mail">🚫 Cancelar fila e-mail</button>
+          <button onclick="ldUnsubscribe('${leadId}','wpp')"   style="background:#fff1f2;border:1px solid #fecaca;color:#b91c1c;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer" title="Remove da fila e impede futuros envios de WPP">🚫 Cancelar fila WPP</button>
         </div>
       </div>
     </div>
@@ -1602,6 +1606,20 @@ async function ldSendConfirm(leadId) {
       res.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:8px 12px;font-size:.82rem;color:#dc2626">❌ ${escHtml(r.msg||r.error||'Falha')}</div>`;
     }
     toast(r.msg || r.error || 'Falha no envio', 'error');
+  }
+}
+
+async function ldUnsubscribe(leadId, channel) {
+  const label   = channel === 'email' ? 'e-mail' : 'WPP';
+  const action  = channel === 'email' ? 'lead_unsubscribe_email' : 'lead_unsubscribe_wpp';
+  const confirm_msg = `Cancelar TODA a fila de ${label} para este lead?\n\n• Todos os itens pendentes serão marcados como cancelados\n• O lead será marcado como opt-out de ${label}\n\nEsta ação não pode ser desfeita.`;
+  if (!confirm(confirm_msg)) return;
+  const r = await proxyWrite({ action, lead_id: leadId });
+  if (r.ok) {
+    toast(`Fila de ${label} cancelada. Lead descadastrado.`);
+    await leadDetailPage(leadId);
+  } else {
+    toast(r.error || 'Erro ao cancelar fila', 'error');
   }
 }
 
