@@ -1339,12 +1339,18 @@ function painel_process_now() {
 }
 
 function painel_worker_status() {
-    $log_file = dirname(__DIR__) . '/email_worker.log';
-    // Fallback: check same directory
-    if (!file_exists($log_file)) {
-        $log_file = __DIR__ . '/../email_worker.log';
+    $docroot = rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/\\');
+    $candidates = [
+        $docroot . '/email_worker.log',
+        dirname(__DIR__) . '/email_worker.log',
+        __DIR__ . '/../email_worker.log',
+        __DIR__ . '/../../email_worker.log',
+    ];
+    $log_file  = $candidates[0];
+    $log_exists = false;
+    foreach ($candidates as $c) {
+        if ($c && file_exists($c)) { $log_file = $c; $log_exists = true; break; }
     }
-    $log_exists = file_exists($log_file);
     $log_lines  = [];
     $log_age_ok = false;
     if ($log_exists) {
@@ -1363,8 +1369,17 @@ function painel_worker_status() {
 }
 
 function painel_run_worker() {
-    $worker = dirname(__DIR__) . '/email_worker.php';
-    if (!file_exists($worker)) { echo json_encode(['ok'=>false,'error'=>'email_worker.php não encontrado']); return; }
+    $docroot = rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/\\');
+    $candidates = [
+        $docroot . '/email_worker.php',
+        dirname(__DIR__) . '/email_worker.php',
+        __DIR__ . '/../email_worker.php',
+    ];
+    $worker = null;
+    foreach ($candidates as $c) {
+        if ($c && file_exists($c)) { $worker = $c; break; }
+    }
+    if (!$worker) { echo json_encode(['ok'=>false,'error'=>'email_worker.php não encontrado']); return; }
     exec('php ' . escapeshellarg($worker) . ' > /dev/null 2>&1 &');
     echo json_encode(['ok'=>true,'msg'=>'Worker disparado em background — aguarde alguns segundos e verifique o log.']);
 }
