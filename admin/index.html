@@ -3111,6 +3111,30 @@ async function pmTestWpp() {
   if (r.ok) toast(r.msg || 'WhatsApp enviado!'); else toast(r.error || r.msg || 'Falha', 'error');
 }
 
+/* ── HELPERS: agrupamento por lead ───────────────────────────────────────── */
+function _groupByLead(items, keyFn) {
+  const map = new Map();
+  for (const m of items) {
+    const k = keyFn(m);
+    if (!map.has(k)) map.set(k, []);
+    map.get(k).push(m);
+  }
+  return [...map.entries()].map(([key, rows]) => ({ key, rows }));
+}
+
+function _qTabBtn(id, label, active, onclick) {
+  return `<button id="${id}" onclick="${onclick}" style="background:${active?'var(--cta)':'#f3f4f6'};color:${active?'#fff':''};border:${active?'none':'1px solid var(--border)'};padding:8px 18px;border-radius:var(--r);font-weight:600;cursor:pointer;font-size:.85rem">${label}</button>`;
+}
+
+function _accordionToggle(uid) {
+  const body = document.getElementById('acc-' + uid);
+  const arrow = document.getElementById('arr-' + uid);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.style.transform = open ? 'rotate(0deg)' : 'rotate(90deg)';
+}
+
 /* ── PAINEL: FILA EMAIL ──────────────────────────────────────────────────── */
 async function painelFilaEmailPage() {
   _clearActiveIntervals();
@@ -3119,8 +3143,8 @@ async function painelFilaEmailPage() {
     <div class="page-title">Fila E-mail</div>
     <div class="page-sub">Visualize e gerencie os e-mails na fila.</div>
     <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
-      <button id="pfe-tab-pend" onclick="pfeSetTab('pending')" style="background:var(--cta);color:#fff;border:none;padding:8px 18px;border-radius:var(--r);font-weight:600;cursor:pointer;font-size:.85rem">Aguardando</button>
-      <button id="pfe-tab-sent" onclick="pfeSetTab('sent')" style="background:#f3f4f6;border:1px solid var(--border);padding:8px 18px;border-radius:var(--r);cursor:pointer;font-size:.85rem">Enviados</button>
+      ${_qTabBtn('pfe-tab-pend','Aguardando',true,"pfeSetTab('pending')")}
+      ${_qTabBtn('pfe-tab-sent','Enviados',false,"pfeSetTab('sent')")}
       <button onclick="pfeLoad()" style="background:#f3f4f6;border:1px solid var(--border);padding:8px 14px;border-radius:var(--r);cursor:pointer;font-size:.82rem;margin-left:auto">Atualizar</button>
     </div>
     <div id="pfe-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
@@ -3130,10 +3154,11 @@ async function painelFilaEmailPage() {
 
 async function pfeSetTab(tab) {
   window._pfeTab = tab;
-  const btnP = document.getElementById('pfe-tab-pend');
-  const btnS = document.getElementById('pfe-tab-sent');
-  if (btnP) { btnP.style.background = tab==='pending' ? 'var(--cta)' : '#f3f4f6'; btnP.style.color = tab==='pending' ? '#fff' : ''; btnP.style.border = tab==='pending' ? 'none' : '1px solid var(--border)'; }
-  if (btnS) { btnS.style.background = tab==='sent'    ? 'var(--cta)' : '#f3f4f6'; btnS.style.color = tab==='sent'    ? '#fff' : ''; btnS.style.border = tab==='sent'    ? 'none' : '1px solid var(--border)'; }
+  ['pend','sent'].forEach(t => {
+    const b = document.getElementById('pfe-tab-' + t);
+    const on = (t === 'pend' && tab === 'pending') || (t === 'sent' && tab === 'sent');
+    if (b) { b.style.background = on ? 'var(--cta)' : '#f3f4f6'; b.style.color = on ? '#fff' : ''; b.style.border = on ? 'none' : '1px solid var(--border)'; }
+  });
   await pfeLoad();
 }
 
@@ -3146,32 +3171,117 @@ async function pfeLoad() {
   const items = r.items || [];
   if (!items.length) { el.innerHTML = '<div class="card" style="text-align:center;padding:32px;color:var(--text3)">Nenhum item.</div>'; return; }
 
+  const groups = _groupByLead(items, m => (m.lead_id || m.to_email || m.to_name || '?'));
+  const totalLeads = groups.length;
+  const totalItems = items.length;
+
   if (tab === 'pending') {
-    el.innerHTML = `<div class="card" style="padding:0;overflow:hidden"><div class="table-wrap"><table>
-      <thead><tr><th>Lead / E-mail</th><th>Template</th><th>Agendado</th><th>Tentativas</th><th>Ações</th></tr></thead>
-      <tbody>${items.map(m => {
+    const rows = groups.map(({ key, rows }, gi) => {
+      const uid   = 'pfe_' + gi;
+      const first = rows[0];
+      const hasOverdue = rows.some(m => m.scheduled_at && new Date(m.scheduled_at) < new Date());
+      const next  = rows.reduce((a,b) => (!a || (b.scheduled_at && b.scheduled_at < a)) ? b.scheduled_at : a, null);
+      const nextFmt = next ? new Date(next).toLocaleString('pt-BR') : '—';
+
+      const subRows = rows.map(m => {
         const overdue = m.scheduled_at && new Date(m.scheduled_at) < new Date();
-        return `<tr>
-          <td style="font-size:.83rem"><strong>${escHtml(m.to_name||'—')}</strong><br><span style="color:var(--text3);font-size:.75rem">${escHtml(m.to_email||'')}</span></td>
-          <td><span style="background:#eff6ff;color:#1e40af;padding:2px 8px;border-radius:8px;font-size:.72rem;font-weight:600">${escHtml(m.template_slug||'')}</span></td>
-          <td style="font-size:.78rem;color:${overdue?'var(--red)':'var(--text3)'}${overdue?';font-weight:600':''}">${m.scheduled_at ? new Date(m.scheduled_at).toLocaleString('pt-BR') : '—'}${overdue?' (atrasado)':''}</td>
-          <td style="text-align:center;font-size:.82rem">${m.attempts||0}</td>
+        return `<tr style="background:#fafafa">
+          <td style="padding-left:36px;font-size:.78rem;color:var(--text3)">${escHtml(m.template_slug||'—')}</td>
+          <td style="font-size:.78rem;color:${overdue?'var(--red)':'var(--text3)'}${overdue?';font-weight:600':''}">${m.scheduled_at ? new Date(m.scheduled_at).toLocaleString('pt-BR') : '—'}${overdue?' ⚠':''.trim()}</td>
+          <td style="text-align:center;font-size:.78rem">${m.attempts||0}</td>
           <td style="white-space:nowrap">
-            <button onclick="pfeForce('${m.id}')" style="background:#7c3aed;color:#fff;border:none;padding:4px 9px;border-radius:5px;font-size:.72rem;cursor:pointer;margin-right:4px">Forcar</button>
-            <button onclick="pfeDelete('${m.id}')" style="background:var(--red);color:#fff;border:none;padding:4px 9px;border-radius:5px;font-size:.72rem;cursor:pointer">Excluir</button>
+            <button onclick="pfeForce('${m.id}')" style="background:#7c3aed;color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:.7rem;cursor:pointer;margin-right:3px">Forçar</button>
+            <button onclick="pfeDelete('${m.id}')" style="background:var(--red);color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:.7rem;cursor:pointer">Excluir</button>
           </td>
         </tr>`;
-      }).join('')}</tbody>
-    </table></div></div>`;
+      }).join('');
+
+      return `<tr onclick="_accordionToggle('${uid}')" style="cursor:pointer;border-top:1px solid var(--border);transition:background .15s" onmouseover="this.style.background='#f9f9f9'" onmouseout="this.style.background=''">
+        <td style="padding:10px 12px 10px 14px;font-size:.84rem">
+          <span id="arr-${uid}" style="display:inline-block;transition:transform .2s;margin-right:8px;font-size:.7rem;color:var(--text3)">▶</span>
+          <strong>${escHtml(first.to_name||'—')}</strong>
+          <span style="display:block;font-size:.72rem;color:var(--text3);margin-left:22px">${escHtml(first.to_email||'')}</span>
+        </td>
+        <td style="padding:10px 12px">
+          <span style="background:${hasOverdue?'#fef2f2':'#eff6ff'};color:${hasOverdue?'#dc2626':'#1e40af'};padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:700">${rows.length} e-mail${rows.length!==1?'s':''}</span>
+        </td>
+        <td style="padding:10px 12px;font-size:.78rem;color:${hasOverdue?'var(--red)':'var(--text3)'}${hasOverdue?';font-weight:600':''}">${nextFmt}${hasOverdue?' ⚠':''}</td>
+        <td></td><td></td>
+      </tr>
+      <tr id="acc-${uid}" style="display:none"><td colspan="5" style="padding:0">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f0f4ff">
+            <th style="text-align:left;padding:6px 36px;font-size:.72rem;color:#1e40af;font-weight:700;letter-spacing:.04em">TEMPLATE</th>
+            <th style="text-align:left;padding:6px 12px;font-size:.72rem;color:#1e40af;font-weight:700;letter-spacing:.04em">AGENDADO</th>
+            <th style="text-align:center;padding:6px 12px;font-size:.72rem;color:#1e40af;font-weight:700;letter-spacing:.04em">TENT.</th>
+            <th style="padding:6px 12px;font-size:.72rem;color:#1e40af;font-weight:700;letter-spacing:.04em">AÇÕES</th>
+          </tr></thead>
+          <tbody>${subRows}</tbody>
+        </table>
+      </td></tr>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div style="font-size:.78rem;color:var(--text3);margin-bottom:10px">${totalLeads} lead${totalLeads!==1?'s':''} — ${totalItems} e-mail${totalItems!==1?'s':''} na fila &nbsp;·&nbsp; Clique para expandir</div>
+      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f8f8f8">
+            <th style="text-align:left;padding:10px 14px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">LEAD / E-MAIL</th>
+            <th style="text-align:left;padding:10px 12px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">TOTAL</th>
+            <th style="text-align:left;padding:10px 12px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">PRÓXIMO AGENDADO</th>
+            <th style="padding:10px 12px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em"></th>
+            <th style="padding:10px 12px"></th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+
   } else {
-    el.innerHTML = `<div class="card" style="padding:0;overflow:hidden"><div class="table-wrap"><table>
-      <thead><tr><th>Lead / E-mail</th><th>Template</th><th>Enviado em</th></tr></thead>
-      <tbody>${items.map(m => `<tr>
-        <td style="font-size:.83rem"><strong>${escHtml(m.to_name||'—')}</strong><br><span style="color:var(--text3);font-size:.75rem">${escHtml(m.to_email||'')}</span></td>
-        <td><span style="background:#f0fdf4;color:#166534;padding:2px 8px;border-radius:8px;font-size:.72rem;font-weight:600">${escHtml(m.template_slug||'')}</span></td>
+    const groups2 = _groupByLead(items, m => (m.lead_id || m.to_email || m.to_name || '?'));
+    const rows = groups2.map(({ rows }, gi) => {
+      const uid  = 'pfe_s_' + gi;
+      const first = rows[0];
+      const last  = rows.reduce((a,b) => (!a || (b.sent_at && b.sent_at > a)) ? b.sent_at : a, null);
+
+      const subRows = rows.map(m => `<tr style="background:#fafafa">
+        <td style="padding-left:36px;font-size:.78rem;color:var(--text3)">${escHtml(m.template_slug||'—')}</td>
         <td style="font-size:.78rem;color:var(--text3)">${m.sent_at ? new Date(m.sent_at).toLocaleString('pt-BR') : '—'}</td>
-      </tr>`).join('')}</tbody>
-    </table></div></div>`;
+      </tr>`).join('');
+
+      return `<tr onclick="_accordionToggle('${uid}')" style="cursor:pointer;border-top:1px solid var(--border)" onmouseover="this.style.background='#f9f9f9'" onmouseout="this.style.background=''">
+        <td style="padding:10px 14px;font-size:.84rem">
+          <span id="arr-${uid}" style="display:inline-block;transition:transform .2s;margin-right:8px;font-size:.7rem;color:var(--text3)">▶</span>
+          <strong>${escHtml(first.to_name||'—')}</strong>
+          <span style="display:block;font-size:.72rem;color:var(--text3);margin-left:22px">${escHtml(first.to_email||'')}</span>
+        </td>
+        <td style="padding:10px 12px">
+          <span style="background:#f0fdf4;color:#166534;padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:700">${rows.length} enviado${rows.length!==1?'s':''}</span>
+        </td>
+        <td style="padding:10px 12px;font-size:.78rem;color:var(--text3)">${last ? new Date(last).toLocaleString('pt-BR') : '—'}</td>
+      </tr>
+      <tr id="acc-${uid}" style="display:none"><td colspan="3" style="padding:0">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f0fdf4">
+            <th style="text-align:left;padding:6px 36px;font-size:.72rem;color:#166534;font-weight:700;letter-spacing:.04em">TEMPLATE</th>
+            <th style="text-align:left;padding:6px 12px;font-size:.72rem;color:#166534;font-weight:700;letter-spacing:.04em">ENVIADO EM</th>
+          </tr></thead>
+          <tbody>${subRows}</tbody>
+        </table>
+      </td></tr>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div style="font-size:.78rem;color:var(--text3);margin-bottom:10px">${groups2.length} lead${groups2.length!==1?'s':''} — ${totalItems} e-mail${totalItems!==1?'s':''} enviados &nbsp;·&nbsp; Clique para expandir</div>
+      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f8f8f8">
+            <th style="text-align:left;padding:10px 14px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">LEAD / E-MAIL</th>
+            <th style="text-align:left;padding:10px 12px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">TOTAL</th>
+            <th style="text-align:left;padding:10px 12px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">ÚLTIMO ENVIO</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
   }
 }
 
@@ -3197,8 +3307,8 @@ async function painelFilaWppPage() {
     <div class="page-title">Fila WPP</div>
     <div class="page-sub">Visualize e gerencie as mensagens WhatsApp na fila.</div>
     <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
-      <button id="pfw-tab-pend" onclick="pfwSetTab('pending')" style="background:var(--cta);color:#fff;border:none;padding:8px 18px;border-radius:var(--r);font-weight:600;cursor:pointer;font-size:.85rem">Aguardando</button>
-      <button id="pfw-tab-sent" onclick="pfwSetTab('sent')" style="background:#f3f4f6;border:1px solid var(--border);padding:8px 18px;border-radius:var(--r);cursor:pointer;font-size:.85rem">Enviados</button>
+      ${_qTabBtn('pfw-tab-pend','Aguardando',true,"pfwSetTab('pending')")}
+      ${_qTabBtn('pfw-tab-sent','Enviados',false,"pfwSetTab('sent')")}
       <button onclick="pfwLoad()" style="background:#f3f4f6;border:1px solid var(--border);padding:8px 14px;border-radius:var(--r);cursor:pointer;font-size:.82rem;margin-left:auto">Atualizar</button>
     </div>
     <div id="pfw-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
@@ -3208,10 +3318,11 @@ async function painelFilaWppPage() {
 
 async function pfwSetTab(tab) {
   window._pfwTab = tab;
-  const btnP = document.getElementById('pfw-tab-pend');
-  const btnS = document.getElementById('pfw-tab-sent');
-  if (btnP) { btnP.style.background = tab==='pending' ? 'var(--cta)' : '#f3f4f6'; btnP.style.color = tab==='pending' ? '#fff' : ''; btnP.style.border = tab==='pending' ? 'none' : '1px solid var(--border)'; }
-  if (btnS) { btnS.style.background = tab==='sent'    ? 'var(--cta)' : '#f3f4f6'; btnS.style.color = tab==='sent'    ? '#fff' : ''; btnS.style.border = tab==='sent'    ? 'none' : '1px solid var(--border)'; }
+  ['pend','sent'].forEach(t => {
+    const b = document.getElementById('pfw-tab-' + t);
+    const on = (t === 'pend' && tab === 'pending') || (t === 'sent' && tab === 'sent');
+    if (b) { b.style.background = on ? 'var(--cta)' : '#f3f4f6'; b.style.color = on ? '#fff' : ''; b.style.border = on ? 'none' : '1px solid var(--border)'; }
+  });
   await pfwLoad();
 }
 
@@ -3224,42 +3335,132 @@ async function pfwLoad() {
   const items = r.items || [];
   if (!items.length) { el.innerHTML = '<div class="card" style="text-align:center;padding:32px;color:var(--text3)">Nenhum item.</div>'; return; }
 
+  const groups = _groupByLead(items, m => (m.lead_id || m.to_phone || m.to_name || '?'));
+  const totalLeads = groups.length;
+  const totalItems = items.length;
+
   if (tab === 'pending') {
-    el.innerHTML = `<div class="card" style="padding:0;overflow:hidden"><div class="table-wrap"><table>
-      <thead><tr><th>Lead</th><th>Telefone</th><th>Mensagem</th><th>Agendado</th><th>Tentativas</th><th>Ações</th></tr></thead>
-      <tbody>${items.map(m => {
+    const rows = groups.map(({ rows }, gi) => {
+      const uid   = 'pfw_' + gi;
+      const first = rows[0];
+      const hasOverdue = rows.some(m => m.scheduled_at && new Date(m.scheduled_at) < new Date());
+      const next  = rows.reduce((a,b) => (!a || (b.scheduled_at && b.scheduled_at < a)) ? b.scheduled_at : a, null);
+
+      const subRows = rows.map(m => {
         const overdue = m.scheduled_at && new Date(m.scheduled_at) < new Date();
-        return `<tr>
-          <td style="font-size:.83rem;font-weight:600">${escHtml(m.to_name||'—')}</td>
-          <td style="font-size:.78rem;color:var(--text3)">${escHtml(m.to_phone||'')}</td>
-          <td style="font-size:.75rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml((m.message||'').slice(0,50))}${(m.message||'').length>50?'…':''}</td>
-          <td style="font-size:.78rem;color:${overdue?'var(--red)':'var(--text3)'}${overdue?';font-weight:600':''}">${m.scheduled_at ? new Date(m.scheduled_at).toLocaleString('pt-BR') : '—'}${overdue?' (atrasado)':''}</td>
-          <td style="text-align:center;font-size:.82rem">${m.attempts||0}</td>
-          <td style="white-space:nowrap">
-            <button onclick="pfwForce('${m.id}')" style="background:#7c3aed;color:#fff;border:none;padding:4px 9px;border-radius:5px;font-size:.72rem;cursor:pointer;margin-right:4px">Forcar</button>
-            <button onclick="pfwDelete('${m.id}')" style="background:var(--red);color:#fff;border:none;padding:4px 9px;border-radius:5px;font-size:.72rem;cursor:pointer">Excluir</button>
+        const preview = (m.message || '').replace(/\n/g,' ').slice(0, 80);
+        return `<tr style="background:#fafafa">
+          <td style="padding:8px 14px 8px 36px;font-size:.76rem;color:var(--text2);max-width:340px">
+            <span title="${escHtml(m.message||'')}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(preview)}${(m.message||'').length>80?'…':''}</span>
+          </td>
+          <td style="padding:8px 12px;font-size:.76rem;color:${overdue?'var(--red)':'var(--text3)'}${overdue?';font-weight:600':''}">${m.scheduled_at ? new Date(m.scheduled_at).toLocaleString('pt-BR') : '—'}${overdue?' ⚠':''}</td>
+          <td style="padding:8px 12px;text-align:center;font-size:.76rem">${m.attempts||0}</td>
+          <td style="padding:8px 12px;white-space:nowrap">
+            <button onclick="pfwForce('${m.id}')" style="background:#7c3aed;color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:.7rem;cursor:pointer;margin-right:3px">Forçar</button>
+            <button onclick="pfwDelete('${m.id}')" style="background:var(--red);color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:.7rem;cursor:pointer">Excluir</button>
           </td>
         </tr>`;
-      }).join('')}</tbody>
-    </table></div></div>`;
+      }).join('');
+
+      return `<tr onclick="_accordionToggle('${uid}')" style="cursor:pointer;border-top:1px solid var(--border)" onmouseover="this.style.background='#f9f9f9'" onmouseout="this.style.background=''">
+        <td style="padding:10px 14px;font-size:.84rem">
+          <span id="arr-${uid}" style="display:inline-block;transition:transform .2s;margin-right:8px;font-size:.7rem;color:var(--text3)">▶</span>
+          <strong>${escHtml(first.to_name||'—')}</strong>
+        </td>
+        <td style="padding:10px 12px;font-size:.78rem;color:var(--text3)">${escHtml(first.to_phone||'')}</td>
+        <td style="padding:10px 12px">
+          <span style="background:${hasOverdue?'#fef2f2':'#f3e8ff'};color:${hasOverdue?'#dc2626':'#7c3aed'};padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:700">${rows.length} msg${rows.length!==1?'s':''}</span>
+        </td>
+        <td style="padding:10px 12px;font-size:.78rem;color:${hasOverdue?'var(--red)':'var(--text3)'}${hasOverdue?';font-weight:600':''}">${next ? new Date(next).toLocaleString('pt-BR') : '—'}${hasOverdue?' ⚠':''}</td>
+        <td></td><td></td>
+      </tr>
+      <tr id="acc-${uid}" style="display:none"><td colspan="6" style="padding:0">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f5f3ff">
+            <th style="text-align:left;padding:6px 36px;font-size:.72rem;color:#7c3aed;font-weight:700;letter-spacing:.04em">MENSAGEM</th>
+            <th style="text-align:left;padding:6px 12px;font-size:.72rem;color:#7c3aed;font-weight:700;letter-spacing:.04em">AGENDADO</th>
+            <th style="text-align:center;padding:6px 12px;font-size:.72rem;color:#7c3aed;font-weight:700;letter-spacing:.04em">TENT.</th>
+            <th style="padding:6px 12px;font-size:.72rem;color:#7c3aed;font-weight:700;letter-spacing:.04em">AÇÕES</th>
+          </tr></thead>
+          <tbody>${subRows}</tbody>
+        </table>
+      </td></tr>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div style="font-size:.78rem;color:var(--text3);margin-bottom:10px">${totalLeads} lead${totalLeads!==1?'s':''} — ${totalItems} mensagem${totalItems!==1?'ns':''} na fila &nbsp;·&nbsp; Clique para expandir</div>
+      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f8f8f8">
+            <th style="text-align:left;padding:10px 14px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">LEAD</th>
+            <th style="text-align:left;padding:10px 12px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">TELEFONE</th>
+            <th style="text-align:left;padding:10px 12px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">TOTAL</th>
+            <th style="text-align:left;padding:10px 12px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">PRÓXIMO</th>
+            <th style="padding:10px 12px"></th><th style="padding:10px 12px"></th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+
   } else {
-    el.innerHTML = `<div class="card" style="padding:0;overflow:hidden"><div class="table-wrap"><table>
-      <thead><tr><th>Lead</th><th>Telefone</th><th>Mensagem</th><th>Enviado em</th><th>Status</th></tr></thead>
-      <tbody>${items.map(m => {
+    const groups2 = _groupByLead(items, m => (m.lead_id || m.to_phone || m.to_name || '?'));
+    const rows = groups2.map(({ rows }, gi) => {
+      const uid   = 'pfw_s_' + gi;
+      const first = rows[0];
+      const last  = rows.reduce((a,b) => (!a || (b.sent_at && b.sent_at > a)) ? b.sent_at : a, null);
+
+      const subRows = rows.map(m => {
         const ds = (m.delivery_status||'').toLowerCase();
-        let badge = '<span style="color:var(--text3);font-size:.72rem">—</span>';
-        if (ds === 'read' || ds === 'played') badge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:700">Lido</span>';
-        else if (ds === 'received') badge = '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:700">Entregue</span>';
-        else if (ds === 'sent') badge = '<span style="background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:600">Enviado</span>';
-        return `<tr>
-          <td style="font-size:.83rem;font-weight:600">${escHtml(m.to_name||'—')}</td>
-          <td style="font-size:.78rem;color:var(--text3)">${escHtml(m.to_phone||'')}</td>
-          <td style="font-size:.75rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml((m.message||'').slice(0,50))}${(m.message||'').length>50?'…':''}</td>
-          <td style="font-size:.78rem;color:var(--text3)">${m.sent_at ? new Date(m.sent_at).toLocaleString('pt-BR') : '—'}</td>
-          <td>${badge}</td>
+        let badge = '<span style="color:var(--text3);font-size:.7rem">—</span>';
+        if (ds==='read'||ds==='played') badge = '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700">Lido</span>';
+        else if (ds==='received') badge = '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700">Entregue</span>';
+        else if (ds==='sent') badge = '<span style="background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:600">Enviado</span>';
+        const preview = (m.message||'').replace(/\n/g,' ').slice(0,80);
+        return `<tr style="background:#fafafa">
+          <td style="padding:7px 14px 7px 36px;font-size:.76rem;color:var(--text2);max-width:340px">
+            <span title="${escHtml(m.message||'')}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(preview)}${(m.message||'').length>80?'…':''}</span>
+          </td>
+          <td style="padding:7px 12px;font-size:.76rem;color:var(--text3)">${m.sent_at ? new Date(m.sent_at).toLocaleString('pt-BR') : '—'}</td>
+          <td style="padding:7px 12px">${badge}</td>
         </tr>`;
-      }).join('')}</tbody>
-    </table></div></div>`;
+      }).join('');
+
+      return `<tr onclick="_accordionToggle('${uid}')" style="cursor:pointer;border-top:1px solid var(--border)" onmouseover="this.style.background='#f9f9f9'" onmouseout="this.style.background=''">
+        <td style="padding:10px 14px;font-size:.84rem">
+          <span id="arr-${uid}" style="display:inline-block;transition:transform .2s;margin-right:8px;font-size:.7rem;color:var(--text3)">▶</span>
+          <strong>${escHtml(first.to_name||'—')}</strong>
+        </td>
+        <td style="padding:10px 12px;font-size:.78rem;color:var(--text3)">${escHtml(first.to_phone||'')}</td>
+        <td style="padding:10px 12px">
+          <span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:700">${rows.length} enviada${rows.length!==1?'s':''}</span>
+        </td>
+        <td style="padding:10px 12px;font-size:.78rem;color:var(--text3)">${last ? new Date(last).toLocaleString('pt-BR') : '—'}</td>
+      </tr>
+      <tr id="acc-${uid}" style="display:none"><td colspan="4" style="padding:0">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f0fdf4">
+            <th style="text-align:left;padding:6px 36px;font-size:.72rem;color:#166534;font-weight:700;letter-spacing:.04em">MENSAGEM</th>
+            <th style="text-align:left;padding:6px 12px;font-size:.72rem;color:#166534;font-weight:700;letter-spacing:.04em">ENVIADO EM</th>
+            <th style="padding:6px 12px;font-size:.72rem;color:#166534;font-weight:700;letter-spacing:.04em">STATUS</th>
+          </tr></thead>
+          <tbody>${subRows}</tbody>
+        </table>
+      </td></tr>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div style="font-size:.78rem;color:var(--text3);margin-bottom:10px">${groups2.length} lead${groups2.length!==1?'s':''} — ${totalItems} mensagem${totalItems!==1?'ns':''} enviadas &nbsp;·&nbsp; Clique para expandir</div>
+      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f8f8f8">
+            <th style="text-align:left;padding:10px 14px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">LEAD</th>
+            <th style="text-align:left;padding:10px 12px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">TELEFONE</th>
+            <th style="text-align:left;padding:10px 12px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">TOTAL</th>
+            <th style="text-align:left;padding:10px 12px;font-size:.72rem;color:var(--text2);font-weight:700;letter-spacing:.04em">ÚLTIMO ENVIO</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
   }
 }
 
