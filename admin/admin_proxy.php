@@ -131,6 +131,13 @@ switch ($action) {
     // Importação com sequência
     case 'import_with_sequence': require_auth(); require_perm('leads'); import_with_sequence(); break;
 
+    // Fase A — Lead Profile & Funnel
+    case 'lead_profile':        require_auth(); require_perm('leads'); lead_profile();        break;
+    case 'lead_update_stage':   require_auth(); require_perm('leads'); lead_update_stage();   break;
+    case 'lead_send_now':       require_auth(); require_perm('leads'); lead_send_now();       break;
+    case 'lead_pause_sequence': require_auth(); require_perm('leads'); lead_pause_sequence(); break;
+    case 'leads_list':          require_auth(); require_perm('leads'); leads_list();          break;
+
     default:
         http_response_code(400);
         echo json_encode(['ok'=>false,'error'=>'Ação desconhecida']);
@@ -1553,6 +1560,165 @@ function import_with_sequence() {
     }
 
     echo json_encode(['ok'=>true,'total'=>$total,'imported'=>$imported,'skipped'=>$skipped,'errors'=>$errors]);
+}
+
+// ── FASE A — LEAD PROFILE & FUNNEL ───────────────────────────────────────────
+
+function lead_profile() {
+    $id = trim($_POST['lead_id'] ?? '');
+    if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'lead_id inválido']); return; }
+
+    $leads = sb_get('leads?id=eq.' . rawurlencode($id) . '&limit=1');
+    if (empty($leads)) { echo json_encode(['ok'=>false,'error'=>'Lead não encontrado']); return; }
+    $lead = $leads[0];
+
+    $email_history = sb_get(
+        'email_queue?lead_id=eq.' . rawurlencode($id) .
+        '&order=scheduled_at.asc' .
+        '&select=id,template_slug,status,scheduled_at,sent_at,attempts,error_msg'
+    );
+    $wpp_history = sb_get(
+        'whatsapp_queue?lead_id=eq.' . rawurlencode($id) .
+        '&order=scheduled_at.asc' .
+        '&select=id,to_phone,message,status,scheduled_at,sent_at,attempts,error_msg,delivery_status'
+    );
+
+    $email_next = array_values(array_filter($email_history, function($e) {
+        return in_array($e['status'] ?? '', ['pending', 'failed'], true);
+    }));
+    $wpp_next = array_values(array_filter($wpp_history, function($w) {
+        return in_array($w['status'] ?? '', ['pending', 'failed'], true);
+    }));
+
+    echo json_encode([
+        'ok'            => true,
+        'lead'          => $lead,
+        'email_history' => $email_history,
+        'wpp_history'   => $wpp_history,
+        'email_next'    => $email_next,
+        'wpp_next'      => $wpp_next,
+    ]);
+}
+
+function lead_update_stage() {
+    $lead_id = trim($_POST['lead_id'] ?? '');
+    $stage   = trim($_POST['stage']   ?? '');
+    if (!is_valid_uuid($lead_id)) { echo json_encode(['ok'=>false,'error'=>'lead_id inválido']); return; }
+    $allowed = ['novo','engajado','interessado','quente','convertido','frio'];
+    if (!in_array($stage, $allowed, true)) {
+        echo json_encode(['ok'=>false,'error'=>'stage inválido: use ' . implode('|', $allowed)]); return;
+    }
+    $r = sb_request('PATCH', 'leads?id=eq.' . rawurlencode($lead_id), ['funnel_stage' => $stage]);
+    echo json_encode(['ok' => $r['status'] >= 200 && $r['status'] < 300]);
+}
+
+function lead_send_now() {
+    $lead_id       = trim($_POST['lead_id']       ?? '');
+    $type          = trim($_POST['type']          ?? ''); // email | wpp
+    $template_slug = trim($_POST['template_slug'] ?? '');
+    if (!is_valid_uuid($lead_id))              { echo json_encode(['ok'=>false,'error'=>'lead_id inválido']); return; }
+    if (!in_array($type, ['email','wpp'],true)) { echo json_encode(['ok'=>false,'error'=>'type deve ser email ou wpp']); return; }
+    if (!$template_slug)                        { echo json_encode(['ok'=>false,'error'=>'template_slug obrigatório']); return; }
+
+    $leads = sb_get('leads?id=eq.' . rawurlencode($lead_id) . '&select=id,name,email,phone,sabotador&limit=1');
+    if (empty($leads)) { echo json_encode(['ok'=>false,'error'=>'Lead não encontrado']); return; }
+    $lead = $leads[0];
+    $nome = $lead['name'] ?? 'você';
+
+    if ($type === 'email') {
+        if (empty($lead['email'])) { echo json_encode(['ok'=>false,'error'=>'Lead sem e-mail']); return; }
+        $tpls = sb_get('email_templates?slug=eq.' . rawurlencode($template_slug) . '&limit=1');
+        if (empty($tpls)) { echo json_encode(['ok'=>false,'error'=>'Template de e-mail não encontrado']); return; }
+        $tpl  = $tpls[0];
+        $vars = [
+            '{{nome}}'             => htmlspecialchars($nome),
+            '{{link_descadastro}}' => 'https://www.oficialemagreser.com/descadastro.php?email=' . urlencode($lead['email']),
+            '{{link_wpp}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
+            '{{link_site}}'        => 'https://www.oficialemagreser.com',
+            '{{emoji}}'            => '', '{{tipo}}' => '', '{{titulo}}' => '', '{{descricao}}' => '',
+        ];
+        $subject = str_replace(array_keys($vars), array_values($vars), $tpl['subject']);
+        $body    = str_replace(array_keys($vars), array_values($vars), $tpl['body_html']);
+        if (stripos($body, '<html') === false)
+            $body = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"></head><body>' . $body . '</body></html>';
+        $result = send_smtp($lead['email'], $nome, $subject, $body);
+        if ($result['ok']) {
+            $now = gmdate('Y-m-d\TH:i:s\Z');
+            // Insert a sent record in email_queue so the timeline shows it
+            sb_request('POST', 'email_queue', [[
+                'lead_id'       => $lead_id,
+                'template_slug' => $template_slug,
+                'to_email'      => $lead['email'],
+                'to_name'       => $nome,
+                'scheduled_at'  => $now,
+                'sent_at'       => $now,
+                'status'        => 'sent',
+                'attempts'      => 1,
+            ]]);
+            echo json_encode(['ok'=>true,'msg'=>'E-mail enviado para ' . $lead['email']]);
+        } else {
+            echo json_encode(['ok'=>false,'msg'=>$result['msg']]);
+        }
+    } else {
+        // wpp
+        if (empty($lead['phone'])) { echo json_encode(['ok'=>false,'error'=>'Lead sem telefone']); return; }
+        $tpls = sb_get('whatsapp_templates?slug=eq.' . rawurlencode($template_slug) . '&limit=1');
+        if (empty($tpls)) {
+            // Try wpp_templates table as fallback
+            $tpls = sb_get('wpp_templates?slug=eq.' . rawurlencode($template_slug) . '&limit=1');
+        }
+        if (empty($tpls)) { echo json_encode(['ok'=>false,'error'=>'Template WPP não encontrado']); return; }
+        $tpl  = $tpls[0];
+        $msg  = str_replace(
+            ['{{nome}}','{{telefone}}'],
+            [$nome, $lead['phone']],
+            $tpl['body'] ?? $tpl['message'] ?? ''
+        );
+        $phone = $lead['phone'];
+        if (!str_starts_with($phone, '55')) $phone = '55' . $phone;
+        $result = send_whatsapp($phone, $msg);
+        if ($result['ok']) {
+            echo json_encode(['ok'=>true,'msg'=>'WPP enviado para ' . $lead['phone']]);
+        } else {
+            echo json_encode(['ok'=>false,'msg'=>$result['msg'] ?? 'Erro ao enviar WPP']);
+        }
+    }
+}
+
+function lead_pause_sequence() {
+    $lead_id = trim($_POST['lead_id'] ?? '');
+    $pause   = ($_POST['pause'] ?? '0') === '1' || ($_POST['pause'] ?? '') === 'true';
+    if (!is_valid_uuid($lead_id)) { echo json_encode(['ok'=>false,'error'=>'lead_id inválido']); return; }
+    $r = sb_request('PATCH', 'leads?id=eq.' . rawurlencode($lead_id), ['sequence_paused' => $pause]);
+    $ok = $r['status'] >= 200 && $r['status'] < 300;
+    echo json_encode(['ok'=>$ok, 'paused'=>$pause, 'http_status'=>$r['status']]);
+}
+
+function leads_list() {
+    $stage  = trim($_POST['stage']  ?? '');
+    $search = trim($_POST['search'] ?? '');
+    $limit  = max(1, min(500, (int)($_POST['limit'] ?? 50)));
+    $offset = max(0, (int)($_POST['offset'] ?? 0));
+
+    $qs = 'select=id,name,email,phone,sabotador,funnel_stage,sequence_queued_at,created_at'
+        . '&order=created_at.desc'
+        . '&limit=' . $limit
+        . '&offset=' . $offset;
+
+    if ($stage !== '') {
+        $qs .= '&funnel_stage=eq.' . rawurlencode($stage);
+    }
+    if ($search !== '') {
+        $qs .= '&or=(name.ilike.*' . rawurlencode($search) . '*,email.ilike.*' . rawurlencode($search) . '*)';
+    }
+
+    $r = sb_request('GET', 'leads', null, $qs, ['Prefer: count=exact']);
+    $total = $r['count'] ?? count((array)($r['body'] ?? []));
+    echo json_encode([
+        'ok'    => $r['status'] < 300,
+        'leads' => $r['body'] ?? [],
+        'total' => $total,
+    ]);
 }
 
 // ── HELPERS PRIVADOS ──────────────────────────────────────────────────────────

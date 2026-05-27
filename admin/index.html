@@ -144,6 +144,27 @@ tbody td{padding:10px 12px;vertical-align:top}
 
 /* LEADS TABLE */
 .lead-sabotador{display:inline-block;background:rgba(232,119,58,.1);color:var(--cta);font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:10px}
+/* FUNNEL STAGE BADGES */
+.stage-badge{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.stage-novo{background:#f3f4f6;color:#6b7280}
+.stage-engajado{background:#dbeafe;color:#1d4ed8}
+.stage-interessado{background:#fef9c3;color:#92400e}
+.stage-quente{background:#ffedd5;color:#c2410c}
+.stage-convertido{background:#d1fae5;color:#065f46}
+.stage-frio{background:#e5e7eb;color:#374151}
+/* MODAL OVERLAY */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,.2)}
+/* TIMELINE */
+.timeline-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.timeline-item:last-child{border-bottom:none}
+.tl-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;margin-top:2px}
+.tl-email{background:#dbeafe;color:#1d4ed8}
+.tl-wpp{background:#d1fae5;color:#065f46}
+/* LEAD DETAIL HEADER */
+.lead-detail-header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:24px}
+.lead-detail-back{background:#f3f4f6;border:1px solid var(--border);border-radius:var(--r);padding:8px 14px;font-size:.82rem;cursor:pointer;font-weight:600}
+.lead-detail-back:hover{background:#e5e7eb}
 .search-bar{width:100%;border:1px solid var(--border);border-radius:var(--r);padding:9px 14px;font-size:.88rem;margin-bottom:16px}
 .search-bar:focus{outline:none;border-color:var(--cta)}
 
@@ -306,6 +327,7 @@ const PAGE_PERMS = {
   mentoras:         'mentoras',
   config:           'config',
   leads:            'leads',
+  lead_detail:      'leads',
   templates:        'leads',
   whatsapp:         'leads',
   wpp_templates:    'leads',
@@ -458,6 +480,7 @@ function goPage(name) {
   const pages = {
     dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras,
     config: configPage, leads,
+    lead_detail: () => leadDetailPage(window._leadDetailId || null),
     templates: emailTemplates, whatsapp: wppPage, wpp_templates: wppTemplatesPage,
     leads_importados: leadsImportadosPage, sequencias: sequenciasPage, usuarios: usuariosPage,
     // Painel pages
@@ -1221,20 +1244,29 @@ async function leads() {
     <div class="page-title">Leads</div>
     <div class="page-sub">Todos os leads capturados pela landing page.</div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
-      <input class="search-bar" id="lead-search" style="flex:1;min-width:200px;margin-bottom:0" placeholder="Buscar por nome, e-mail, telefone ou perfil…" oninput="filterLeads(this.value)">
-      <select id="lead-filter-sab" style="border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.85rem;background:#fff" onchange="filterLeads(document.getElementById('lead-search').value)">
+      <input class="search-bar" id="lead-search" style="flex:1;min-width:200px;margin-bottom:0" placeholder="Buscar por nome, e-mail ou telefone…" oninput="filterLeads()">
+      <select id="lead-filter-sab" style="border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.85rem;background:#fff" onchange="filterLeads()">
         <option value="">Todos os perfis</option>
         <option value="A">🍫 Perfil A</option>
         <option value="B">🤖 Perfil B</option>
         <option value="C">⚡ Perfil C</option>
         <option value="D">🌙 Perfil D</option>
       </select>
+      <select id="lead-filter-stage" style="border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:.85rem;background:#fff" onchange="filterLeads()">
+        <option value="">Todos os estágios</option>
+        <option value="novo">⚪ Novo</option>
+        <option value="engajado">🔵 Engajado</option>
+        <option value="interessado">🟡 Interessado</option>
+        <option value="quente">🟠 Quente</option>
+        <option value="convertido">🟢 Convertido</option>
+        <option value="frio">⚫ Frio</option>
+      </select>
       <button class="btn-save" style="padding:9px 18px;white-space:nowrap" onclick="exportLeads()">⬇ Exportar CSV</button>
     </div>
     <div id="leads-dist" style="margin-bottom:16px"></div>
     <div id="leads-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
 
-  const rows = await sb('leads', 'select=id,name,email,phone,sabotador,faixa_etaria,faixa_renda,cidade,estado,created_at,source,utm_medium,source_campaign&order=created_at.desc&limit=1000');
+  const rows = await sb('leads', 'select=id,name,email,phone,sabotador,funnel_stage,faixa_etaria,faixa_renda,cidade,estado,created_at,source,utm_medium,source_campaign&order=created_at.desc&limit=1000');
   window._allLeads = rows;
   renderLeadsDist(rows);
   renderLeads(rows);
@@ -1271,11 +1303,24 @@ function renderLeadsDist(rows) {
   </div>`;
 }
 
+const FUNNEL_STAGES = {
+  novo:        { label: 'Novo',        bg: '#f3f4f6', color: '#6b7280' },
+  engajado:    { label: 'Engajado',    bg: '#eff6ff', color: '#1d4ed8' },
+  interessado: { label: 'Interessado', bg: '#fef9c3', color: '#b45309' },
+  quente:      { label: 'Quente',      bg: '#fff7ed', color: '#ea580c' },
+  convertido:  { label: 'Convertido',  bg: '#f0fdf4', color: '#16a34a' },
+  frio:        { label: 'Frio',        bg: '#f1f5f9', color: '#475569' },
+};
+function stageBadge(stage) {
+  const s = FUNNEL_STAGES[stage] || FUNNEL_STAGES.novo;
+  return `<span style="background:${s.bg};color:${s.color};padding:2px 9px;border-radius:20px;font-size:.71rem;font-weight:700;white-space:nowrap">${s.label}</span>`;
+}
+
 function renderLeads(rows) {
   document.getElementById('leads-body').innerHTML = `
     <div class="card" style="margin-bottom:0">
       <div class="table-wrap"><table>
-        <thead><tr><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>Perfil</th><th>Faixa Etária</th><th>Renda</th><th>Cidade/UF</th><th>Origem</th><th>Data</th></tr></thead>
+        <thead><tr><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>Funil</th><th>Perfil</th><th>Cidade/UF</th><th>Origem</th><th>Data</th></tr></thead>
         <tbody>
           ${rows.length ? rows.map(l => {
             const src = l.source || 'direto';
@@ -1293,36 +1338,43 @@ function renderLeads(rows) {
             }
             return `
             <tr>
-              <td style="font-weight:600;font-size:.85rem">${escHtml(l.name||'')}</td>
+              <td style="font-size:.85rem">
+                <span onclick="openLeadDetail('${l.id}')" style="font-weight:700;cursor:pointer;color:var(--cta);text-decoration:underline;text-underline-offset:3px">${escHtml(l.name||'')}</span>
+              </td>
               <td style="font-size:.8rem;word-break:break-all">${escHtml(l.email||'')}</td>
               <td style="font-size:.8rem">${escHtml(l.phone||'')}</td>
+              <td>${stageBadge(l.funnel_stage||'novo')}</td>
               <td><span class="lead-sabotador">${escHtml(l.sabotador||'—')}</span></td>
-              <td style="font-size:.78rem;color:var(--text2)">${escHtml(l.faixa_etaria||'—')}</td>
-              <td style="font-size:.78rem;color:var(--text2)">${escHtml(l.faixa_renda||'—')}</td>
               <td style="font-size:.78rem;color:var(--text3)">${escHtml((l.cidade||'')+(l.estado?' / '+l.estado:''))}</td>
               <td>${srcBadge}</td>
               <td style="font-size:.75rem;color:var(--text3);white-space:nowrap">${l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '—'}</td>
             </tr>`;
-          }).join('') : '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">Nenhum lead encontrado</td></tr>'}
+          }).join('') : '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">Nenhum lead encontrado</td></tr>'}
         </tbody>
       </table></div>
       <p style="font-size:.78rem;color:var(--text3);margin-top:10px">${rows.length} lead(s) encontrado(s)</p>
     </div>`;
 }
 
-function filterLeads(q) {
+function filterLeads() {
   if (!window._allLeads) return;
-  const lq = q.toLowerCase();
-  const sabFilter = document.getElementById('lead-filter-sab')?.value || '';
+  const q        = (document.getElementById('lead-search')?.value || '').toLowerCase();
+  const sabFilter   = document.getElementById('lead-filter-sab')?.value || '';
+  const stageFilter = document.getElementById('lead-filter-stage')?.value || '';
   const filtered = window._allLeads.filter(l => {
-    const matchQ = !lq || (l.name||'').toLowerCase().includes(lq) ||
-      (l.email||'').toLowerCase().includes(lq) ||
-      (l.sabotador||'').toLowerCase().includes(lq) ||
-      (l.phone||'').includes(lq);
-    const matchSab = !sabFilter || (l.sabotador||'').trim().toUpperCase() === sabFilter;
-    return matchQ && matchSab;
+    const matchQ = !q || (l.name||'').toLowerCase().includes(q) ||
+      (l.email||'').toLowerCase().includes(q) ||
+      (l.phone||'').includes(q);
+    const matchSab   = !sabFilter   || (l.sabotador||'').trim().toUpperCase() === sabFilter;
+    const matchStage = !stageFilter || (l.funnel_stage||'novo') === stageFilter;
+    return matchQ && matchSab && matchStage;
   });
   renderLeads(filtered);
+}
+
+function openLeadDetail(id) {
+  window._leadDetailId = id;
+  goPage('lead_detail');
 }
 
 function exportLeads() {
@@ -1339,6 +1391,222 @@ function exportLeads() {
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = `leads-emagreser-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+
+/* ── LEAD DETAIL (perfil + timeline + envio manual) ─────────────────────── */
+async function leadDetailPage(leadId) {
+  _clearActiveIntervals();
+  if (!leadId) { goPage('leads'); return; }
+  const main = document.getElementById('main-content');
+  main.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text3)">Carregando perfil…</div>`;
+
+  const r = await proxyWrite({ action: 'lead_profile', lead_id: leadId });
+  if (!r.ok) {
+    main.innerHTML = `<div class="card" style="color:var(--red)">Erro: ${escHtml(r.error||'Falha ao carregar')}</div>`;
+    return;
+  }
+  const lead = r.lead || {};
+  const stage = lead.funnel_stage || 'novo';
+  const isPaused = lead.sequence_paused === true || lead.sequence_paused === 'true';
+
+  // Build unified timeline (email + wpp), sorted by date desc
+  const emailItems = (r.email_history || []).map(m => ({ ...m, _type: 'email' }));
+  const wppItems   = (r.wpp_history   || []).map(m => ({ ...m, _type: 'wpp'   }));
+  const timeline   = [...emailItems, ...wppItems].sort((a, b) => {
+    const da = a.sent_at || a.scheduled_at || '';
+    const db = b.sent_at || b.scheduled_at || '';
+    return db.localeCompare(da);
+  });
+
+  const totalEmail = emailItems.length;
+  const totalWpp   = wppItems.length;
+  const sentEmail  = emailItems.filter(m => m.status === 'sent').length;
+  const sentWpp    = wppItems.filter(m => m.status === 'sent').length;
+  const nextEmail  = (r.email_next || []).sort((a,b) => (a.scheduled_at||'').localeCompare(b.scheduled_at||''))[0];
+  const nextWpp    = (r.wpp_next   || []).sort((a,b) => (a.scheduled_at||'').localeCompare(b.scheduled_at||''))[0];
+
+  const stageOptions = Object.entries(FUNNEL_STAGES).map(([k,s]) =>
+    `<option value="${k}" ${k===stage?'selected':''}>${s.label}</option>`).join('');
+
+  main.innerHTML = `
+    <!-- header -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+      <button onclick="goPage('leads')" style="background:#f3f4f6;border:1px solid var(--border);border-radius:var(--r);padding:7px 14px;font-size:.82rem;cursor:pointer">← Voltar</button>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:1.15rem;font-weight:800;color:var(--text1)">${escHtml(lead.name||'Lead')}</div>
+        <div style="font-size:.8rem;color:var(--text3)">${escHtml(lead.email||'')} ${lead.phone?'· '+escHtml(lead.phone):''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <select id="ld-stage-sel" onchange="ldUpdateStage('${leadId}',this.value)"
+          style="border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:.8rem;font-weight:700;background:${FUNNEL_STAGES[stage].bg};color:${FUNNEL_STAGES[stage].color};cursor:pointer">
+          ${stageOptions}
+        </select>
+        <button id="ld-pause-btn" onclick="ldTogglePause('${leadId}',${isPaused})"
+          style="background:${isPaused?'#f0fdf4':'#fef9c3'};border:1px solid ${isPaused?'#86efac':'#fde68a'};color:${isPaused?'#166534':'#92400e'};border-radius:var(--r);padding:6px 14px;font-size:.78rem;font-weight:600;cursor:pointer">
+          ${isPaused?'▶ Retomar automação':'⏸ Pausar automação'}
+        </button>
+      </div>
+    </div>
+
+    <!-- info + stats -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Dados pessoais</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.83rem">
+          <div><span style="color:var(--text3)">Sabotador</span><br><strong>${escHtml(lead.sabotador||'—')}</strong></div>
+          <div><span style="color:var(--text3)">Faixa etária</span><br><strong>${escHtml(lead.faixa_etaria||'—')}</strong></div>
+          <div><span style="color:var(--text3)">Renda</span><br><strong>${escHtml(lead.faixa_renda||'—')}</strong></div>
+          <div><span style="color:var(--text3)">Cidade/UF</span><br><strong>${escHtml((lead.cidade||'')+(lead.estado?' / '+lead.estado:'') || '—')}</strong></div>
+          <div><span style="color:var(--text3)">Origem</span><br><strong>${escHtml(lead.source||'direto')}</strong></div>
+          <div><span style="color:var(--text3)">Cadastrado em</span><br><strong>${lead.created_at?new Date(lead.created_at).toLocaleString('pt-BR'):'—'}</strong></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Jornada na automação</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.83rem;margin-bottom:14px">
+          <div><span style="color:var(--text3)">E-mails enviados</span><br><strong style="color:#16a34a">${sentEmail} / ${totalEmail}</strong></div>
+          <div><span style="color:var(--text3)">WPPs enviados</span><br><strong style="color:#16a34a">${sentWpp} / ${totalWpp}</strong></div>
+          <div><span style="color:var(--text3)">Próximo e-mail</span><br><strong style="font-size:.78rem">${nextEmail?new Date(nextEmail.scheduled_at).toLocaleString('pt-BR'):'—'}</strong></div>
+          <div><span style="color:var(--text3)">Próximo WPP</span><br><strong style="font-size:.78rem">${nextWpp?new Date(nextWpp.scheduled_at).toLocaleString('pt-BR'):'—'}</strong></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="ldSendModal('${leadId}','email')" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer">📧 Enviar e-mail agora</button>
+          <button onclick="ldSendModal('${leadId}','wpp')"   style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer">💬 Enviar WPP agora</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- timeline -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px">Timeline de comunicações <span>${timeline.length}</span></div>
+      <div id="ld-timeline">
+        ${timeline.length ? ldRenderTimeline(timeline) : '<div style="text-align:center;padding:24px;color:var(--text3)">Nenhuma comunicação registrada.</div>'}
+      </div>
+    </div>
+
+    <!-- send modal (hidden) -->
+    <div id="ld-send-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+        <div style="font-weight:800;font-size:1rem;margin-bottom:16px" id="ld-modal-title">Enviar agora</div>
+        <select id="ld-modal-tpl" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:.85rem;margin-bottom:16px">
+          <option value="">Carregando templates…</option>
+        </select>
+        <div style="display:flex;gap:10px">
+          <button onclick="ldSendConfirm('${leadId}')" style="flex:1;background:#16a34a;color:#fff;border:none;border-radius:var(--r);padding:10px;font-weight:700;font-size:.88rem;cursor:pointer">Enviar agora</button>
+          <button onclick="document.getElementById('ld-send-modal').style.display='none'" style="flex:1;background:#f3f4f6;border:1px solid var(--border);border-radius:var(--r);padding:10px;font-size:.88rem;cursor:pointer">Cancelar</button>
+        </div>
+        <div id="ld-modal-result" style="display:none;margin-top:12px"></div>
+      </div>
+    </div>`;
+}
+
+function ldRenderTimeline(items) {
+  const statusInfo = {
+    sent:       { label:'Enviado',   bg:'#f0fdf4', color:'#166534', icon:'✅' },
+    pending:    { label:'Agendado',  bg:'#eff6ff', color:'#1d4ed8', icon:'⏳' },
+    failed:     { label:'Falha',     bg:'#fef2f2', color:'#dc2626', icon:'❌' },
+    processing: { label:'Enviando',  bg:'#fff7ed', color:'#c2410c', icon:'⚡' },
+    read:       { label:'Lido',      bg:'#d1fae5', color:'#065f46', icon:'👁' },
+    received:   { label:'Entregue',  bg:'#dbeafe', color:'#1e40af', icon:'✅' },
+  };
+  return items.map(m => {
+    const isEmail = m._type === 'email';
+    const date    = m.sent_at || m.scheduled_at;
+    const ds      = isEmail ? m.status : (m.delivery_status && m.delivery_status !== 'sent' ? m.delivery_status : m.status);
+    const si      = statusInfo[ds] || { label: ds || '—', bg:'#f3f4f6', color:'#6b7280', icon:'•' };
+    const what    = isEmail
+      ? `<span style="background:#eff6ff;color:#1e40af;padding:1px 8px;border-radius:6px;font-size:.72rem;font-weight:600">${escHtml(m.template_slug||'—')}</span>`
+      : `<span style="font-size:.75rem;color:var(--text2)">${escHtml((m.message||'').replace(/\n/g,' ').slice(0,70))}${(m.message||'').length>70?'…':''}</span>`;
+    const forceBtn = (m.status==='pending'||m.status==='failed')
+      ? `<button onclick="ldForce('${m.id}','${m._type}')" style="background:#7c3aed;color:#fff;border:none;padding:3px 9px;border-radius:4px;font-size:.7rem;cursor:pointer;margin-left:8px">Forçar</button>`
+      : '';
+    const errTip = m.error_msg ? `<div style="font-size:.71rem;color:#dc2626;margin-top:3px">⚠ ${escHtml(m.error_msg)}</div>` : '';
+    return `<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9">
+      <div style="font-size:1rem;margin-top:1px">${isEmail?'📧':'💬'}</div>
+      <div style="flex:1;min-width:0">
+        ${what}${forceBtn}${errTip}
+      </div>
+      <div style="text-align:right;white-space:nowrap;flex-shrink:0">
+        <div style="font-size:.72rem;color:var(--text3)">${date?new Date(date).toLocaleString('pt-BR'):'—'}</div>
+        <span style="background:${si.bg};color:${si.color};padding:1px 7px;border-radius:20px;font-size:.7rem;font-weight:700">${si.icon} ${si.label}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function ldUpdateStage(leadId, stage) {
+  const sel = document.getElementById('ld-stage-sel');
+  const s   = FUNNEL_STAGES[stage] || FUNNEL_STAGES.novo;
+  if (sel) { sel.style.background = s.bg; sel.style.color = s.color; }
+  const r = await proxyWrite({ action: 'lead_update_stage', lead_id: leadId, stage });
+  if (r.ok) toast('Estágio atualizado!');
+  else toast(r.error || 'Erro ao atualizar estágio', 'error');
+}
+
+async function ldTogglePause(leadId, currentlyPaused) {
+  const newPause = !currentlyPaused;
+  const r = await proxyWrite({ action: 'lead_pause_sequence', lead_id: leadId, pause: newPause ? '1' : '0' });
+  const btn = document.getElementById('ld-pause-btn');
+  if (r.ok) {
+    toast(newPause ? 'Automação pausada' : 'Automação retomada');
+    if (btn) {
+      btn.textContent  = newPause ? '▶ Retomar automação' : '⏸ Pausar automação';
+      btn.style.background   = newPause ? '#f0fdf4' : '#fef9c3';
+      btn.style.borderColor  = newPause ? '#86efac' : '#fde68a';
+      btn.style.color        = newPause ? '#166534' : '#92400e';
+      btn.setAttribute('onclick', `ldTogglePause('${leadId}',${newPause})`);
+    }
+  } else toast(r.error || 'Erro', 'error');
+}
+
+async function ldSendModal(leadId, type) {
+  window._ldSendType = type;
+  const modal    = document.getElementById('ld-send-modal');
+  const title    = document.getElementById('ld-modal-title');
+  const sel      = document.getElementById('ld-modal-tpl');
+  const res      = document.getElementById('ld-modal-result');
+  if (!modal) return;
+  if (title) title.textContent = type === 'email' ? '📧 Enviar E-mail agora' : '💬 Enviar WhatsApp agora';
+  if (sel)   sel.innerHTML = '<option value="">Carregando…</option>';
+  if (res)   res.style.display = 'none';
+  modal.style.display = 'flex';
+
+  const table = type === 'email' ? 'email_templates' : 'whatsapp_templates';
+  const field = type === 'email' ? 'select=slug,subject' : 'select=slug,body';
+  const tpls  = await sb(table, field + '&order=slug.asc&limit=100');
+  if (sel) {
+    sel.innerHTML = tpls.length
+      ? tpls.map(t => `<option value="${escHtml(t.slug)}">${escHtml(t.slug)}${t.subject?' — '+escHtml(t.subject.slice(0,40)):''}</option>`).join('')
+      : '<option value="">Nenhum template encontrado</option>';
+  }
+}
+
+async function ldSendConfirm(leadId) {
+  const type = window._ldSendType;
+  const slug = document.getElementById('ld-modal-tpl')?.value;
+  const res  = document.getElementById('ld-modal-result');
+  if (!slug) { toast('Selecione um template', 'error'); return; }
+  if (res) res.style.display = 'none';
+  const r = await proxyWrite({ action: 'lead_send_now', lead_id: leadId, type, template_slug: slug });
+  if (r.ok) {
+    toast(r.msg || 'Enviado!');
+    document.getElementById('ld-send-modal').style.display = 'none';
+    // Reload timeline
+    await leadDetailPage(leadId);
+  } else {
+    if (res) {
+      res.style.display = 'block';
+      res.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:8px 12px;font-size:.82rem;color:#dc2626">❌ ${escHtml(r.msg||r.error||'Falha')}</div>`;
+    }
+    toast(r.msg || r.error || 'Falha no envio', 'error');
+  }
+}
+
+async function ldForce(itemId, type) {
+  if (!confirm('Forçar envio agora?')) return;
+  const r = await proxyWrite({ action: 'painel_force_send', queue_type: type, item_id: itemId });
+  if (r.ok) { toast(r.msg || 'Enviado!'); await leadDetailPage(window._leadDetailId); }
+  else toast(r.msg || r.error || 'Falha', 'error');
 }
 
 /* ── EMAIL TEMPLATES ─────────────────────────────────────────────── */
