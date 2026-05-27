@@ -224,6 +224,7 @@ tbody td{padding:10px 12px;vertical-align:top}
         <div class="nav-group-body">
           <div class="nav-sub-item active" data-page="dashboard" onclick="goPage('dashboard')"><span class="nav-item-icon">📊</span> Dashboard</div>
           <div class="nav-sub-item" data-page="leads" onclick="goPage('leads')"><span class="nav-item-icon">👥</span> Leads</div>
+          <div class="nav-sub-item" data-page="funil" onclick="goPage('funil')"><span class="nav-item-icon">🎯</span> Funil de Vendas</div>
         </div>
       </div>
 
@@ -328,6 +329,7 @@ const PAGE_PERMS = {
   config:           'config',
   leads:            'leads',
   lead_detail:      'leads',
+  funil:            'leads',
   templates:        'leads',
   whatsapp:         'leads',
   wpp_templates:    'leads',
@@ -481,6 +483,7 @@ function goPage(name) {
     dashboard, textos, quiz: quizPage, resultados, depoimentos, mentoras,
     config: configPage, leads,
     lead_detail: () => leadDetailPage(window._leadDetailId || null),
+    funil:       funilPage,
     templates: emailTemplates, whatsapp: wppPage, wpp_templates: wppTemplatesPage,
     leads_importados: leadsImportadosPage, sequencias: sequenciasPage, usuarios: usuariosPage,
     // Painel pages
@@ -1607,6 +1610,149 @@ async function ldForce(itemId, type) {
   const r = await proxyWrite({ action: 'painel_force_send', queue_type: type, item_id: itemId });
   if (r.ok) { toast(r.msg || 'Enviado!'); await leadDetailPage(window._leadDetailId); }
   else toast(r.msg || r.error || 'Falha', 'error');
+}
+
+/* ── FUNIL DE VENDAS ─────────────────────────────────────────────── */
+const STAGE_ORDER = ['novo','engajado','interessado','quente','convertido','frio'];
+
+async function funilPage() {
+  _clearActiveIntervals();
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page-title">Funil de Vendas</div>
+    <div class="page-sub">Visualize e gerencie seus leads por estágio.</div>
+    <div id="funil-cards" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px">
+      ${STAGE_ORDER.map(() => `<div class="stat-card" style="min-height:80px;background:#f8f8f8;animation:pulse 1.5s infinite"></div>`).join('')}
+    </div>
+    <div id="funil-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+  await funilLoad();
+}
+
+async function funilLoad() {
+  const rows = await sb('leads','select=id,name,email,phone,sabotador,funnel_stage,sequence_queued_at,created_at&order=created_at.desc&limit=1000');
+  window._funilLeads = rows;
+  funilRender(rows);
+}
+
+function funilRender(rows) {
+  const total = rows.length || 1;
+
+  // group by stage
+  const groups = {};
+  STAGE_ORDER.forEach(s => groups[s] = []);
+  rows.forEach(l => {
+    const s = l.funnel_stage || 'novo';
+    if (groups[s]) groups[s].push(l); else groups['novo'].push(l);
+  });
+
+  // ── stage cards ──────────────────────────────────────────────────
+  const cardsEl = document.getElementById('funil-cards');
+  if (cardsEl) {
+    cardsEl.innerHTML = STAGE_ORDER.map(s => {
+      const st  = FUNNEL_STAGES[s];
+      const cnt = groups[s].length;
+      const pct = Math.round(cnt / total * 100);
+      return `<div class="stat-card" style="cursor:pointer;border-top:3px solid ${st.color}" onclick="funilScrollTo('${s}')">
+        <div style="font-size:1.5rem;font-weight:800;color:${st.color}">${cnt}</div>
+        <div style="font-size:.72rem;font-weight:700;color:${st.color};margin-bottom:4px">${st.label}</div>
+        <div style="background:#e5e7eb;border-radius:4px;height:5px;overflow:hidden;margin-bottom:3px">
+          <div style="height:5px;width:${pct}%;background:${st.color};border-radius:4px;transition:width .4s"></div>
+        </div>
+        <div style="font-size:.7rem;color:var(--text3)">${pct}% do total</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── accordion table ──────────────────────────────────────────────
+  const bodyEl = document.getElementById('funil-body');
+  if (!bodyEl) return;
+
+  bodyEl.innerHTML = STAGE_ORDER.map(s => {
+    const st    = FUNNEL_STAGES[s];
+    const leads = groups[s];
+    const uid   = 'funil_' + s;
+
+    const subRows = leads.map(l => {
+      const automation = l.sequence_queued_at
+        ? `<span style="background:#f0fdf4;color:#166534;padding:1px 7px;border-radius:20px;font-size:.7rem;font-weight:600">Ativa</span>`
+        : `<span style="background:#f3f4f6;color:#6b7280;padding:1px 7px;border-radius:20px;font-size:.7rem">Sem automação</span>`;
+      const dateStr = l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR') : '—';
+
+      // prev/next stage buttons
+      const idx   = STAGE_ORDER.indexOf(s);
+      const prev  = idx > 0 ? STAGE_ORDER[idx-1] : null;
+      const next  = idx < STAGE_ORDER.length-1 ? STAGE_ORDER[idx+1] : null;
+      const prevBtn = prev
+        ? `<button onclick="funilMoveStage('${l.id}','${prev}')" title="Mover para ${FUNNEL_STAGES[prev].label}"
+             style="background:#f3f4f6;border:1px solid var(--border);border-radius:5px;padding:3px 7px;font-size:.7rem;cursor:pointer">◀ ${FUNNEL_STAGES[prev].label}</button>`
+        : '';
+      const nextBtn = next
+        ? `<button onclick="funilMoveStage('${l.id}','${next}')" title="Mover para ${FUNNEL_STAGES[next].label}"
+             style="background:${FUNNEL_STAGES[next].bg};border:1px solid ${FUNNEL_STAGES[next].color}44;color:${FUNNEL_STAGES[next].color};border-radius:5px;padding:3px 7px;font-size:.7rem;font-weight:600;cursor:pointer">${FUNNEL_STAGES[next].label} ▶</button>`
+        : '';
+
+      return `<tr style="border-top:1px solid #f1f5f9;background:#fafafa">
+        <td style="padding:9px 14px 9px 28px;font-size:.83rem">
+          <span onclick="openLeadDetail('${l.id}')" style="font-weight:700;cursor:pointer;color:var(--cta);text-decoration:underline;text-underline-offset:3px">${escHtml(l.name||'—')}</span>
+        </td>
+        <td style="padding:9px 12px;font-size:.78rem;color:var(--text3)">${escHtml(l.email||'')}</td>
+        <td style="padding:9px 12px;font-size:.78rem;color:var(--text3)">${escHtml(l.phone||'')}</td>
+        <td style="padding:9px 12px"><span class="lead-sabotador" style="font-size:.72rem">${escHtml(l.sabotador||'—')}</span></td>
+        <td style="padding:9px 12px">${automation}</td>
+        <td style="padding:9px 12px;font-size:.75rem;color:var(--text3)">${dateStr}</td>
+        <td style="padding:9px 12px;white-space:nowrap;display:flex;gap:5px;align-items:center">${prevBtn}${nextBtn}</td>
+      </tr>`;
+    }).join('');
+
+    const emptyRow = `<tr><td colspan="7" style="padding:16px 28px;font-size:.82rem;color:var(--text3);background:#fafafa">Nenhum lead neste estágio.</td></tr>`;
+
+    return `<div id="funil-group-${s}" style="margin-bottom:12px;border:1px solid ${st.color}44;border-radius:10px;overflow:hidden">
+      <div onclick="_accordionToggle('${uid}')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:${st.bg};cursor:pointer;user-select:none">
+        <span id="arr-${uid}" style="display:inline-block;transition:transform .2s;font-size:.7rem;color:${st.color}">▶</span>
+        <span style="font-weight:700;font-size:.88rem;color:${st.color}">${st.label}</span>
+        <span style="background:${st.color};color:#fff;border-radius:20px;padding:1px 9px;font-size:.72rem;font-weight:700">${leads.length}</span>
+        <span style="font-size:.75rem;color:${st.color};opacity:.7;margin-left:auto">${leads.length ? Math.round(leads.length/total*100)+'% do total' : ''}</span>
+      </div>
+      <div id="acc-${uid}" style="display:none">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:${st.bg}88">
+            <th style="text-align:left;padding:7px 14px 7px 28px;font-size:.7rem;color:${st.color};font-weight:700;letter-spacing:.04em">LEAD</th>
+            <th style="text-align:left;padding:7px 12px;font-size:.7rem;color:${st.color};font-weight:700;letter-spacing:.04em">E-MAIL</th>
+            <th style="text-align:left;padding:7px 12px;font-size:.7rem;color:${st.color};font-weight:700;letter-spacing:.04em">TELEFONE</th>
+            <th style="text-align:left;padding:7px 12px;font-size:.7rem;color:${st.color};font-weight:700;letter-spacing:.04em">PERFIL</th>
+            <th style="text-align:left;padding:7px 12px;font-size:.7rem;color:${st.color};font-weight:700;letter-spacing:.04em">AUTOMAÇÃO</th>
+            <th style="text-align:left;padding:7px 12px;font-size:.7rem;color:${st.color};font-weight:700;letter-spacing:.04em">CADASTRO</th>
+            <th style="padding:7px 12px;font-size:.7rem;color:${st.color};font-weight:700;letter-spacing:.04em">MOVER</th>
+          </tr></thead>
+          <tbody>${leads.length ? subRows : emptyRow}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function funilScrollTo(stage) {
+  const el = document.getElementById('funil-group-' + stage);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // auto-open if closed
+  const body = document.getElementById('acc-funil_' + stage);
+  if (body && body.style.display === 'none') _accordionToggle('funil_' + stage);
+}
+
+async function funilMoveStage(leadId, newStage) {
+  const r = await proxyWrite({ action: 'lead_update_stage', lead_id: leadId, stage: newStage });
+  if (r.ok) {
+    toast(`Movido para ${FUNNEL_STAGES[newStage].label}`);
+    // Update local cache and re-render
+    if (window._funilLeads) {
+      const lead = window._funilLeads.find(l => l.id === leadId);
+      if (lead) lead.funnel_stage = newStage;
+      funilRender(window._funilLeads);
+    }
+  } else {
+    toast(r.error || 'Erro ao mover', 'error');
+  }
 }
 
 /* ── EMAIL TEMPLATES ─────────────────────────────────────────────── */
