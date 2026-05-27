@@ -2879,52 +2879,87 @@ async function painelWorkerPage() {
   const main = document.getElementById('main-content');
   main.innerHTML = `
     <div class="page-title">Diagnóstico Worker</div>
-    <div class="page-sub">Status das filas e do worker de e-mail/WPP em tempo real.</div>
-    <div id="pw-stats-wrap" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px"></div>
-    <div class="card" id="pw-worker-log">
+    <div id="pw-leads-banner" style="display:none;background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:10px 18px;margin-bottom:18px;font-size:.88rem;font-weight:600;color:#065f46"></div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:12px">🔧 Diagnóstico do Worker</div>
+      <div id="pw-diag-checks" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+        <div style="color:var(--text3);font-size:.83rem">Verificando…</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <button id="pw-process-btn" onclick="pwProcessNow()" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:9px 22px;font-size:.85rem;font-weight:700;cursor:pointer">⚡ Processar fila agora</button>
+        <button id="pw-worker-btn" onclick="pwRunWorker()" style="background:#0d9488;color:#fff;border:none;border-radius:8px;padding:9px 22px;font-size:.85rem;font-weight:700;cursor:pointer">🚀 Disparar Worker (AJAX)</button>
+        <span style="font-size:.78rem;color:var(--text3)">Dispara envios pendentes imediatamente, sem esperar o cron.</span>
+      </div>
+      <div id="pw-process-result" style="display:none;margin-top:12px"></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
       <div class="card-title">Log do Worker</div>
       <div id="pw-log-body" style="font-size:.82rem;color:var(--text3)">Carregando…</div>
     </div>
-    <div class="card" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:16px 20px">
-      <button id="pw-process-btn" onclick="pwProcessNow()" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:.85rem;font-weight:700;cursor:pointer">Processar fila agora</button>
-      <span style="font-size:.78rem;color:var(--text3)">Dispara envios vencidos imediatamente, sem esperar o cron.</span>
-    </div>
-    <div id="pw-process-result" style="display:none;margin:0 0 16px 0"></div>`;
-  await pwLoadStats();
-  const iid = setInterval(pwLoadStats, 10000);
+    <div class="card" style="background:#fffbeb;border-color:#fde68a">
+      <div class="card-title" style="color:#92400e">Como configurar o cron no Hostinger:</div>
+      <ol style="font-size:.83rem;color:#78350f;margin:8px 0 12px 18px;line-height:1.9">
+        <li>Painel Hostinger → <strong>Sites → Avançado → Cron Jobs</strong></li>
+        <li>Selecione o tipo <strong style="color:#0d9488">PHP</strong> (não "Personalizado")</li>
+        <li>No campo comando coloque apenas: <code style="background:#fef3c7;padding:1px 6px;border-radius:4px;font-size:.78rem">public_html/email_worker.php</code></li>
+        <li>Frequência: selecione <strong>"A cada 10 minutos"</strong> nas Opções Comuns</li>
+        <li>Salvar</li>
+      </ol>
+      <div style="font-size:.78rem;color:#b45309;background:#fef9c3;padding:8px 12px;border-radius:6px;border:1px solid #fde68a">
+        ⚠️ Não use o tipo "Personalizado" — ele tenta executar o arquivo diretamente sem o PHP e gera erro "No such file or directory".
+      </div>
+    </div>`;
+  await pwLoadDiag();
+  const iid = setInterval(pwLoadDiag, 15000);
   window._activeIntervals = window._activeIntervals || [];
   window._activeIntervals.push(iid);
 }
 
-async function pwLoadStats() {
+async function pwLoadDiag() {
   const [statsR, logR] = await Promise.all([
     proxyWrite({ action: 'painel_stats' }),
     proxyWrite({ action: 'painel_worker_status' }),
   ]);
-  const sw = document.getElementById('pw-stats-wrap');
-  if (sw && statsR.ok) {
-    const s = statsR;
-    const statCard = (label, val, color) =>
-      `<div class="stat-card"><div class="stat-num" style="color:${color}">${val}</div><div class="stat-label">${label}</div></div>`;
-    sw.innerHTML =
-      statCard('Email pendentes', s.email_pend||0, (s.email_pend||0)>0?'#d97706':'var(--cta)') +
-      statCard('Email falhas',    s.email_fail||0, (s.email_fail||0)>0?'var(--red)':'var(--cta)') +
-      statCard('WPP pendentes',   s.wpp_pend||0,   (s.wpp_pend||0)>0?'#d97706':'var(--cta)') +
-      statCard('WPP falhas',      s.wpp_fail||0,   (s.wpp_fail||0)>0?'var(--red)':'var(--cta)') +
-      statCard('E-mails vencidos',s.email_overdue||0, (s.email_overdue||0)>0?'var(--red)':'#16a34a') +
-      statCard('WPP vencidos',    s.wpp_overdue||0,   (s.wpp_overdue||0)>0?'var(--red)':'#16a34a');
+
+  // Banner leads
+  const banner = document.getElementById('pw-leads-banner');
+  if (banner && statsR.ok) {
+    const total = statsR.leads_total || 0;
+    const queued = statsR.leads_queued || 0;
+    if (queued > 0) {
+      banner.style.display = 'block';
+      banner.textContent = `✅ Automação ativada para ${queued} lead${queued !== 1 ? 's' : ''}`;
+    } else {
+      banner.style.display = total > 0 ? 'block' : 'none';
+      banner.style.background = '#fef9c3'; banner.style.borderColor = '#fde68a'; banner.style.color = '#92400e';
+      banner.textContent = total > 0 ? `⚠️ ${total} lead${total !== 1 ? 's' : ''} sem automação ativa` : '';
+    }
   }
+
+  // Diagnostic checks
+  const diag = document.getElementById('pw-diag-checks');
+  if (diag && logR.ok) {
+    const cronOk = logR.log_available && logR.log_age_ok;
+    const keyOk  = logR.resend_key_ok;
+    const check  = (ok, label) =>
+      `<div style="display:flex;align-items:center;gap:8px;font-size:.84rem">
+        <span style="font-size:1rem">${ok ? '✅' : '⚠️'}</span>
+        <span style="color:${ok ? '#065f46' : '#92400e'}">${label}</span>
+      </div>`;
+    diag.innerHTML =
+      check(cronOk, cronOk ? 'Cron rodou nos últimos 30 minutos' : logR.log_available ? 'Cron pode estar parado — log desatualizado' : 'email_worker.log não encontrado') +
+      check(keyOk,  keyOk  ? 'Resend API Key configurada' : 'Resend API Key não configurada');
+  }
+
+  // Log terminal
   const lb = document.getElementById('pw-log-body');
   if (lb && logR.ok) {
     if (!logR.log_available) {
       lb.innerHTML = '<span style="color:var(--red)">Log não disponível — email_worker.log não encontrado.</span>';
     } else {
-      const ageColor = logR.log_age_ok ? '#16a34a' : '#d97706';
-      const ageMsg   = logR.log_age_ok ? 'Cron ativo (log atualizado há menos de 30min)' : 'Atenção: log desatualizado — cron pode estar parado';
-      lb.innerHTML = `<div style="margin-bottom:8px;font-size:.8rem;font-weight:600;color:${ageColor}">${ageMsg}</div>` +
-        (logR.log_lines?.length
-          ? `<pre style="background:#1e293b;color:#a3e635;font-family:monospace;font-size:.75rem;padding:10px;border-radius:6px;overflow-x:auto;white-space:pre-wrap;word-break:break-all">${escHtml(logR.log_lines.join('\n'))}</pre>`
-          : '<span style="color:var(--text3)">Log vazio.</span>');
+      lb.innerHTML = logR.log_lines?.length
+        ? `<pre style="background:#1e293b;color:#a3e635;font-family:monospace;font-size:.75rem;padding:12px 14px;border-radius:6px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;margin:0">${escHtml(logR.log_lines.join('\n'))}</pre>`
+        : '<span style="color:var(--text3)">Log vazio.</span>';
     }
   }
 }
@@ -2932,17 +2967,25 @@ async function pwLoadStats() {
 async function pwProcessNow() {
   const btn = document.getElementById('pw-process-btn');
   const res = document.getElementById('pw-process-result');
-  if (btn) { btn.disabled = true; btn.textContent = 'Processando…'; }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Processando…'; }
   if (res) res.style.display = 'none';
   const r = await proxyWrite({ action: 'painel_process_now' });
-  if (btn) { btn.disabled = false; btn.textContent = 'Processar fila agora'; }
+  if (btn) { btn.disabled = false; btn.textContent = '⚡ Processar fila agora'; }
   if (res) {
     res.style.display = 'block';
-    res.innerHTML = `<div class="card" style="border-color:${r.ok?'#86efac':'#fca5a5'};background:${r.ok?'#f0fdf4':'#fef2f2'}"><span style="font-size:.85rem;color:${r.ok?'#166534':'var(--red)'}">${escHtml(r.msg||r.error||'')}</span></div>`;
+    res.innerHTML = `<div style="background:${r.ok?'#f0fdf4':'#fef2f2'};border:1px solid ${r.ok?'#86efac':'#fca5a5'};border-radius:6px;padding:8px 14px;font-size:.84rem;color:${r.ok?'#166534':'var(--red)'}">${escHtml(r.msg||r.error||'')}</div>`;
   }
-  if (r.ok) toast(r.msg || 'Concluído!');
-  else toast(r.error || 'Erro', 'error');
-  await pwLoadStats();
+  if (r.ok) toast(r.msg || 'Concluído!'); else toast(r.error || 'Erro', 'error');
+  await pwLoadDiag();
+}
+
+async function pwRunWorker() {
+  const btn = document.getElementById('pw-worker-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Disparando…'; }
+  const r = await proxyWrite({ action: 'painel_run_worker' });
+  if (btn) { btn.disabled = false; btn.textContent = '🚀 Disparar Worker (AJAX)'; }
+  if (r.ok) toast(r.msg || 'Worker disparado!'); else toast(r.error || 'Erro', 'error');
+  setTimeout(pwLoadDiag, 3000);
 }
 
 /* ── PAINEL: MANUTENÇÃO FILA ─────────────────────────────────────────────── */
@@ -2950,51 +2993,86 @@ async function painelManutencaoPage() {
   _clearActiveIntervals();
   const main = document.getElementById('main-content');
   main.innerHTML = `
-    <div class="page-title">Manutenção Fila</div>
-    <div class="page-sub">Retentar falhas, resetar travados, limpar filas.</div>
-    <div id="pm-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
+    <div class="page-title">Manutenção da Fila</div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:14px">🛠 Manutenção da Fila</div>
+      <div id="pm-queues" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="text-align:center;padding:30px;color:var(--text3)">Carregando…</div>
+      </div>
+    </div>
+    <div id="pm-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">📧 Enviar E-mail de Teste</div>
+        <input id="pm-email-to"   type="email" placeholder="E-mail destinatário *"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:.85rem;margin-bottom:10px">
+        <input id="pm-email-name" type="text"  placeholder="Nome do destinatário"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:.85rem;margin-bottom:12px">
+        <button onclick="pmTestEmail()" style="width:100%;background:var(--cta);color:#fff;border:none;border-radius:var(--r);padding:10px;font-weight:700;font-size:.88rem;cursor:pointer">Enviar agora</button>
+        <div id="pm-email-result" style="display:none;margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">💬 Enviar WhatsApp de Teste</div>
+        <input id="pm-wpp-phone" type="text" placeholder="Telefone sem +55 (ex: 85998765432) *"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:.85rem;margin-bottom:10px">
+        <input id="pm-wpp-name"  type="text" placeholder="Nome do destinatário"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:.85rem;margin-bottom:12px">
+        <button onclick="pmTestWpp()" style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:var(--r);padding:10px;font-weight:700;font-size:.88rem;cursor:pointer">Enviar agora</button>
+        <div id="pm-wpp-result" style="display:none;margin-top:10px"></div>
+      </div>
+    </div>`;
   await pmLoad();
 }
 
 async function pmLoad() {
   const r = await proxyWrite({ action: 'painel_stats' });
-  const el = document.getElementById('pm-body');
-  if (!r.ok) { el.innerHTML = `<div class="card" style="color:var(--red)">Erro: ${escHtml(r.error||'')}</div>`; return; }
+  const qel = document.getElementById('pm-queues');
+  const sel  = document.getElementById('pm-stats');
+  if (!r.ok) {
+    if (qel) qel.innerHTML = `<div style="color:var(--red)">Erro: ${escHtml(r.error||'')}</div>`;
+    return;
+  }
 
   const pmBtn = (label, op, danger, disabled) =>
-    `<button onclick="pmAction('${op}')" ${disabled?'disabled':''} style="background:${danger?'#fef2f2':'#fff7ed'};border:1px solid ${danger?'#fecaca':'#fed7aa'};color:${danger?'#dc2626':'#c2410c'};border-radius:7px;padding:7px 13px;font-size:.78rem;font-weight:600;cursor:${disabled?'default':'pointer'};opacity:${disabled?'.4':'1'}">${label}</button>`;
+    `<button onclick="pmAction('${op}')" ${disabled?'disabled':''} style="background:${danger?'#fef2f2':'#fff7ed'};border:1px solid ${danger?'#fecaca':'#fed7aa'};color:${danger?'#dc2626':'#c2410c'};border-radius:7px;padding:6px 12px;font-size:.77rem;font-weight:600;cursor:${disabled?'default':'pointer'};opacity:${disabled?'.4':'1'}">${label}</button>`;
 
-  el.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div class="card">
-        <div class="card-title">Email</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-          <span style="font-size:.82rem">Travados: <strong style="color:${(r.email_stuck||0)>0?'#d97706':'#16a34a'}">${r.email_stuck||0}</strong></span>
-          <span style="font-size:.82rem">Falhas: <strong style="color:${(r.email_fail||0)>0?'var(--red)':'#16a34a'}">${r.email_fail||0}</strong></span>
-          <span style="font-size:.82rem">Pendentes: <strong>${r.email_pend||0}</strong></span>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${pmBtn('Retentar falhas',    'retry_failed_email',   false, (r.email_fail||0)===0)}
-          ${pmBtn('Resetar travados',   'reset_stuck_email',    false, (r.email_stuck||0)===0)}
-          ${pmBtn('Excluir falhas',     'delete_failed_email',  true,  (r.email_fail||0)===0)}
-          ${pmBtn('Limpar pendentes',   'delete_pending_email', true,  (r.email_pend||0)===0)}
-        </div>
+  if (qel) qel.innerHTML = `
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:6px;font-weight:700;font-size:.88rem;margin-bottom:8px">📧 E-mail</div>
+      <div style="font-size:.82rem;margin-bottom:10px">
+        Travados: <strong style="color:${(r.email_stuck||0)>0?'#d97706':'#16a34a'}">${r.email_stuck||0}</strong>
+        &nbsp;&nbsp;Com falha: <strong style="color:${(r.email_fail||0)>0?'var(--red)':'#16a34a'}">${r.email_fail||0}</strong>
       </div>
-      <div class="card">
-        <div class="card-title">WPP</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-          <span style="font-size:.82rem">Travados: <strong style="color:${(r.wpp_stuck||0)>0?'#d97706':'#16a34a'}">${r.wpp_stuck||0}</strong></span>
-          <span style="font-size:.82rem">Falhas: <strong style="color:${(r.wpp_fail||0)>0?'var(--red)':'#16a34a'}">${r.wpp_fail||0}</strong></span>
-          <span style="font-size:.82rem">Pendentes: <strong>${r.wpp_pend||0}</strong></span>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${pmBtn('Retentar falhas',    'retry_failed_wpp',   false, (r.wpp_fail||0)===0)}
-          ${pmBtn('Resetar travados',   'reset_stuck_wpp',    false, (r.wpp_stuck||0)===0)}
-          ${pmBtn('Excluir falhas',     'delete_failed_wpp',  true,  (r.wpp_fail||0)===0)}
-          ${pmBtn('Limpar pendentes',   'delete_pending_wpp', true,  (r.wpp_pend||0)===0)}
-        </div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px">
+        ${pmBtn('↺ Resetar travados', 'reset_stuck_email',   false, (r.email_stuck||0)===0)}
+        ${pmBtn('↺ Retentar falhas',  'retry_failed_email',  false, (r.email_fail||0)===0)}
+        ${pmBtn('🗑 Excluir falhas',  'delete_failed_email', true,  (r.email_fail||0)===0)}
+      </div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:6px;font-weight:700;font-size:.88rem;margin-bottom:8px">💬 WhatsApp</div>
+      <div style="font-size:.82rem;margin-bottom:10px">
+        Travados: <strong style="color:${(r.wpp_stuck||0)>0?'#d97706':'#16a34a'}">${r.wpp_stuck||0}</strong>
+        &nbsp;&nbsp;Com falha: <strong style="color:${(r.wpp_fail||0)>0?'var(--red)':'#16a34a'}">${r.wpp_fail||0}</strong>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px">
+        ${pmBtn('↺ Resetar travados', 'reset_stuck_wpp',   false, (r.wpp_stuck||0)===0)}
+        ${pmBtn('↺ Retentar falhas',  'retry_failed_wpp',  false, (r.wpp_fail||0)===0)}
+        ${pmBtn('🗑 Excluir falhas',  'delete_failed_wpp', true,  (r.wpp_fail||0)===0)}
       </div>
     </div>`;
+
+  const statCard = (label, val, color) =>
+    `<div class="stat-card"><div class="stat-num" style="color:${color}">${val}</div><div class="stat-label">${label}</div></div>`;
+  if (sel) sel.innerHTML =
+    statCard('Leads cadastradas', r.leads_total||0,  'var(--cta)') +
+    statCard('Na automação',      r.leads_queued||0, 'var(--cta)') +
+    statCard('E-mails enviados',  r.email_sent||0,   '#16a34a') +
+    statCard('E-mails pendentes', r.email_pend||0,   (r.email_pend||0)>0?'#d97706':'var(--cta)') +
+    statCard('E-mails com falha', r.email_fail||0,   (r.email_fail||0)>0?'var(--red)':'var(--cta)') +
+    statCard('WPP enviados',      r.wpp_sent||0,     '#16a34a') +
+    statCard('WPP pendentes',     r.wpp_pend||0,     (r.wpp_pend||0)>0?'#d97706':'var(--cta)') +
+    statCard('WPP com falha',     r.wpp_fail||0,     (r.wpp_fail||0)>0?'var(--red)':'var(--cta)');
 }
 
 async function pmAction(op) {
@@ -3003,6 +3081,34 @@ async function pmAction(op) {
   const r = await proxyWrite({ action: 'painel_maintenance', op });
   if (r.ok) { toast(r.msg || 'Operação concluída!'); await pmLoad(); }
   else toast(r.error || 'Erro', 'error');
+}
+
+async function pmTestEmail() {
+  const to   = document.getElementById('pm-email-to')?.value?.trim();
+  const name = document.getElementById('pm-email-name')?.value?.trim() || 'Teste';
+  const res  = document.getElementById('pm-email-result');
+  if (!to) { toast('Informe o e-mail destinatário', 'error'); return; }
+  if (res) res.style.display = 'none';
+  const r = await proxyWrite({ action: 'painel_test_email', to, name });
+  if (res) {
+    res.style.display = 'block';
+    res.innerHTML = `<div style="background:${r.ok?'#f0fdf4':'#fef2f2'};border:1px solid ${r.ok?'#86efac':'#fca5a5'};border-radius:6px;padding:8px 12px;font-size:.83rem;color:${r.ok?'#166534':'var(--red)'}">${r.ok?'✅':'❌'} ${escHtml(r.msg||r.error||'')}</div>`;
+  }
+  if (r.ok) toast(r.msg || 'E-mail enviado!'); else toast(r.error || r.msg || 'Falha', 'error');
+}
+
+async function pmTestWpp() {
+  const phone = document.getElementById('pm-wpp-phone')?.value?.trim();
+  const name  = document.getElementById('pm-wpp-name')?.value?.trim() || 'Teste';
+  const res   = document.getElementById('pm-wpp-result');
+  if (!phone) { toast('Informe o telefone', 'error'); return; }
+  if (res) res.style.display = 'none';
+  const r = await proxyWrite({ action: 'painel_test_wpp', phone, name });
+  if (res) {
+    res.style.display = 'block';
+    res.innerHTML = `<div style="background:${r.ok?'#f0fdf4':'#fef2f2'};border:1px solid ${r.ok?'#86efac':'#fca5a5'};border-radius:6px;padding:8px 12px;font-size:.83rem;color:${r.ok?'#166534':'var(--red)'}">${r.ok?'✅':'❌'} ${escHtml(r.msg||r.error||'')}</div>`;
+  }
+  if (r.ok) toast(r.msg || 'WhatsApp enviado!'); else toast(r.error || r.msg || 'Falha', 'error');
 }
 
 /* ── PAINEL: FILA EMAIL ──────────────────────────────────────────────────── */

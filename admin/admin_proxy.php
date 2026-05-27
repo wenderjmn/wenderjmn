@@ -123,6 +123,10 @@ switch ($action) {
     case 'painel_force_send':    require_auth(); require_perm('config'); painel_force_send();    break;
     case 'painel_process_now':   require_auth(); require_perm('config'); painel_process_now();   break;
     case 'painel_worker_status': require_auth(); painel_worker_status(); break;
+    case 'painel_run_worker':    require_auth(); require_perm('config'); painel_run_worker();    break;
+    case 'painel_test_email':    require_auth(); require_perm('config'); painel_test_email();    break;
+    case 'painel_test_wpp':      require_auth(); require_perm('config'); painel_test_wpp();      break;
+    case 'painel_activate_leads':require_auth(); require_perm('config'); painel_activate_leads();break;
 
     // Importação com sequência
     case 'import_with_sequence': require_auth(); require_perm('leads'); import_with_sequence(); break;
@@ -1350,11 +1354,53 @@ function painel_worker_status() {
         $log_age_ok = (time() - filemtime($log_file)) < 1800;
     }
     echo json_encode([
-        'ok'            => true,
-        'log_available' => $log_exists,
-        'log_age_ok'    => $log_age_ok,
-        'log_lines'     => $log_lines,
+        'ok'             => true,
+        'log_available'  => $log_exists,
+        'log_age_ok'     => $log_age_ok,
+        'log_lines'      => $log_lines,
+        'resend_key_ok'  => strlen(getenv('RESEND_API_KEY') ?: '') > 10,
     ]);
+}
+
+function painel_run_worker() {
+    $worker = dirname(__DIR__) . '/email_worker.php';
+    if (!file_exists($worker)) { echo json_encode(['ok'=>false,'error'=>'email_worker.php não encontrado']); return; }
+    exec('php ' . escapeshellarg($worker) . ' > /dev/null 2>&1 &');
+    echo json_encode(['ok'=>true,'msg'=>'Worker disparado em background — aguarde alguns segundos e verifique o log.']);
+}
+
+function painel_test_email() {
+    $to   = trim($_POST['to']   ?? '');
+    $name = trim($_POST['name'] ?? 'Teste');
+    if (!$to || !filter_var($to, FILTER_VALIDATE_EMAIL)) { echo json_encode(['ok'=>false,'error'=>'E-mail inválido']); return; }
+    $subject = 'Teste de envio — Programa EmagreSer';
+    $body    = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"></head><body style="font-family:Arial;padding:24px;background:#f4f3ef"><div style="max-width:500px;margin:0 auto;background:#fff;padding:28px;border-radius:10px"><h2 style="color:#0d9488">&#x2705; E-mail funcionando!</h2><p>Olá, <strong>' . htmlspecialchars($name) . '</strong>!</p><p>Este é um teste da automação do <strong>Programa EmagreSer</strong>.</p><p style="color:#6b7c67;font-size:13px">Enviado em ' . date('d/m/Y H:i:s') . '</p></div></body></html>';
+    $result  = send_smtp($to, $name, $subject, $body);
+    echo json_encode(['ok' => $result['ok'], 'msg' => $result['ok'] ? "E-mail enviado para {$to}" : $result['msg']]);
+}
+
+function painel_test_wpp() {
+    $phone = preg_replace('/\D/', '', $_POST['phone'] ?? '');
+    $name  = trim($_POST['name'] ?? 'Teste');
+    if (strlen($phone) < 10) { echo json_encode(['ok'=>false,'error'=>'Telefone inválido']); return; }
+    $result = send_whatsapp('55' . $phone, "✅ *Teste EmagreSer*\n\nOlá, {$name}! A automação de WhatsApp está funcionando.\n\n_" . date('d/m/Y H:i') . "_");
+    echo json_encode(['ok' => $result['ok'], 'msg' => $result['ok'] ? "WhatsApp enviado para {$phone}" : $result['msg']]);
+}
+
+function painel_activate_leads() {
+    $unqueued = sb_get('leads?sequence_queued_at=is.null&select=id,name,email&limit=200');
+    $count = 0;
+    foreach ($unqueued as $lead) {
+        if (empty($lead['email'])) continue;
+        $url = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/email_trigger.php';
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_POST=>true,
+            CURLOPT_POSTFIELDS=>json_encode(['lead_id'=>$lead['id'],'event'=>'new_lead']),
+            CURLOPT_HTTPHEADER=>['Content-Type: application/json'], CURLOPT_TIMEOUT=>10]);
+        curl_exec($ch); curl_close($ch);
+        $count++; usleep(100000);
+    }
+    echo json_encode(['ok'=>true,'msg'=>"Automação ativada para {$count} leads",'count'=>$count]);
 }
 
 // ── IMPORTAÇÃO COM SEQUÊNCIA ──────────────────────────────────────────────────
