@@ -1477,8 +1477,11 @@ async function leadDetailPage(leadId) {
           <button onclick="ldSendModal('${leadId}','wpp')"   style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer">💬 Enviar WPP agora</button>
         </div>
         <div style="border-top:1px solid #fee2e2;padding-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-          <button onclick="ldUnsubscribe('${leadId}','email')" style="background:#fff1f2;border:1px solid #fecaca;color:#b91c1c;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer" title="Remove da fila e impede futuros envios de e-mail">🚫 Cancelar fila e-mail</button>
-          <button onclick="ldUnsubscribe('${leadId}','wpp')"   style="background:#fff1f2;border:1px solid #fecaca;color:#b91c1c;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer" title="Remove da fila e impede futuros envios de WPP">🚫 Cancelar fila WPP</button>
+          <button onclick="ldUnsubscribe('${leadId}','email')" style="background:#fff1f2;border:1px solid #fecaca;color:#b91c1c;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer" title="Marca opt-out e cancela e-mails pendentes">🚫 Cancelar fila e-mail</button>
+          <button onclick="ldUnsubscribe('${leadId}','wpp')"   style="background:#fff1f2;border:1px solid #fecaca;color:#b91c1c;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer" title="Marca opt-out e cancela WPPs pendentes">🚫 Cancelar fila WPP</button>
+          <button onclick="ldPurgeQueues('${leadId}','email')" style="background:#fef2f2;border:1px solid #f87171;color:#7f1d1d;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer" title="Exclui TODOS os registros de e-mail da fila (enviados e pendentes)">🗑 Excluir histórico e-mail</button>
+          <button onclick="ldPurgeQueues('${leadId}','wpp')"   style="background:#fef2f2;border:1px solid #f87171;color:#7f1d1d;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:600;cursor:pointer" title="Exclui TODOS os registros de WPP da fila (enviados e pendentes)">🗑 Excluir histórico WPP</button>
+          <button onclick="ldPurgeQueues('${leadId}','both')"  style="background:#fef2f2;border:1px solid #f87171;color:#7f1d1d;border-radius:var(--r);padding:7px 14px;font-size:.78rem;font-weight:700;cursor:pointer" title="Exclui TODOS os registros de e-mail e WPP da fila">🗑 Excluir tudo das filas</button>
         </div>
       </div>
     </div>
@@ -1606,6 +1609,22 @@ async function ldSendConfirm(leadId) {
       res.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:8px 12px;font-size:.82rem;color:#dc2626">❌ ${escHtml(r.msg||r.error||'Falha')}</div>`;
     }
     toast(r.msg || r.error || 'Falha no envio', 'error');
+  }
+}
+
+async function ldPurgeQueues(leadId, channel) {
+  const labels = { email:'e-mail', wpp:'WPP', both:'e-mail e WPP' };
+  const label  = labels[channel];
+  if (!confirm(`Excluir TODOS os registros de ${label} das filas deste lead?\n\nIsso remove enviados, pendentes e cancelados — o histórico de comunicação desaparece. O cadastro do lead é mantido.\n\nEsta ação é irreversível.`)) return;
+  const r = await proxyWrite({ action: 'lead_purge_queues', lead_id: leadId, channel });
+  if (r.ok) {
+    const parts = [];
+    if (r.deleted_email > 0) parts.push(`${r.deleted_email} e-mail${r.deleted_email>1?'s':''}`);
+    if (r.deleted_wpp   > 0) parts.push(`${r.deleted_wpp} WPP${r.deleted_wpp>1?'s':''}`);
+    toast(parts.length ? `Excluído: ${parts.join(' e ')}` : 'Nenhum registro encontrado nas filas');
+    await leadDetailPage(leadId);
+  } else {
+    toast(r.error || 'Erro ao excluir filas', 'error');
   }
 }
 

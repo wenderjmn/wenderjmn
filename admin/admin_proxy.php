@@ -138,6 +138,7 @@ switch ($action) {
     case 'lead_pause_sequence':      require_auth(); require_perm('leads'); lead_pause_sequence();      break;
     case 'lead_unsubscribe_email':   require_auth(); require_perm('leads'); lead_unsubscribe_email();   break;
     case 'lead_unsubscribe_wpp':     require_auth(); require_perm('leads'); lead_unsubscribe_wpp();     break;
+    case 'lead_purge_queues':        require_auth(); require_perm('leads'); lead_purge_queues();        break;
     case 'leads_list':               require_auth(); require_perm('leads'); leads_list();               break;
 
     default:
@@ -1694,6 +1695,36 @@ function lead_pause_sequence() {
     $r = sb_request('PATCH', 'leads?id=eq.' . rawurlencode($lead_id), ['sequence_paused' => $pause]);
     $ok = $r['status'] >= 200 && $r['status'] < 300;
     echo json_encode(['ok'=>$ok, 'paused'=>$pause, 'http_status'=>$r['status']]);
+}
+
+function lead_purge_queues() {
+    $lead_id  = trim($_POST['lead_id']  ?? '');
+    $channel  = trim($_POST['channel']  ?? 'both'); // email | wpp | both
+    if (!is_valid_uuid($lead_id)) { echo json_encode(['ok'=>false,'error'=>'lead_id inválido']); return; }
+    if (!in_array($channel, ['email','wpp','both'], true)) { echo json_encode(['ok'=>false,'error'=>'channel inválido']); return; }
+
+    $deleted_email = 0;
+    $deleted_wpp   = 0;
+
+    if ($channel === 'email' || $channel === 'both') {
+        // Conta antes de deletar
+        $cnt = sb_get('email_queue?lead_id=eq.' . rawurlencode($lead_id) . '&select=id');
+        $deleted_email = count((array)$cnt);
+        // Deleta todas (qualquer status)
+        sb_request('DELETE', 'email_queue?lead_id=eq.' . rawurlencode($lead_id));
+    }
+
+    if ($channel === 'wpp' || $channel === 'both') {
+        $cnt = sb_get('whatsapp_queue?lead_id=eq.' . rawurlencode($lead_id) . '&select=id');
+        $deleted_wpp = count((array)$cnt);
+        sb_request('DELETE', 'whatsapp_queue?lead_id=eq.' . rawurlencode($lead_id));
+    }
+
+    echo json_encode([
+        'ok'            => true,
+        'deleted_email' => $deleted_email,
+        'deleted_wpp'   => $deleted_wpp,
+    ]);
 }
 
 function lead_unsubscribe_email() {
