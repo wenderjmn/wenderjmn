@@ -3025,6 +3025,7 @@ async function painelManutencaoPage() {
 }
 
 async function pmLoad() {
+  // Fetch stats + failed queues in parallel (only if there are failures)
   const r = await proxyWrite({ action: 'painel_stats' });
   const qel = document.getElementById('pm-queues');
   const sel  = document.getElementById('pm-stats');
@@ -3073,12 +3074,112 @@ async function pmLoad() {
     statCard('WPP enviados',      r.wpp_sent||0,     '#16a34a') +
     statCard('WPP pendentes',     r.wpp_pend||0,     (r.wpp_pend||0)>0?'#d97706':'var(--cta)') +
     statCard('WPP com falha',     r.wpp_fail||0,     (r.wpp_fail||0)>0?'var(--red)':'var(--cta)');
+
+  // ── Failed items detail ──────────────────────────────────────────────────
+  const hasFail = (r.email_fail||0) > 0 || (r.wpp_fail||0) > 0;
+  let failSection = document.getElementById('pm-fail-section');
+  if (!hasFail) { if (failSection) failSection.remove(); return; }
+
+  if (!failSection) {
+    failSection = document.createElement('div');
+    failSection.id = 'pm-fail-section';
+    // Insert before the test forms (last grid)
+    const testGrid = document.querySelector('#main-content > div:last-child');
+    if (testGrid) testGrid.parentNode.insertBefore(failSection, testGrid);
+    else document.getElementById('main-content').appendChild(failSection);
+  }
+  failSection.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:.83rem">Carregando detalhes das falhas…</div>';
+
+  const fetches = [];
+  if ((r.email_fail||0) > 0) fetches.push(proxyWrite({ action: 'painel_queue_list', queue: 'email_failed' }));
+  else fetches.push(Promise.resolve({ ok: true, items: [] }));
+  if ((r.wpp_fail||0) > 0) fetches.push(proxyWrite({ action: 'painel_queue_list', queue: 'wpp_failed' }));
+  else fetches.push(Promise.resolve({ ok: true, items: [] }));
+
+  const [ef, wf] = await Promise.all(fetches);
+  const emailFails = ef.ok ? (ef.items || []) : [];
+  const wppFails   = wf.ok ? (wf.items || []) : [];
+
+  const renderFailTable = (items, type) => {
+    if (!items.length) return '';
+    const icon  = type === 'email' ? '📧' : '💬';
+    const title = type === 'email' ? 'Falhas de E-mail' : 'Falhas de WhatsApp';
+    const acColor = type === 'email' ? '#1e40af' : '#7c3aed';
+    const acBg    = type === 'email' ? '#eff6ff' : '#f5f3ff';
+
+    const rows = items.map(m => {
+      const contact = type === 'email'
+        ? `<span style="font-size:.75rem;color:var(--text3)">${escHtml(m.to_email||'')}</span>`
+        : `<span style="font-size:.75rem;color:var(--text3)">${escHtml(m.to_phone||'')}</span>`;
+      const what = type === 'email'
+        ? `<span style="background:${acBg};color:${acColor};padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:600">${escHtml(m.template_slug||'—')}</span>`
+        : `<span style="font-size:.75rem;color:var(--text2);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px" title="${escHtml(m.message||'')}">${escHtml((m.message||'').replace(/\n/g,' ').slice(0,70))}${(m.message||'').length>70?'…':''}</span>`;
+      const errMsg = escHtml(m.error_msg || 'Sem detalhes registrados');
+      const forceOp = type === 'email' ? `pmForceFailEmail('${m.id}')` : `pmForceFailWpp('${m.id}')`;
+      const delOp   = type === 'email' ? `pmAction('delete_item_email','${m.id}')` : `pmAction('delete_item_wpp','${m.id}')`;
+
+      return `<tr style="border-top:1px solid #fee2e2">
+        <td style="padding:10px 14px">
+          <strong style="font-size:.83rem">${escHtml(m.to_name||'—')}</strong><br>${contact}
+        </td>
+        <td style="padding:10px 12px">${what}</td>
+        <td style="padding:10px 12px">
+          <span style="font-size:.73rem;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:5px;padding:3px 8px;display:inline-block;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${errMsg}">${errMsg}</span>
+        </td>
+        <td style="padding:10px 12px;font-size:.73rem;text-align:center;color:var(--text3)">${m.attempts||0}</td>
+        <td style="padding:10px 12px;white-space:nowrap">
+          <button onclick="${forceOp}" style="background:#2563eb;color:#fff;border:none;padding:4px 10px;border-radius:5px;font-size:.72rem;cursor:pointer;margin-right:4px;font-weight:600">Forçar</button>
+          <button onclick="${delOp}" style="background:var(--red);color:#fff;border:none;padding:4px 10px;border-radius:5px;font-size:.72rem;cursor:pointer;font-weight:600">Excluir</button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    return `<div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-weight:700;font-size:.9rem;color:#b91c1c">${icon} ${title} <span style="background:#fee2e2;color:#b91c1c;padding:1px 8px;border-radius:20px;font-size:.72rem;margin-left:6px">${items.length}</span></div>
+        <button onclick="pmAction('retry_failed_${type}')" style="background:#fff7ed;border:1px solid #fed7aa;color:#c2410c;border-radius:6px;padding:5px 12px;font-size:.75rem;font-weight:600;cursor:pointer">↺ Retentar todas</button>
+      </div>
+      <div style="border:1px solid #fecaca;border-radius:10px;overflow:hidden;background:#fff">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#fff1f2">
+            <th style="text-align:left;padding:8px 14px;font-size:.71rem;color:#9f1239;font-weight:700;letter-spacing:.04em">LEAD</th>
+            <th style="text-align:left;padding:8px 12px;font-size:.71rem;color:#9f1239;font-weight:700;letter-spacing:.04em">${type==='email'?'TEMPLATE':'MENSAGEM'}</th>
+            <th style="text-align:left;padding:8px 12px;font-size:.71rem;color:#9f1239;font-weight:700;letter-spacing:.04em">MOTIVO DA FALHA</th>
+            <th style="text-align:center;padding:8px 12px;font-size:.71rem;color:#9f1239;font-weight:700;letter-spacing:.04em">TENT.</th>
+            <th style="padding:8px 12px;font-size:.71rem;color:#9f1239;font-weight:700;letter-spacing:.04em">AÇÕES</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  };
+
+  failSection.innerHTML =
+    `<div style="margin-bottom:6px;font-size:.82rem;font-weight:700;color:#b91c1c">⚠️ Itens com falha</div>` +
+    renderFailTable(emailFails, 'email') +
+    renderFailTable(wppFails,   'wpp');
 }
 
-async function pmAction(op) {
-  const dangerous = ['delete_failed_email','delete_failed_wpp','delete_pending_email','delete_pending_wpp'];
-  if (dangerous.includes(op) && !confirm('Confirma esta operação destrutiva? Não pode ser desfeita.')) return;
-  const r = await proxyWrite({ action: 'painel_maintenance', op });
+async function pmForceFailEmail(id) {
+  if (!confirm('Forçar reenvio deste e-mail agora?')) return;
+  const r = await proxyWrite({ action: 'painel_force_send', queue_type: 'email', item_id: id });
+  if (r.ok) { toast(r.msg || 'E-mail enviado!'); await pmLoad(); }
+  else toast(r.msg || r.error || 'Falha no envio', 'error');
+}
+
+async function pmForceFailWpp(id) {
+  if (!confirm('Forçar reenvio deste WhatsApp agora?')) return;
+  const r = await proxyWrite({ action: 'painel_force_send', queue_type: 'wpp', item_id: id });
+  if (r.ok) { toast(r.msg || 'WPP enviado!'); await pmLoad(); }
+  else toast(r.msg || r.error || 'Falha no envio', 'error');
+}
+
+async function pmAction(op, itemId) {
+  const dangerous = ['delete_failed_email','delete_failed_wpp','delete_pending_email','delete_pending_wpp','delete_item_email','delete_item_wpp'];
+  if (dangerous.includes(op) && !confirm('Confirma esta operação? Não pode ser desfeita.')) return;
+  const payload = { action: 'painel_maintenance', op };
+  if (itemId) payload.item_id = itemId;
+  const r = await proxyWrite(payload);
   if (r.ok) { toast(r.msg || 'Operação concluída!'); await pmLoad(); }
   else toast(r.error || 'Erro', 'error');
 }
