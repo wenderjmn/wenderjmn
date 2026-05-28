@@ -48,7 +48,45 @@ if (!$data) {
 $log_line = date('Y-m-d H:i:s') . ' RECEIVE ' . substr($raw, 0, 400) . "\n";
 file_put_contents(__DIR__ . '/wpp_receive.log', $log_line, FILE_APPEND);
 
-// Ignora mensagens que NÓS enviamos
+// ── Callback de status de entrega (algumas configs Z-API usam um único webhook) ──
+// Detecta pelo campo "status" OU pelo type ReceivedCallback/ReadCallback
+$status_raw = strtoupper($data['status'] ?? '');
+$cb_type    = strtoupper($data['type'] ?? '');
+$is_status_cb = in_array($status_raw, ['RECEIVED','DELIVERED','READ','PLAYED'], true)
+             || in_array($cb_type, ['RECEIVEDCALLBACK','READCALLBACK','DELIVERYCALLBACK'], true);
+
+if ($is_status_cb && !empty($data['messageId'] ?? $data['zaapId'] ?? '')) {
+    // Delega ao wpp_status.php via include para reaproveitar a lógica
+    if (file_exists(__DIR__ . '/wpp_status.php')) {
+        // Reprocessa internamente sem nova requisição HTTP
+        $message_id = $data['messageId'] ?? $data['zaapId'] ?? null;
+        $status_map = ['RECEIVED'=>'received','DELIVERED'=>'received','READ'=>'read','PLAYED'=>'read',
+                       'RECEIVEDCALLBACK'=>'received','READCALLBACK'=>'read','DELIVERYCALLBACK'=>'received'];
+        $new_status = $status_map[$status_raw] ?: ($status_map[$cb_type] ?? null);
+        $now        = gmdate('Y-m-d\TH:i:s\Z');
+        if ($message_id && $new_status) {
+            $ch = curl_init(SUPABASE_URL . '/rest/v1/whatsapp_queue?zapi_message_id=eq.' . urlencode($message_id) . '&select=id,delivery_status&limit=1');
+            curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_HTTPHEADER=>['apikey: '.SUPABASE_SERVICE_KEY,'Authorization: Bearer '.SUPABASE_SERVICE_KEY]]);
+            $sb_rows = json_decode(curl_exec($ch),true) ?: []; curl_close($ch);
+            if (!empty($sb_rows)) {
+                $item = $sb_rows[0];
+                $order = ['sent'=>0,'received'=>1,'read'=>2];
+                if (($order[$new_status]??0) > ($order[$item['delivery_status']??'sent']??0)) {
+                    $patch = ['delivery_status'=>$new_status];
+                    if ($new_status==='received') $patch['delivered_at']=$now;
+                    if ($new_status==='read')     $patch['read_at']=$now;
+                    $ch2 = curl_init(SUPABASE_URL.'/rest/v1/whatsapp_queue?id=eq.'.$item['id']);
+                    curl_setopt_array($ch2,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_CUSTOMREQUEST=>'PATCH',CURLOPT_POSTFIELDS=>json_encode($patch),CURLOPT_HTTPHEADER=>['apikey: '.SUPABASE_SERVICE_KEY,'Authorization: Bearer '.SUPABASE_SERVICE_KEY,'Content-Type: application/json','Prefer: return=minimal']]);
+                    curl_exec($ch2); curl_close($ch2);
+                }
+            }
+        }
+    }
+    echo json_encode(['ok' => true, 'handled' => 'status_callback', 'status' => $new_status ?? $status_raw]);
+    exit;
+}
+
+// Ignora mensagens que NÓS enviamos (mas não são callbacks de status)
 $from_me = $data['fromMe'] ?? false;
 if ($from_me) {
     echo json_encode(['ok' => true, 'skipped' => 'own_message']);
