@@ -980,11 +980,15 @@ function sb_request(string $method, string $path, ?array $body = null, string $q
 function list_imported_leads() {
     require_perm('leads');
     $batch  = trim($_POST['batch']  ?? '');
-    $filter = trim($_POST['filter'] ?? '');
-    $qs = 'select=id,name,email,phone,sabotador,source,source_campaign,optin_wpp,optin_email,email_blocked,wpp_optout,automation_enrolled,sequence_queued_at,import_batch,notes,created_at&order=created_at.desc&limit=2000';
-    if ($batch) $qs .= '&import_batch=eq.' . rawurlencode($batch);
-    $r = sb_request('GET', 'imported_leads', null, $qs);
-    echo json_encode(['ok' => $r['status'] < 300, 'data' => $r['body'] ?? []]);
+    $qs = 'select=id,name,email,phone,sabotador,source,source_campaign,optin_wpp,optin_email,email_blocked,wpp_optout,automation_enrolled,sequence_queued_at,notes,created_at&source=eq.import&order=created_at.desc&limit=2000';
+    if ($batch) $qs .= '&source_campaign=eq.' . rawurlencode($batch);
+    $r = sb_request('GET', 'leads', null, $qs);
+    $data = $r['body'] ?? [];
+    // Map source_campaign → import_batch for frontend compatibility
+    foreach ($data as &$row) {
+        $row['import_batch'] = $row['source_campaign'] ?? null;
+    }
+    echo json_encode(['ok' => $r['status'] < 300, 'data' => $data]);
 }
 
 function import_csv_batch() {
@@ -1012,14 +1016,14 @@ function import_csv_batch() {
             'email'           => $email ?: null,
             'phone'           => $ph    ?: null,
             'sabotador'       => $sab,
-            'source_campaign' => $camp  ?: null,
-            'import_batch'    => $batch,
+            'source'          => 'import',
+            'source_campaign' => $camp  ?: $batch,
+            'funnel_stage'    => 'novo',
             'created_at'      => gmdate('c'),
-            'updated_at'      => gmdate('c'),
         ];
     }
     if (empty($records)) { echo json_encode(['ok'=>false,'error'=>'Nenhum registro válido']); return; }
-    $r = sb_request('POST', 'imported_leads', $records, 'on_conflict=email');
+    $r = sb_request('POST', 'leads', $records, 'on_conflict=email');
     echo json_encode(['ok' => $r['status'] < 300, 'imported' => count($records)]);
 }
 
@@ -1032,7 +1036,7 @@ function toggle_imported_optin() {
     if (!in_array($field, ['optin_wpp','optin_email','email_blocked','wpp_optout'], true)) {
         echo json_encode(['ok'=>false,'error'=>'Campo inválido']); return;
     }
-    $r = sb_request('PATCH', 'imported_leads?id=eq.' . rawurlencode($id), [$field => $val, 'updated_at' => gmdate('c')]);
+    $r = sb_request('PATCH', 'leads?id=eq.' . rawurlencode($id), [$field => $val]);
     echo json_encode(['ok' => $r['status'] < 300]);
 }
 
@@ -1043,7 +1047,7 @@ function enqueue_imported_lead() {
     if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
     if (!in_array($type, ['email','wpp','both'], true)) { echo json_encode(['ok'=>false,'error'=>'Tipo inválido']); return; }
 
-    $leads = sb_get('imported_leads?id=eq.' . rawurlencode($id) . '&select=id,name,email,phone,sabotador&limit=1');
+    $leads = sb_get('leads?id=eq.' . rawurlencode($id) . '&select=id,name,email,phone,sabotador&limit=1');
     if (empty($leads)) { echo json_encode(['ok'=>false,'error'=>'Lead não encontrado']); return; }
     $lead = $leads[0];
     $now  = gmdate('c');
@@ -1074,7 +1078,7 @@ function enqueue_imported_lead() {
         if ($r['status'] < 300) $inserted++;
     }
 
-    sb_request('PATCH', 'imported_leads?id=eq.' . rawurlencode($id), ['sequence_queued_at' => $now, 'updated_at' => $now]);
+    sb_request('PATCH', 'leads?id=eq.' . rawurlencode($id), ['sequence_queued_at' => $now]);
     echo json_encode(['ok' => $inserted > 0, 'inserted' => $inserted]);
 }
 
@@ -1091,7 +1095,7 @@ function enqueue_imported_bulk() {
     if (empty($ids)) { echo json_encode(['ok'=>false,'error'=>'IDs inválidos']); return; }
 
     $ids_qs = implode(',', array_map('rawurlencode', $ids));
-    $leads  = sb_get('imported_leads?id=in.(' . $ids_qs . ')&select=id,name,email,phone&limit=500');
+    $leads  = sb_get('leads?id=in.(' . $ids_qs . ')&select=id,name,email,phone&limit=500');
 
     $email_rows = []; $wpp_rows = [];
     $now = gmdate('c');
@@ -1115,7 +1119,7 @@ function delete_imported_lead() {
     require_perm('leads');
     $id = trim($_POST['id'] ?? '');
     if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
-    $r = sb_request('DELETE', 'imported_leads?id=eq.' . rawurlencode($id));
+    $r = sb_request('DELETE', 'leads?id=eq.' . rawurlencode($id));
     echo json_encode(['ok' => $r['status'] < 300]);
 }
 
