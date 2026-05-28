@@ -23,6 +23,11 @@ define('ZAPI_CLIENT_TOKEN', getenv('ZAPI_CLIENT_TOKEN') ?: '');
 define('ZAPI_URL',          'https://api.z-api.io/instances/' . ZAPI_INSTANCE . '/token/' . ZAPI_TOKEN);
 
 define('BATCH_SIZE', 20);
+
+// Janela de envio permitida — horário de Brasília (UTC-3)
+define('TZ_BRT',          'America/Sao_Paulo');
+define('SEND_HOUR_START',  8);   // a partir das 08:00
+define('SEND_HOUR_END',   20);   // até as 19:59 (não envia às 20:00 em diante)
 // ────────────────────────────────────────────────────────────────
 
 // ── AUTENTICAÇÃO (quando chamado via HTTP) ───────────────────────
@@ -54,6 +59,21 @@ if (!SUPABASE_SERVICE_KEY) {
     file_put_contents(__DIR__ . '/email_worker.log', $err, FILE_APPEND);
     flock($lock, LOCK_UN); fclose($lock);
     if ($via_http) echo json_encode(['ok'=>false,'error'=>'missing SUPABASE_SERVICE_KEY']);
+    exit;
+}
+
+// ── JANELA DE ENVIO: 08h–20h horário de Brasília ────────────────
+$now_brt  = new DateTime('now', new DateTimeZone(TZ_BRT));
+$hora_brt = (int)$now_brt->format('G');
+
+if ($hora_brt < SEND_HOUR_START || $hora_brt >= SEND_HOUR_END) {
+    $proxima = ($hora_brt >= SEND_HOUR_END)
+        ? $now_brt->modify('+1 day')->format('d/m') . ' às ' . SEND_HOUR_START . 'h'
+        : 'hoje às ' . SEND_HOUR_START . 'h';
+    $msg = "Worker fora da janela ({$hora_brt}h BRT). Próximo envio: {$proxima}.";
+    file_put_contents(__DIR__ . '/email_worker.log', '[' . date('Y-m-d H:i:s') . "] {$msg}\n", FILE_APPEND);
+    flock($lock, LOCK_UN); fclose($lock);
+    if ($via_http) echo json_encode(['ok' => true, 'skipped' => 'outside_window', 'hora_brt' => $hora_brt, 'msg' => $msg]);
     exit;
 }
 
