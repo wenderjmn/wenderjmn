@@ -1799,7 +1799,7 @@ function funnel_stats() {
     $page_filter = in_array($_POST['page_filter'] ?? '', ['index','ig'], true) ? $_POST['page_filter'] : null;
 
     $since  = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$days} days"));
-    $params = 'select=event,page,session_id,source,sabotador'
+    $params = 'select=event,page,session_id,source,sabotador,city,region,country'
             . '&created_at=gte.' . urlencode($since)
             . '&limit=200000&order=created_at.asc';
     if ($page_filter) $params .= '&page=eq.' . urlencode($page_filter);
@@ -1824,6 +1824,8 @@ function funnel_stats() {
     $sess_sets   = array_fill_keys($event_order, []);
     $sources     = [];
     $sabotadores = [];
+    $cities      = [];
+    $regions     = [];
 
     foreach ($rows as $r) {
         $ev  = $r['event'];
@@ -1838,18 +1840,27 @@ function funnel_stats() {
             $s = $r['sabotador'];
             $sabotadores[$s] = ($sabotadores[$s] ?? 0) + 1;
         }
+        // Geo — conta apenas page_view para não duplicar por sessão
+        if ($ev === 'page_view') {
+            if (!empty($r['city']))   $cities[$r['city']]   = ($cities[$r['city']]   ?? 0) + 1;
+            if (!empty($r['region'])) $regions[$r['region']]= ($regions[$r['region']]?? 0) + 1;
+        }
     }
 
     $sessions = [];
     foreach ($event_order as $ev) $sessions[$ev] = count($sess_sets[$ev]);
     arsort($sources);
+    arsort($cities);
+    arsort($regions);
 
     echo json_encode([
         'ok'         => true,
         'counts'     => $counts,
         'sessions'   => $sessions,
-        'sources'    => array_slice($sources, 0, 10, true),
+        'sources'    => array_slice($sources,  0, 10, true),
         'sabotadores'=> $sabotadores,
+        'cities'     => array_slice($cities,   0, 15, true),
+        'regions'    => array_slice($regions,  0, 10, true),
         'total_rows' => count($rows),
         'since'      => $since,
         'days'       => $days,

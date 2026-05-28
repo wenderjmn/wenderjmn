@@ -2107,18 +2107,22 @@ async function funilConversaoLoad() {
   const leads = sessions['form_submitted'] ?? counts['form_submitted'] ?? 0;
   const convRate = top > 0 ? (leads/top*100).toFixed(1) : '0.0';
 
+  // Helpers para tabelas
+  function makeTableRows(obj, topN, labelFn) {
+    if (!obj || !Object.keys(obj).length) return '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text3);font-size:.82rem">Sem dados ainda</td></tr>';
+    const total = Object.values(obj).reduce((a,b)=>a+b,0);
+    return Object.entries(obj).slice(0,topN).map(([k,cnt])=>{
+      const pct = total>0?Math.round(cnt/total*100):0;
+      return `<tr><td style="padding:7px 10px;font-size:.82rem">${labelFn?labelFn(k):k}</td><td style="padding:7px 10px;text-align:right;font-weight:600;font-size:.82rem">${cnt.toLocaleString('pt-BR')}</td><td style="padding:7px 10px;text-align:right;color:var(--text3);font-size:.78rem">${pct}%</td></tr>`;
+    }).join('');
+  }
   // Sources table
-  const sourcesHtml = Object.keys(sources).length ? Object.entries(sources).map(([src,cnt]) => {
-    const pct = total_rows > 0 ? Math.round(cnt/total_rows*100) : 0;
-    return `<tr><td style="padding:7px 10px;font-size:.82rem">${src||'(direto)'}</td><td style="padding:7px 10px;text-align:right;font-weight:600;font-size:.82rem">${cnt.toLocaleString('pt-BR')}</td><td style="padding:7px 10px;text-align:right;color:var(--text3);font-size:.78rem">${pct}%</td></tr>`;
-  }).join('') : '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text3);font-size:.82rem">Sem dados</td></tr>';
-
+  const sourcesHtml = makeTableRows(sources, 10, s=>s||'(direto)');
   // Sabotadores table
-  const sabHtml = Object.keys(sabotadores).length ? Object.entries(sabotadores).sort((a,b)=>b[1]-a[1]).map(([s,cnt]) => {
-    const total_sab = Object.values(sabotadores).reduce((a,b)=>a+b,0);
-    const pct = total_sab > 0 ? Math.round(cnt/total_sab*100) : 0;
-    return `<tr><td style="padding:7px 10px;font-size:.82rem">Perfil ${s}</td><td style="padding:7px 10px;text-align:right;font-weight:600;font-size:.82rem">${cnt.toLocaleString('pt-BR')}</td><td style="padding:7px 10px;text-align:right;color:var(--text3);font-size:.78rem">${pct}%</td></tr>`;
-  }).join('') : '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text3);font-size:.82rem">Sem dados ainda</td></tr>';
+  const sabHtml = makeTableRows(sabotadores, 4, s=>'Perfil '+s);
+  // Cidades e estados
+  const citiesHtml  = makeTableRows(cities,  15, null);
+  const regionsHtml = makeTableRows(regions, 10, null);
 
   body_el.innerHTML = `
     <!-- Summary cards -->
@@ -2151,10 +2155,10 @@ async function funilConversaoLoad() {
       ${barsHtml}
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap;margin-bottom:16px">
       <!-- Sources -->
       <div style="background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden">
-        <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700;font-size:.85rem">🌐 Origens (eventos)</div>
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700;font-size:.85rem">🌐 Origens (utm_source)</div>
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:#f8fafc">
             <th style="padding:7px 10px;text-align:left;font-size:.75rem;color:var(--text3);font-weight:600">Origem</th>
@@ -2174,6 +2178,33 @@ async function funilConversaoLoad() {
             <th style="padding:7px 10px;text-align:right;font-size:.75rem;color:var(--text3);font-weight:600">%</th>
           </tr></thead>
           <tbody>${sabHtml}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap">
+      <!-- Cidades -->
+      <div style="background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700;font-size:.85rem">📍 Top Cidades (visitantes)</div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f8fafc">
+            <th style="padding:7px 10px;text-align:left;font-size:.75rem;color:var(--text3);font-weight:600">Cidade</th>
+            <th style="padding:7px 10px;text-align:right;font-size:.75rem;color:var(--text3);font-weight:600">Visitas</th>
+            <th style="padding:7px 10px;text-align:right;font-size:.75rem;color:var(--text3);font-weight:600">%</th>
+          </tr></thead>
+          <tbody>${citiesHtml}</tbody>
+        </table>
+      </div>
+      <!-- Estados -->
+      <div style="background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700;font-size:.85rem">🗺️ Top Estados (visitantes)</div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f8fafc">
+            <th style="padding:7px 10px;text-align:left;font-size:.75rem;color:var(--text3);font-weight:600">Estado</th>
+            <th style="padding:7px 10px;text-align:right;font-size:.75rem;color:var(--text3);font-weight:600">Visitas</th>
+            <th style="padding:7px 10px;text-align:right;font-size:.75rem;color:var(--text3);font-weight:600">%</th>
+          </tr></thead>
+          <tbody>${regionsHtml}</tbody>
         </table>
       </div>
     </div>`;
