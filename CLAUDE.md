@@ -32,6 +32,7 @@ Plataforma de marketing e automação de comunicação para o **Programa EmagreS
 ├── import_leads.php        # Importação de CSV com sequência configurável
 ├── cron.php                # Auto-enrola leads importados (cron-job.org, horário)
 ├── wpp_receive.php         # Webhook Z-API: processa respostas dos leads
+├── wpp_status.php          # Webhook Z-API: callback de status de entrega (RECEIVED/READ)
 ├── painel.php              # Painel PHP de manutenção de filas (fallback)
 ├── _env.php                # Variáveis de ambiente (não versionado)
 │
@@ -123,6 +124,9 @@ Eventos de funil gravados pelas landing pages via `track.php`.
 | `source` | text | utm_source do visitante |
 | `source_campaign` | text | utm_campaign |
 | `referrer` | text | document.referrer (máx 200 chars) |
+| `city` | text | Cidade do visitante (geolocalização por IP, só em page_view) |
+| `region` | text | Estado/região (geolocalização por IP) |
+| `country` | text | País (geolocalização por IP) |
 | `created_at` | timestamptz | |
 
 **RLS:** INSERT permitido para anon (landing pages gravam sem auth); SELECT restrito ao service_role (proxy admin).
@@ -353,7 +357,54 @@ O painel admin é responsivo com sidebar em modo drawer para telas ≤768px:
 
 ---
 
+## Janela de Envio (v25)
+
+`email_worker.php` só envia mensagens entre **08h–21h BRT** (`America/Sao_Paulo`). Regra:
+- A primeira mensagem de cada lead (sem histórico `sent`) é sempre enviada imediatamente, em qualquer horário.
+- As mensagens subsequentes são puladas fora da janela e reprocessadas na próxima execução do cron dentro do horário.
+- Constantes: `TZ_BRT='America/Sao_Paulo'`, `SEND_HOUR_START=8`, `SEND_HOUR_END=21`.
+
+---
+
+## Status de Entrega WPP (v25)
+
+### wpp_status.php (endpoint dedicado)
+Configure no painel Z-API: **Webhooks → "Na entrega"** → `https://www.oficialemagreser.com/wpp_status.php`
+
+Valida `ZAPI_CLIENT_TOKEN` via header `Client-Token`. Mapeamento:
+- `RECEIVED` / `DELIVERED` / `RECEIVEDCALLBACK` / `DELIVERYCALLBACK` → `received` + grava `delivered_at`
+- `READ` / `PLAYED` / `READCALLBACK` → `read` + grava `read_at`
+- Status nunca regride (ordem: `sent=0 < received=1 < read=2`)
+
+### wpp_receive.php (inline, fallback)
+Se a Z-API enviar callbacks de status pelo mesmo webhook de recebimento, `wpp_receive.php` os detecta primeiro (antes de processar respostas de texto) e atualiza `delivery_status` da mesma forma.
+
+---
+
+## Geolocalização de Visitantes (v25)
+
+`track.php` consulta `http://ip-api.com/json/{ip}` **somente em eventos `page_view`**:
+- IPs privados (127.x, 192.168.x, 10.x) não são consultados.
+- Resultado cacheado por 24h via APCu (`geo_{md5(ip)}`). Sem APCu: consulta a cada page_view.
+- Timeout de 2s; falhas silenciosas (grava `null` nos campos).
+- Campos gravados em `page_events`: `city`, `region` (estado), `country`.
+
+O admin exibe **Top 15 Cidades** e **Top 10 Estados** no Funil de Conversão, agregados a partir de eventos `page_view`.
+
+> **Migração Supabase necessária:** `ALTER TABLE page_events ADD COLUMN city TEXT, ADD COLUMN region TEXT, ADD COLUMN country TEXT;`
+
+---
+
 ## Histórico de Versões
+
+### v25 — Janela de envio, status de entrega WPP e geolocalização
+- **`email_worker.php`**: janela de envio 08h–21h BRT — primeiro envio por lead sempre imediato; subsequentes adiados fora da janela
+- **`wpp_status.php`** (novo): endpoint dedicado para callback de status Z-API (RECEIVED/READ); valida Client-Token; nunca regride status; loga em `wpp_status.log`
+- **`wpp_receive.php`**: detecção inline de callbacks de status antes de processar respostas de texto
+- **`track.php`**: geolocalização por IP via ip-api.com com cache APCu 24h; somente em `page_view`; grava `city`/`region`/`country` em `page_events`
+- **`admin/admin_proxy.php`**: `funnel_stats()` agora seleciona e agrega `city`/`region`/`country`; retorna top 15 cidades e top 10 estados
+- **`admin/index.html`**: tabelas "Top Cidades" e "Top Estados" na página Funil de Conversão
+- **Supabase**: migração necessária para adicionar colunas `city`, `region`, `country` em `page_events`
 
 ### v24 — Funil de Conversão Nativo (rastreamento de eventos)
 - **`track.php`** (novo): endpoint público com rate limit por IP, valida 10 eventos e grava em `page_events`
