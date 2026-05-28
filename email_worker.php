@@ -27,7 +27,7 @@ define('BATCH_SIZE', 20);
 // Janela de envio permitida — horário de Brasília (UTC-3)
 define('TZ_BRT',          'America/Sao_Paulo');
 define('SEND_HOUR_START',  8);   // a partir das 08:00
-define('SEND_HOUR_END',   20);   // até as 19:59 (não envia às 20:00 em diante)
+define('SEND_HOUR_END',   21);   // até as 20:59 (não envia às 21:00 em diante)
 // ────────────────────────────────────────────────────────────────
 
 // ── AUTENTICAÇÃO (quando chamado via HTTP) ───────────────────────
@@ -62,20 +62,12 @@ if (!SUPABASE_SERVICE_KEY) {
     exit;
 }
 
-// ── JANELA DE ENVIO: 08h–20h horário de Brasília ────────────────
-$now_brt  = new DateTime('now', new DateTimeZone(TZ_BRT));
-$hora_brt = (int)$now_brt->format('G');
-
-if ($hora_brt < SEND_HOUR_START || $hora_brt >= SEND_HOUR_END) {
-    $proxima = ($hora_brt >= SEND_HOUR_END)
-        ? $now_brt->modify('+1 day')->format('d/m') . ' às ' . SEND_HOUR_START . 'h'
-        : 'hoje às ' . SEND_HOUR_START . 'h';
-    $msg = "Worker fora da janela ({$hora_brt}h BRT). Próximo envio: {$proxima}.";
-    file_put_contents(__DIR__ . '/email_worker.log', '[' . date('Y-m-d H:i:s') . "] {$msg}\n", FILE_APPEND);
-    flock($lock, LOCK_UN); fclose($lock);
-    if ($via_http) echo json_encode(['ok' => true, 'skipped' => 'outside_window', 'hora_brt' => $hora_brt, 'msg' => $msg]);
-    exit;
-}
+// ── JANELA DE ENVIO: 08h–21h horário de Brasília ────────────────
+// Primeiro e-mail e primeiro WPP de cada lead são sempre enviados imediatamente.
+// A partir do segundo, respeita a janela 08:00–20:59 BRT.
+$now_brt      = new DateTime('now', new DateTimeZone(TZ_BRT));
+$hora_brt     = (int)$now_brt->format('G');
+$within_window = ($hora_brt >= SEND_HOUR_START && $hora_brt < SEND_HOUR_END);
 
 // ── PROCESSAR FILA DE E-MAILS ────────────────────────────────────
 $now_iso = gmdate('Y-m-d\TH:i:s\Z'); // sem '+' no timezone, evita quebra de URL
@@ -88,6 +80,15 @@ foreach ($pending as $item) {
         if (!empty($lcheck[0]['email_blocked'])) {
             sb_patch("email_queue?id=eq.{$item['id']}", ['status'=>'failed','error_msg'=>'email_blocked']);
             continue;
+        }
+    }
+
+    // Janela de envio: se fora do horário, só envia se for o primeiro e-mail deste lead
+    if (!$within_window && !empty($item['lead_id'])) {
+        $ja_enviou = sb_get("email_queue?lead_id=eq.{$item['lead_id']}&status=eq.sent&select=id&limit=1");
+        if (!empty($ja_enviou)) {
+            $log[] = "⏰ Email adiado ({$hora_brt}h BRT): {$item['to_email']}";
+            continue; // deixa pending, o cron pega quando a janela abrir
         }
     }
 
@@ -164,6 +165,15 @@ if (!ZAPI_INSTANCE || !ZAPI_TOKEN) {
                 sb_patch("whatsapp_queue?id=eq.{$item['id']}", ['status'=>'cancelled','error_msg'=>'wpp_optout']);
                 $log[] = "⛔ WA cancelado (opt-out) para {$item['to_phone']}";
                 continue;
+            }
+        }
+
+        // Janela de envio: se fora do horário, só envia se for o primeiro WPP deste lead
+        if (!$within_window && !empty($item['lead_id'])) {
+            $ja_enviou = sb_get("whatsapp_queue?lead_id=eq.{$item['lead_id']}&status=eq.sent&select=id&limit=1");
+            if (!empty($ja_enviou)) {
+                $log[] = "⏰ WPP adiado ({$hora_brt}h BRT): {$item['to_phone']}";
+                continue; // deixa pending, o cron pega quando a janela abrir
             }
         }
 
