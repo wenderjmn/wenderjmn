@@ -25,6 +25,7 @@ Plataforma de marketing e automação de comunicação para o **Programa EmagreS
 /
 ├── index.html              # LP principal (tráfego pago / orgânico)
 ├── ig.html                 # LP específica para Instagram
+├── track.php               # Endpoint público de rastreamento de eventos de funil
 ├── descadastro.php         # Página de descadastro de e-mail (link nos rodapés)
 ├── email_trigger.php       # Enfileira sequência ao novo lead orgânico
 ├── email_worker.php        # Worker cron: processa email_queue + whatsapp_queue
@@ -109,19 +110,46 @@ Configurações da landing page: textos, URLs de vídeo, datas, pixel IDs, etc.
 #### `testimonials`, `depoimentos_prints`
 Depoimentos em vídeo e capturas de tela exibidos na LP.
 
+#### `page_events`
+Eventos de funil gravados pelas landing pages via `track.php`.
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `id` | uuid PK | |
+| `session_id` | text | ID único de sessão (gerado no browser, persiste em sessionStorage) |
+| `event` | text | page_view / quiz_opened / quiz_q1-q4 / quiz_completed / form_opened / form_submitted / vip_click |
+| `page` | text | index ou ig |
+| `step` | int | Número da pergunta (1–4) para eventos quiz_qN |
+| `sabotador` | text | Perfil A/B/C/D (preenchido em quiz_completed e form_submitted) |
+| `source` | text | utm_source do visitante |
+| `source_campaign` | text | utm_campaign |
+| `referrer` | text | document.referrer (máx 200 chars) |
+| `created_at` | timestamptz | |
+
+**RLS:** INSERT permitido para anon (landing pages gravam sem auth); SELECT restrito ao service_role (proxy admin).
+
 ---
 
 ## Fluxo de um Lead Orgânico
 
 ```
 Visitante acessa ig.html ou index.html
-  ↓
+  ↓  track('page_view') gravado em page_events
 ig.html  → Preenche formulário VIP na Hero (nome/email/phone)
+           → track('form_opened') ao focar o campo Nome
+           → track('form_submitted') + track('vip_click') ao salvar com sucesso
            → POST email_trigger.php → 7 e-mails + 13 WPPs enfileirados
            → sequence_queued_at = now
+  OU
+ig.html  → Clica botão "DESCOBRIR MEU PERFIL" → track('quiz_opened')
+           → Faz quiz → track('quiz_q1..q4') por pergunta
+           → track('quiz_completed', {sabotador}) ao terminar
+           → Preenche formulário resultado → track('form_submitted')
 
-index.html → Clica botão quiz → lead-modal (captura dados)
-           → Faz quiz (4 perguntas) → Resultado + formulário
+index.html → Clica botão quiz → track('form_opened') ao abrir lead-modal
+           → Preenche lead-modal → openQuizModal → track('quiz_opened')
+           → Faz quiz (4 perguntas) → track('quiz_q1..q4')
+           → Resultado → track('quiz_completed', {sabotador})
+           → Preenche formulário resultado → track('form_submitted')
            → POST email_trigger.php → sequência enfileirada
   ↓
 email_worker.php (cron a cada 10 min)
@@ -177,6 +205,7 @@ SPA single-page autenticada via sessão PHP. Navegação por grupos:
 | Dashboard | `dashboard()` | Stats de filas + últimos envios + leads recentes |
 | Leads | `leadsPage()` | Lista/busca/filtro de leads com exportação CSV |
 | Funil de Vendas | `funilPage()` | Cards por estágio + accordion com leads + mover estágio |
+| Funil de Conversão | `funilConversaoPage()` | Rastreamento de visitantes: onde desistem no quiz/formulário |
 
 ### Grupo: Gestão
 | Página | Função | Descrição |
@@ -232,6 +261,51 @@ Acessível clicando em qualquer lead. Exibe:
 
 ---
 
+## Rastreamento de Funil de Conversão
+
+### Como funciona
+
+Cada landing page (`index.html`, `ig.html`) gera um `session_id` único por aba/sessão (salvo em `sessionStorage`) e dispara eventos via `fetch('track.php', ...)` de forma assíncrona (fire-and-forget, sem impacto na UX).
+
+### Eventos rastreados
+
+| Evento | Quando dispara |
+|--------|---------------|
+| `page_view` | Ao carregar a página (fim de `init()`) |
+| `quiz_opened` | Ao abrir o modal do quiz (`openQuizModal()`) |
+| `quiz_q1` | Ao exibir a pergunta 1 pela primeira vez (`renderQ(0)`) |
+| `quiz_q2` | Ao exibir a pergunta 2 pela primeira vez (`renderQ(1)`) |
+| `quiz_q3` | Ao exibir a pergunta 3 pela primeira vez (`renderQ(2)`) |
+| `quiz_q4` | Ao exibir a pergunta 4 pela primeira vez (`renderQ(3)`) |
+| `quiz_completed` | Ao finalizar o quiz (`finishQuiz()`), inclui `sabotador` |
+| `form_opened` | Ao abrir o formulário de captura de lead |
+| `form_submitted` | Ao salvar o lead com sucesso (`saveLead()`), inclui `sabotador` |
+| `vip_click` | Ao clicar em botão WPP/VIP (delegado via `.btn-wpp`) |
+
+> **ig.html específico:** `form_opened` dispara no primeiro foco dos campos do hero form; `form_submitted` + `vip_click` disparam juntos ao salvar via hero form com sucesso.
+
+### Arquivo `track.php`
+
+- Endpoint público (sem autenticação)
+- Rate limit: 120 req/min por IP via APCu (skip silencioso sem APCu)
+- Valida `event` contra allowlist de 10 eventos
+- Sanitiza todos os campos antes de gravar
+- Grava via Supabase REST API com `SUPABASE_SERVICE_KEY`
+
+### Página "Funil de Conversão" no admin
+
+Filtros: período (7 / 14 / 30 / 90 dias / tudo) e página (todas / index / ig).
+
+Exibe:
+- **5 cards de resumo**: visitantes únicos, quiz abertos, quiz concluídos, leads salvos, taxa de conversão
+- **Barras horizontais por etapa**: sessões únicas por evento, % do anterior em verde (≥80%) / amarelo (≥50%) / vermelho (<50%)
+- **Tabela de origens** (utm_source) com contagem e % do total de eventos
+- **Tabela de perfis sabotadores** concluídos com distribuição %
+
+A agregação é feita em PHP (`funnel_stats()` em `admin_proxy.php`) — busca até 200k linhas de `page_events` e conta sessões únicas por evento com `array_fill_keys` + sets de session_id.
+
+---
+
 ## Funil de Vendas
 
 Estágios (em ordem):
@@ -268,7 +342,36 @@ putenv('CRON_SECRET=...');            // secret para chamar cron.php
 
 ---
 
+## Admin — Responsividade Mobile
+
+O painel admin é responsivo com sidebar em modo drawer para telas ≤768px:
+- **Topbar mobile** (`#mobile-topbar`): logo + botão hamburguer (☰) e botão fechar (✕)
+- **Sidebar overlay** (`#sidebar-overlay`): fundo escuro semitransparente — clique fecha o drawer
+- Funções: `toggleSidebar()` e `closeSidebar()`
+- `goPage()` chama `closeSidebar()` automaticamente ao navegar
+- CSS: `@media(max-width:768px)` transforma a sidebar em drawer com `transform: translateX(-100%)`
+
+---
+
 ## Histórico de Versões
+
+### v24 — Funil de Conversão Nativo (rastreamento de eventos)
+- **`track.php`** (novo): endpoint público com rate limit por IP, valida 10 eventos e grava em `page_events`
+- **`index.html`** + **`ig.html`**: helper `track()` com `session_id` único por sessão; eventos `page_view`, `quiz_opened`, `quiz_q1–q4`, `quiz_completed`, `form_opened`, `form_submitted`, `vip_click` wired nos pontos corretos
+- **`admin_proxy.php`**: ação `funnel_stats` — agrega `page_events` por período/página, retorna sessões únicas por etapa, origens e perfis sabotadores
+- **`admin/index.html`**: página "📉 Funil de Conversão" no sidebar com cards de resumo, barras de funil com drop-off colorido e tabelas de origens/perfis
+- **Supabase**: tabela `page_events` com RLS — INSERT anon (landing pages) + SELECT service_role (admin)
+
+### v23 — Admin responsivo mobile
+- Sidebar em drawer com overlay para telas ≤768px
+- Topbar mobile com hamburguer e botão fechar
+- `toggleSidebar()` e `closeSidebar()` — drawer fecha ao navegar
+- Grid `.g2` colapsa de 2 para 1 coluna em mobile
+
+### v22 — Dashboard redesenhado + CLAUDE.md
+- Dashboard com 8 stats de filas, accordions de itens falhos, tabelas de últimos envios e leads recentes
+- `dashQueueAction(op)`: manutenção de filas (reset stuck, retry failed, cancel pending) por canal
+- `CLAUDE.md`: documentação completa do projeto (criado do zero)
 
 ### v20 — Descadastro automático e manual
 - **`descadastro.php`** (novo): landing page para o link de descadastro dos e-mails
