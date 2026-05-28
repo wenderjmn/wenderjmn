@@ -863,6 +863,23 @@ let leadData=null;
 })();
 function getUtm(k){return sessionStorage.getItem(k)||null;}
 
+/* ── FUNIL TRACKING ── */
+(function(){
+  let _sid=sessionStorage.getItem('_sid');
+  if(!_sid){_sid=Math.random().toString(36).slice(2)+Date.now().toString(36);sessionStorage.setItem('_sid',_sid);}
+  window._sid=_sid;
+})();
+function track(event,extra){
+  try{
+    fetch('track.php',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(Object.assign({session_id:window._sid,event,page:'index',
+        source:getUtm('utm_source'),source_campaign:getUtm('utm_campaign'),
+        referrer:document.referrer?document.referrer.slice(0,200):null},extra||{}))
+    }).catch(()=>{});
+  }catch(e){}
+}
+const _trackedQ=new Set();
+
 async function sb(table,params){
   const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`,{
     headers:{apikey:ANON_KEY,Authorization:`Bearer ${ANON_KEY}`}
@@ -914,6 +931,7 @@ async function init(){
   initAnims();
   initFloating();
   initTracking();
+  track('page_view');
 }
 
 function safeHtml(v){
@@ -1146,6 +1164,7 @@ function buildQuiz(){
 function renderQ(idx){
   const body=document.getElementById('quiz-body');
   if(!body||!questions[idx])return;
+  if(!_trackedQ.has(idx)&&idx<4){_trackedQ.add(idx);track('quiz_q'+(idx+1),{step:idx+1});}
   const q=questions[idx];
   const total=questions.length;
   const pct=(idx/total)*100;
@@ -1206,6 +1225,7 @@ function calcResult(){
 function finishQuiz(){
   const{profile,counts}=calcResult();
   quizState.result=profile;quizState.done=true;
+  track('quiz_completed',{sabotador:profile});
   const profiles={
     A:{sabotador:k('resultado_A_sabotador')||'Fome Hedônica',tipo:k('resultado_A_tipo')||'Perfil A — A Recompensadora',titulo:k('resultado_A_titulo'),desc:k('resultado_A_desc'),insight:k('resultado_A_insight'),emoji:k('resultado_A_emoji')||'🍫',video:k('video_perfil_a')},
     B:{sabotador:k('resultado_B_sabotador')||'Amnésia Alimentar',tipo:k('resultado_B_tipo')||'Perfil B — A Piloto Automático',titulo:k('resultado_B_titulo'),desc:k('resultado_B_desc'),insight:k('resultado_B_insight'),emoji:k('resultado_B_emoji')||'🤖',video:k('video_perfil_b')},
@@ -1317,6 +1337,7 @@ async function saveLead(ld, profileLetter, sabotadorNome, scores){
     const lead_id=Array.isArray(rows)&&rows[0]?rows[0].id:null;
     if(lead_id){
       fetch('email_trigger.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lead_id,event:'new_lead'})}).catch(()=>{});
+      track('form_submitted',{sabotador:quizState.result});
       if(window.fbq)fbq('track','Lead',{content_name:'Perfil Sabotador',content_category:'Programa EmagreSer',currency:'BRL',value:0});
       if(window.gtag)gtag('event','generate_lead',{currency:'BRL',value:0,content_name:'Perfil Sabotador'});
     }
@@ -1436,8 +1457,8 @@ function openQuizModal(){
   const sec=document.getElementById('quiz-section');
   sec.classList.add('open');
   document.body.style.overflow='hidden';
-  // scroll modal container to top
   setTimeout(()=>{const c=sec.querySelector('.container');if(c)c.scrollTop=0;sec.scrollTop=0;},50);
+  track('quiz_opened');
 }
 function closeQuizModal(){
   document.getElementById('quiz-section').classList.remove('open');
@@ -1461,6 +1482,7 @@ function goToQuiz(){
   if(!leadData){
     document.getElementById('lead-modal').classList.remove('hidden');
     setTimeout(()=>{const f=document.getElementById('mln');if(f)f.focus();},120);
+    track('form_opened');
     return;
   }
   openQuizModal();
@@ -1498,6 +1520,10 @@ function initFloating(){
     else fCta.classList.remove('visible');
   },{threshold:0}).observe(hero);
 }
+
+document.addEventListener('click',function(e){
+  if(e.target.closest('.btn-wpp,[data-track-vip]'))track('vip_click');
+});
 
 init();
 

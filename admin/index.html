@@ -263,6 +263,7 @@ tbody td{padding:10px 12px;vertical-align:top}
           <div class="nav-sub-item active" data-page="dashboard" onclick="goPage('dashboard')"><span class="nav-item-icon">📊</span> Dashboard</div>
           <div class="nav-sub-item" data-page="leads" onclick="goPage('leads')"><span class="nav-item-icon">👥</span> Leads</div>
           <div class="nav-sub-item" data-page="funil" onclick="goPage('funil')"><span class="nav-item-icon">🎯</span> Funil de Vendas</div>
+          <div class="nav-sub-item" data-page="funil_conversao" onclick="goPage('funil_conversao')"><span class="nav-item-icon">📉</span> Funil de Conversão</div>
         </div>
       </div>
 
@@ -368,6 +369,7 @@ const PAGE_PERMS = {
   leads:            'leads',
   lead_detail:      'leads',
   funil:            'leads',
+  funil_conversao:  'dashboard',
   templates:        'leads',
   whatsapp:         'leads',
   wpp_templates:    'leads',
@@ -537,6 +539,7 @@ function goPage(name) {
     config: configPage, leads,
     lead_detail: () => leadDetailPage(window._leadDetailId || null),
     funil:       funilPage,
+    funil_conversao: funilConversaoPage,
     templates: emailTemplates, whatsapp: wppPage, wpp_templates: wppTemplatesPage,
     leads_importados: leadsImportadosPage, sequencias: sequenciasPage, usuarios: usuariosPage,
     // Painel pages
@@ -2017,6 +2020,163 @@ async function funilMoveStage(leadId, newStage) {
   } else {
     toast(r.error || 'Erro ao mover', 'error');
   }
+}
+
+/* ── FUNIL DE CONVERSÃO ──────────────────────────────────────────── */
+const FUNNEL_STEPS = [
+  {key:'page_view',     label:'Visitantes'},
+  {key:'quiz_opened',   label:'Quiz Aberto'},
+  {key:'quiz_q1',       label:'Pergunta 1'},
+  {key:'quiz_q2',       label:'Pergunta 2'},
+  {key:'quiz_q3',       label:'Pergunta 3'},
+  {key:'quiz_q4',       label:'Pergunta 4'},
+  {key:'quiz_completed',label:'Quiz Concluído'},
+  {key:'form_opened',   label:'Form Aberto'},
+  {key:'form_submitted',label:'Lead Salvo'},
+  {key:'vip_click',     label:'Clique VIP'},
+];
+
+async function funilConversaoPage() {
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = `
+    <div class="page-title">Funil de Conversão</div>
+    <div class="page-sub">Onde os visitantes estão desistindo no quiz e no formulário de leads.</div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:24px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <label style="font-size:.83rem;color:var(--text2);font-weight:600">Período:</label>
+        <select id="fc-days" onchange="funilConversaoLoad()" style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.83rem;background:#fff">
+          <option value="7">Últimos 7 dias</option>
+          <option value="14">Últimos 14 dias</option>
+          <option value="30" selected>Últimos 30 dias</option>
+          <option value="90">Últimos 90 dias</option>
+          <option value="365">Todo o período</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label style="font-size:.83rem;color:var(--text2);font-weight:600">Página:</label>
+        <select id="fc-page" onchange="funilConversaoLoad()" style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.83rem;background:#fff">
+          <option value="">Todas</option>
+          <option value="index">index.html</option>
+          <option value="ig">ig.html</option>
+        </select>
+      </div>
+      <button onclick="funilConversaoLoad()" style="background:var(--cta);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:.83rem;cursor:pointer;font-weight:600">↻ Atualizar</button>
+    </div>
+
+    <div id="fc-body"><div class="spinner" style="margin:60px auto"></div></div>`;
+
+  funilConversaoLoad();
+}
+
+async function funilConversaoLoad() {
+  const days       = document.getElementById('fc-days')?.value  || 30;
+  const page_filter= document.getElementById('fc-page')?.value  || '';
+  const body_el    = document.getElementById('fc-body');
+  if (!body_el) return;
+  body_el.innerHTML = '<div class="spinner" style="margin:60px auto"></div>';
+
+  const r = await proxyWrite({ action:'funnel_stats', days, page_filter });
+  if (!r.ok) { body_el.innerHTML = `<div class="empty-state">Erro ao carregar dados: ${r.error||'desconhecido'}</div>`; return; }
+
+  const { counts, sessions, sources, sabotadores, total_rows } = r;
+  const top = sessions['page_view'] || counts['page_view'] || 1;
+
+  // Funnel bars
+  const barsHtml = FUNNEL_STEPS.map((step, i) => {
+    const val  = sessions[step.key] ?? counts[step.key] ?? 0;
+    const prev = i === 0 ? top : (sessions[FUNNEL_STEPS[i-1].key] ?? counts[FUNNEL_STEPS[i-1].key] ?? 0);
+    const pctOfTop  = top > 0 ? Math.round(val / top * 100) : 0;
+    const pctOfPrev = prev > 0 ? Math.round(val / prev * 100) : 0;
+    const dropColor = pctOfPrev >= 80 ? '#22c55e' : pctOfPrev >= 50 ? '#f59e0b' : '#ef4444';
+    return `
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px">
+          <span style="font-size:.82rem;color:var(--text1);font-weight:600;min-width:130px">${step.label}</span>
+          <span style="font-size:.82rem;color:var(--text2);font-weight:700;min-width:40px;text-align:right">${val.toLocaleString('pt-BR')}</span>
+          <span style="font-size:.75rem;min-width:80px;text-align:right">${i===0?'<span style="color:var(--text3)">base</span>':'<span style="color:'+dropColor+'">'+pctOfPrev+'% do anterior</span>'}</span>
+        </div>
+        <div style="background:#f1f5f9;border-radius:6px;height:28px;overflow:hidden;position:relative">
+          <div style="background:var(--cta);height:100%;width:${pctOfTop}%;border-radius:6px;transition:width .5s;min-width:${val>0?4:0}px"></div>
+          <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:.72rem;color:var(--text2);font-weight:600">${pctOfTop}%</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Conversion summary
+  const leads = sessions['form_submitted'] ?? counts['form_submitted'] ?? 0;
+  const convRate = top > 0 ? (leads/top*100).toFixed(1) : '0.0';
+
+  // Sources table
+  const sourcesHtml = Object.keys(sources).length ? Object.entries(sources).map(([src,cnt]) => {
+    const pct = total_rows > 0 ? Math.round(cnt/total_rows*100) : 0;
+    return `<tr><td style="padding:7px 10px;font-size:.82rem">${src||'(direto)'}</td><td style="padding:7px 10px;text-align:right;font-weight:600;font-size:.82rem">${cnt.toLocaleString('pt-BR')}</td><td style="padding:7px 10px;text-align:right;color:var(--text3);font-size:.78rem">${pct}%</td></tr>`;
+  }).join('') : '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text3);font-size:.82rem">Sem dados</td></tr>';
+
+  // Sabotadores table
+  const sabHtml = Object.keys(sabotadores).length ? Object.entries(sabotadores).sort((a,b)=>b[1]-a[1]).map(([s,cnt]) => {
+    const total_sab = Object.values(sabotadores).reduce((a,b)=>a+b,0);
+    const pct = total_sab > 0 ? Math.round(cnt/total_sab*100) : 0;
+    return `<tr><td style="padding:7px 10px;font-size:.82rem">Perfil ${s}</td><td style="padding:7px 10px;text-align:right;font-weight:600;font-size:.82rem">${cnt.toLocaleString('pt-BR')}</td><td style="padding:7px 10px;text-align:right;color:var(--text3);font-size:.78rem">${pct}%</td></tr>`;
+  }).join('') : '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text3);font-size:.82rem">Sem dados ainda</td></tr>';
+
+  body_el.innerHTML = `
+    <!-- Summary cards -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:24px">
+      <div style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:800;color:var(--cta)">${(sessions['page_view']||0).toLocaleString('pt-BR')}</div>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:4px">Visitantes únicos</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:800;color:#8b5cf6">${(sessions['quiz_opened']||0).toLocaleString('pt-BR')}</div>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:4px">Abriram o quiz</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:800;color:#f59e0b">${(sessions['quiz_completed']||0).toLocaleString('pt-BR')}</div>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:4px">Concluíram o quiz</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:800;color:#22c55e">${leads.toLocaleString('pt-BR')}</div>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:4px">Leads salvos</div>
+      </div>
+      <div style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px;text-align:center">
+        <div style="font-size:1.4rem;font-weight:800;color:#06b6d4">${convRate}%</div>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:4px">Taxa de conversão</div>
+      </div>
+    </div>
+
+    <!-- Funnel bars -->
+    <div style="background:#fff;border-radius:12px;border:1px solid var(--border);padding:20px;margin-bottom:20px">
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:16px;color:var(--text1)">Funil de Conversão — Sessões únicas por etapa</div>
+      ${barsHtml}
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap">
+      <!-- Sources -->
+      <div style="background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700;font-size:.85rem">🌐 Origens (eventos)</div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f8fafc">
+            <th style="padding:7px 10px;text-align:left;font-size:.75rem;color:var(--text3);font-weight:600">Origem</th>
+            <th style="padding:7px 10px;text-align:right;font-size:.75rem;color:var(--text3);font-weight:600">Eventos</th>
+            <th style="padding:7px 10px;text-align:right;font-size:.75rem;color:var(--text3);font-weight:600">%</th>
+          </tr></thead>
+          <tbody>${sourcesHtml}</tbody>
+        </table>
+      </div>
+      <!-- Sabotadores -->
+      <div style="background:#fff;border-radius:12px;border:1px solid var(--border);overflow:hidden">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700;font-size:.85rem">🧠 Perfis Sabotadores (quizzes concluídos)</div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f8fafc">
+            <th style="padding:7px 10px;text-align:left;font-size:.75rem;color:var(--text3);font-weight:600">Perfil</th>
+            <th style="padding:7px 10px;text-align:right;font-size:.75rem;color:var(--text3);font-weight:600">Qtd</th>
+            <th style="padding:7px 10px;text-align:right;font-size:.75rem;color:var(--text3);font-weight:600">%</th>
+          </tr></thead>
+          <tbody>${sabHtml}</tbody>
+        </table>
+      </div>
+    </div>`;
 }
 
 /* ── EMAIL TEMPLATES ─────────────────────────────────────────────── */

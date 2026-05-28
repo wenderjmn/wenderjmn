@@ -140,6 +140,7 @@ switch ($action) {
     case 'lead_unsubscribe_wpp':     require_auth(); require_perm('leads'); lead_unsubscribe_wpp();     break;
     case 'lead_purge_queues':        require_auth(); require_perm('leads'); lead_purge_queues();        break;
     case 'leads_list':               require_auth(); require_perm('leads'); leads_list();               break;
+    case 'funnel_stats':             require_auth(); require_perm('dashboard'); funnel_stats();          break;
 
     default:
         http_response_code(400);
@@ -1790,6 +1791,68 @@ function leads_list() {
         'ok'    => $r['status'] < 300,
         'leads' => $r['body'] ?? [],
         'total' => $total,
+    ]);
+}
+
+function funnel_stats() {
+    $days        = max(1, min(365, (int)($_POST['days'] ?? 30)));
+    $page_filter = in_array($_POST['page_filter'] ?? '', ['index','ig'], true) ? $_POST['page_filter'] : null;
+
+    $since  = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$days} days"));
+    $params = 'select=event,page,session_id,source,sabotador'
+            . '&created_at=gte.' . urlencode($since)
+            . '&limit=200000&order=created_at.asc';
+    if ($page_filter) $params .= '&page=eq.' . urlencode($page_filter);
+
+    $ch = curl_init(SUPABASE_URL . '/rest/v1/page_events?' . $params);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20,
+        CURLOPT_HTTPHEADER => [
+            'apikey: ' . SUPABASE_SERVICE_KEY,
+            'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
+        ],
+    ]);
+    $body = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($code !== 200) { echo json_encode(['ok'=>false,'error'=>'db_error','code'=>$code]); return; }
+    $rows = json_decode($body, true) ?: [];
+
+    $event_order = ['page_view','quiz_opened','quiz_q1','quiz_q2','quiz_q3','quiz_q4','quiz_completed','form_opened','form_submitted','vip_click'];
+    $counts      = array_fill_keys($event_order, 0);
+    $sess_sets   = array_fill_keys($event_order, []);
+    $sources     = [];
+    $sabotadores = [];
+
+    foreach ($rows as $r) {
+        $ev  = $r['event'];
+        $sid = $r['session_id'] ?? '';
+        if (isset($counts[$ev])) {
+            $counts[$ev]++;
+            if ($sid) $sess_sets[$ev][$sid] = true;
+        }
+        $src = $r['source'] ?? '';
+        if ($src) $sources[$src] = ($sources[$src] ?? 0) + 1;
+        if (($r['sabotador'] ?? '') && $ev === 'quiz_completed') {
+            $s = $r['sabotador'];
+            $sabotadores[$s] = ($sabotadores[$s] ?? 0) + 1;
+        }
+    }
+
+    $sessions = [];
+    foreach ($event_order as $ev) $sessions[$ev] = count($sess_sets[$ev]);
+    arsort($sources);
+
+    echo json_encode([
+        'ok'         => true,
+        'counts'     => $counts,
+        'sessions'   => $sessions,
+        'sources'    => array_slice($sources, 0, 10, true),
+        'sabotadores'=> $sabotadores,
+        'total_rows' => count($rows),
+        'since'      => $since,
+        'days'       => $days,
     ]);
 }
 
