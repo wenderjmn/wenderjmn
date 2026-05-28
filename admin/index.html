@@ -2079,7 +2079,7 @@ async function funilConversaoLoad() {
   const r = await proxyWrite({ action:'funnel_stats', days, page_filter });
   if (!r.ok) { body_el.innerHTML = `<div class="empty-state">Erro ao carregar dados: ${r.error||'desconhecido'}</div>`; return; }
 
-  const { counts, sessions, sources, sabotadores, total_rows } = r;
+  const { counts, sessions, sources, sabotadores, cities = {}, regions = {}, total_rows } = r;
   const top = sessions['page_view'] || counts['page_view'] || 1;
 
   // Funnel bars
