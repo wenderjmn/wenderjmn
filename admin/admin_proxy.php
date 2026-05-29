@@ -414,6 +414,8 @@ function upload_file() {
 
     $fp = fopen($file['tmp_name'], 'r');
     $ch = curl_init($upload_url);
+    // Timeout maior para vídeos (50MB pode demorar em hospedagem compartilhada)
+    $timeout = strpos($mime, 'video/') === 0 ? 120 : 30;
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_PUT            => true,
@@ -425,7 +427,7 @@ function upload_file() {
             'Content-Type: '         . $mime,
             'x-upsert: true',
         ],
-        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_TIMEOUT        => $timeout,
         CURLOPT_SSL_VERIFYPEER => true,
     ]);
 
