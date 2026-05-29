@@ -2048,6 +2048,13 @@ async function funilConversaoPage() {
       <div style="display:flex;gap:8px;align-items:center">
         <label style="font-size:.83rem;color:var(--text2);font-weight:600">Período:</label>
         <select id="fc-days" onchange="funilConversaoLoad()" style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.83rem;background:#fff">
+          <option value="h1">Última 1 hora</option>
+          <option value="h3">Últimas 3 horas</option>
+          <option value="h6">Últimas 6 horas</option>
+          <option value="h24">Últimas 24 horas</option>
+          <option value="2">Últimos 2 dias</option>
+          <option value="3">Últimos 3 dias</option>
+          <option value="5">Últimos 5 dias</option>
           <option value="7">Últimos 7 dias</option>
           <option value="14">Últimos 14 dias</option>
           <option value="30" selected>Últimos 30 dias</option>
@@ -2072,13 +2079,17 @@ async function funilConversaoPage() {
 }
 
 async function funilConversaoLoad() {
-  const days       = document.getElementById('fc-days')?.value  || 30;
+  const raw        = document.getElementById('fc-days')?.value || '30';
   const page_filter= document.getElementById('fc-page')?.value  || '';
   const body_el    = document.getElementById('fc-body');
   if (!body_el) return;
   body_el.innerHTML = '<div class="spinner" style="margin:60px auto"></div>';
 
-  const r = await proxyWrite({ action:'funnel_stats', days, page_filter });
+  let days = 0, hours = 0;
+  if (raw.startsWith('h')) { hours = parseInt(raw.slice(1), 10) || 1; }
+  else                     { days  = parseInt(raw, 10) || 30; }
+
+  const r = await proxyWrite({ action:'funnel_stats', days, hours, page_filter });
   if (!r.ok) { body_el.innerHTML = `<div class="empty-state">Erro ao carregar dados: ${r.error||'desconhecido'}</div>`; return; }
 
   const { counts, sessions, sources, sabotadores, cities = {}, regions = {}, total_rows } = r;

@@ -2002,10 +2002,15 @@ function leads_list() {
 }
 
 function funnel_stats() {
-    $days        = max(1, min(365, (int)($_POST['days'] ?? 30)));
+    $hours_param = max(0, (int)($_POST['hours'] ?? 0));
+    $days_param  = max(1, min(365, (int)($_POST['days']  ?? 30)));
     $page_filter = in_array($_POST['page_filter'] ?? '', ['index','ig'], true) ? $_POST['page_filter'] : null;
 
-    $since  = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$days} days"));
+    if ($hours_param > 0) {
+        $since = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$hours_param} hours"));
+    } else {
+        $since = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$days_param} days"));
+    }
     $params = 'select=event,page,session_id,source,sabotador,city,region,country'
             . '&created_at=gte.' . urlencode($since)
             . '&limit=200000&order=created_at.asc';
