@@ -70,6 +70,8 @@ switch ($action) {
     case 'delete_testimonial':    require_auth(); delete_testimonial();    break;
     case 'update_mentor':         require_auth(); update_mentor();         break;
     case 'upload_file':           require_auth(); upload_file();           break;
+    case 'list_media':            require_auth(); list_media();            break;
+    case 'delete_media':          require_auth(); require_perm('config'); delete_media(); break;
     case 'list_email_templates':  require_auth(); list_email_templates();  break;
     case 'get_email_template':    require_auth(); get_email_template();    break;
     case 'save_email_template':   require_auth(); save_email_template();   break;
@@ -353,7 +355,7 @@ function upload_file() {
     $user = $_SESSION['admin'];
 
     $bucket = trim($_POST['bucket'] ?? '');
-    $allowed_buckets = ['mentoras', 'assets', 'depoimentos'];
+    $allowed_buckets = ['mentoras', 'assets', 'depoimentos', 'media'];
     if (!in_array($bucket, $allowed_buckets)) {
         echo json_encode(['ok'=>false,'error'=>'Bucket inválido']); return;
     }
@@ -365,8 +367,8 @@ function upload_file() {
     if ($bucket === 'depoimentos' && !$user['perms']['videos'] && !$user['perms']['textos'] && $user['role'] !== 'super_admin') {
         http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Sem permissão para upload de depoimentos']); return;
     }
-    if ($bucket === 'assets' && !$user['perms']['config'] && $user['role'] !== 'super_admin') {
-        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Sem permissão para upload de assets']); return;
+    if (in_array($bucket, ['assets','media']) && !$user['perms']['config'] && $user['role'] !== 'super_admin') {
+        http_response_code(403); echo json_encode(['ok'=>false,'error'=>'Sem permissão para upload de mídia']); return;
     }
 
     if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
@@ -376,7 +378,17 @@ function upload_file() {
 
     $file = $_FILES['file'];
     $ext  = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $allowed_exts = ['jpg','jpeg','png','webp','gif','svg'];
+
+    // Bucket media aceita vídeo e imagem; demais só imagem
+    if ($bucket === 'media') {
+        $allowed_exts  = ['jpg','jpeg','png','webp','gif','mp4','mov','webm','avi','m4v'];
+        $allowed_mimes = ['image/jpeg','image/jpg','image/png','image/webp','image/gif',
+                          'video/mp4','video/quicktime','video/webm','video/x-msvideo','video/x-m4v'];
+    } else {
+        $allowed_exts  = ['jpg','jpeg','png','webp','gif','svg'];
+        $allowed_mimes = ['image/jpeg','image/jpg','image/png','image/webp','image/gif','image/svg+xml'];
+    }
+
     if (!in_array($ext, $allowed_exts)) {
         echo json_encode(['ok'=>false,'error'=>'Extensão não permitida: '.$ext]); return;
     }
@@ -385,7 +397,6 @@ function upload_file() {
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mime  = finfo_file($finfo, $file['tmp_name']);
     finfo_close($finfo);
-    $allowed_mimes = ['image/jpeg','image/jpg','image/png','image/webp','image/gif','image/svg+xml'];
     if (!in_array($mime, $allowed_mimes)) {
         echo json_encode(['ok'=>false,'error'=>'Tipo de arquivo não permitido: '.$mime]); return;
     }
@@ -436,6 +447,63 @@ function upload_file() {
         $msg  = $body['message'] ?? ($body['error'] ?? ('HTTP '.$status));
         echo json_encode(['ok'=>false,'error'=>$msg]);
     }
+}
+
+// ── BIBLIOTECA DE MÍDIA ──────────────────────────────────────────────────────
+function list_media() {
+    $prefix = trim($_POST['prefix'] ?? '');
+    $url = SUPABASE_URL . '/storage/v1/object/list/media';
+    $payload = json_encode(['prefix' => $prefix, 'limit' => 200, 'offset' => 0, 'sortBy' => ['column'=>'created_at','order'=>'desc']]);
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_HTTPHEADER     => [
+            'apikey: '               . SUPABASE_SERVICE_KEY,
+            'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
+            'Content-Type: application/json',
+        ],
+        CURLOPT_TIMEOUT => 15,
+    ]);
+    $res  = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    $data = json_decode($res, true);
+    if ($code >= 200 && $code < 300 && is_array($data)) {
+        $base = SUPABASE_URL . '/storage/v1/object/public/media/';
+        $files = array_map(fn($f) => [
+            'name'       => $f['name'],
+            'size'       => $f['metadata']['size'] ?? 0,
+            'mime'       => $f['metadata']['mimetype'] ?? '',
+            'created_at' => $f['created_at'] ?? '',
+            'url'        => $base . rawurlencode($f['name']),
+        ], array_filter($data, fn($f) => !empty($f['name']) && $f['name'] !== '.emptyFolderPlaceholder'));
+        echo json_encode(['ok'=>true,'files'=>array_values($files)]);
+    } else {
+        echo json_encode(['ok'=>false,'error'=>json_decode($res,true)['message'] ?? 'HTTP '.$code]);
+    }
+}
+
+function delete_media() {
+    $name = trim($_POST['name'] ?? '');
+    if (!$name) { echo json_encode(['ok'=>false,'error'=>'Nome do arquivo obrigatório']); return; }
+    $url = SUPABASE_URL . '/storage/v1/object/media/' . rawurlencode($name);
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER  => true,
+        CURLOPT_CUSTOMREQUEST   => 'DELETE',
+        CURLOPT_HTTPHEADER      => [
+            'apikey: '               . SUPABASE_SERVICE_KEY,
+            'Authorization: Bearer ' . SUPABASE_SERVICE_KEY,
+        ],
+        CURLOPT_TIMEOUT => 15,
+    ]);
+    $res  = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($code >= 200 && $code < 300) echo json_encode(['ok'=>true]);
+    else echo json_encode(['ok'=>false,'error'=>json_decode($res,true)['message'] ?? 'HTTP '.$code]);
 }
 
 // ── HELPER DE PERMISSÃO ──────────────────────────────────────────────────────
