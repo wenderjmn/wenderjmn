@@ -1629,39 +1629,45 @@ function import_with_sequence() {
             'source'          => 'import',
             'source_campaign' => 'reengajamento_2026',
             'utm_medium'      => $pair[1]['tipo']   ?: null,
+            'optin_status'    => 'pending',
+            'funnel_stage'    => 'novo',
         ], $chunk);
 
         $r = sb_request('POST', 'leads', $inserts);
 
-        if (is_array($r['body'])) {
-            $created_emails = [];
+        // Detecta erro: body é objeto de erro (tem 'code'/'message') em vez de array de rows
+        $is_error_response = isset($r['body']['code']) || isset($r['body']['message']) || $r['status'] >= 300;
+
+        if (!$is_error_response && is_array($r['body'])) {
+            $created_keys = [];
             foreach ($r['body'] as $created) {
                 if (empty($created['id'])) continue;
                 $cemail = strtolower($created['email'] ?? '');
                 $cphone = preg_replace('/\D/', '', $created['phone'] ?? '');
                 $ckey   = $cemail ?: ('phone_' . $cphone);
                 $lead_ids[$ckey] = $created['id'];
-                $created_emails[$ckey] = true;
+                $created_keys[$ckey] = true;
                 if (isset($key_detail[$ckey])) {
                     $detail[$key_detail[$ckey]]['reason'] = 'Novo lead criado';
                 }
             }
-            // Marcar como erro os que não foram criados
-            foreach ($chunk as [$ckey2, $rd2]) {
-                if (!isset($created_emails[$ckey2]) && isset($key_detail[$ckey2])) {
+            // Marcar como erro os que não foram criados dentro do lote
+            foreach ($chunk as [$ckey2]) {
+                if (!isset($created_keys[$ckey2]) && isset($key_detail[$ckey2])) {
                     $detail[$key_detail[$ckey2]]['status'] = 'erro';
                     $detail[$key_detail[$ckey2]]['reason'] = 'Falha ao criar no banco de dados';
+                    $errors++;
                 }
             }
-            $errors += max(0, count($chunk) - count($r['body']));
         } else {
+            $err_detail = is_array($r['body']) ? ($r['body']['message'] ?? 'status ' . $r['status']) : 'status ' . $r['status'];
             foreach ($chunk as [$ckey2]) {
                 if (isset($key_detail[$ckey2])) {
                     $detail[$key_detail[$ckey2]]['status'] = 'erro';
-                    $detail[$key_detail[$ckey2]]['reason'] = 'Falha ao criar no banco de dados';
+                    $detail[$key_detail[$ckey2]]['reason'] = 'Falha ao criar no banco: ' . $err_detail;
+                    $errors++;
                 }
             }
-            $errors += count($chunk);
         }
     }
 
