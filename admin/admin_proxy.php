@@ -1265,6 +1265,18 @@ function painel_maintenance() {
             $r = sb_request('DELETE', 'whatsapp_queue?id=eq.' . rawurlencode($item_id));
             echo json_encode(['ok' => $r['status'] < 300, 'msg' => 'Item removido da fila']);
             break;
+        case 'retry_item_email':
+            if (!is_valid_uuid($item_id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+            $r = sb_request('PATCH', 'email_queue?id=eq.' . rawurlencode($item_id) . '&status=eq.failed',
+                ['status' => 'pending', 'attempts' => 0, 'error_msg' => null]);
+            echo json_encode(['ok' => $r['status'] < 300, 'msg' => 'Reenfileirado']);
+            break;
+        case 'retry_item_wpp':
+            if (!is_valid_uuid($item_id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
+            $r = sb_request('PATCH', 'whatsapp_queue?id=eq.' . rawurlencode($item_id) . '&status=eq.failed',
+                ['status' => 'pending', 'attempts' => 0, 'error_msg' => null]);
+            echo json_encode(['ok' => $r['status'] < 300, 'msg' => 'Reenfileirado']);
+            break;
         default:
             echo json_encode(['ok'=>false,'error'=>'Operação desconhecida: '.$op]);
     }
