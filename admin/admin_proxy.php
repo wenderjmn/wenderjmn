@@ -980,7 +980,7 @@ function sb_request(string $method, string $path, ?array $body = null, string $q
 function list_imported_leads() {
     require_perm('leads');
     $batch  = trim($_POST['batch']  ?? '');
-    $qs = 'select=id,name,email,phone,sabotador,source,source_campaign,optin_wpp,optin_email,email_blocked,wpp_optout,automation_enrolled,sequence_queued_at,notes,created_at&source=eq.import&order=created_at.desc&limit=2000';
+    $qs = 'select=id,name,email,phone,sabotador,source,source_campaign,optin_status,email_blocked,wpp_optout,email_optout,automation_enrolled,sequence_queued_at,created_at&source=eq.import&order=created_at.desc&limit=2000';
     if ($batch) $qs .= '&source_campaign=eq.' . rawurlencode($batch);
     $r = sb_request('GET', 'leads', null, $qs);
     $data = $r['body'] ?? [];
@@ -1033,7 +1033,7 @@ function toggle_imported_optin() {
     $field = trim($_POST['field'] ?? ''); // optin_wpp | optin_email
     $val   = ($_POST['value'] ?? '0') === '1';
     if (!is_valid_uuid($id)) { echo json_encode(['ok'=>false,'error'=>'ID inválido']); return; }
-    if (!in_array($field, ['optin_wpp','optin_email','email_blocked','wpp_optout'], true)) {
+    if (!in_array($field, ['email_blocked','wpp_optout','email_optout'], true)) {
         echo json_encode(['ok'=>false,'error'=>'Campo inválido']); return;
     }
     $r = sb_request('PATCH', 'leads?id=eq.' . rawurlencode($id), [$field => $val]);
@@ -1436,6 +1436,8 @@ function painel_activate_leads() {
 // ── IMPORTAÇÃO COM SEQUÊNCIA ──────────────────────────────────────────────────
 
 function import_with_sequence() {
+    set_time_limit(300);
+
     $rows_json   = $_POST['rows_json']   ?? '[]';
     $sequence_id = trim($_POST['sequence_id'] ?? '');
     $canal       = trim($_POST['canal']       ?? 'ambos');
@@ -1446,22 +1448,25 @@ function import_with_sequence() {
     $rows = json_decode($rows_json, true);
     if (!is_array($rows) || empty($rows)) { echo json_encode(['ok'=>false,'error'=>'Nenhuma linha no CSV']); return; }
 
-    // Carrega sequência ativa
     $seq_data = sb_get('sequences?id=eq.' . rawurlencode($sequence_id) . '&is_active=eq.true&select=name,items&limit=1');
     if (empty($seq_data[0]['items'])) { echo json_encode(['ok'=>false,'error'=>'Sequência não encontrada ou inativa']); return; }
     $seq_items = $seq_data[0]['items'];
 
-    // Link do vídeo da Ira (configurável em site_config)
     $cfg_ira        = sb_get('site_config?key=eq.link_video_ira&select=value&limit=1');
     $link_video_ira = $cfg_ira[0]['value'] ?? '';
 
-    $tz   = new DateTimeZone('America/Sao_Paulo');
-    $base = new DateTime('now', $tz);
+    $tz       = new DateTimeZone('America/Sao_Paulo');
+    $base     = new DateTime('now', $tz);
+    $now_atom = $base->format(DateTime::ATOM);
 
-    $total    = count($rows);
-    $imported = 0;
-    $skipped  = 0;
-    $errors   = 0;
+    $perfis_nomes = [
+        'A' => 'Recompensadora', 'B' => 'Piloto Automático',
+        'C' => 'Prisioneira do Esforço', 'D' => 'Compensadora Noturna',
+    ];
+
+    // ── 1. Normalizar e deduplicar ────────────────────────────────────────
+    $by_key  = []; // unique key (email ou 'phone_N') → row data
+    $total   = 0;
 
     foreach ($rows as $i => $row) {
         $name   = trim($row['nome']     ?? $row['name']      ?? '');
@@ -1472,44 +1477,94 @@ function import_with_sequence() {
         $sab    = strtoupper(trim($row['sabotador'] ?? $row['perfil'] ?? ''));
         $tipo   = strtolower(trim($row['tipo'] ?? $row['origem'] ?? ''));
 
-        // Validações por canal
-        if (in_array($canal, ['email', 'ambos']) && (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL))) {
-            if ($canal === 'email') { $skipped++; continue; }
-        }
-        if (in_array($canal, ['wpp', 'ambos']) && (!$phone || strlen($phone) < 10)) {
-            if ($canal === 'wpp') { $skipped++; continue; }
-        }
-        if (!$name) $name = $email ? explode('@', $email)[0] : 'Lead ' . ($i + 2);
+        $has_email = $email && filter_var($email, FILTER_VALIDATE_EMAIL);
+        $has_phone = strlen($phone) >= 10;
 
-        // Upsert lead
-        $existing = $email
-            ? sb_get('leads?email=eq.' . rawurlencode($email) . '&select=id,sequence_queued_at&limit=1')
-            : [];
+        if ($canal === 'email' && !$has_email) continue;
+        if ($canal === 'wpp'   && !$has_phone) continue;
+        if ($canal === 'ambos' && !$has_email && !$has_phone) continue;
 
-        if (!empty($existing)) {
-            if (!empty($existing[0]['sequence_queued_at'])) { $skipped++; continue; }
-            $lead_id = $existing[0]['id'];
+        if (!$name) $name = $has_email ? explode('@', $email)[0] : 'Lead ' . ($i + 2);
+
+        $key = $has_email ? $email : ('phone_' . $phone);
+        if (isset($by_key[$key])) continue; // deduplica
+        $by_key[$key] = compact('name', 'email', 'phone', 'cidade', 'estado', 'sab', 'tipo');
+        $total++;
+    }
+
+    if (!$total) { echo json_encode(['ok'=>true,'total'=>0,'imported'=>0,'skipped'=>0,'errors'=>0]); return; }
+
+    // ── 2. Batch-lookup de leads existentes por email ─────────────────────
+    $emails_all = array_filter(array_map(fn($rd) => $rd['email'], $by_key));
+    $existing   = []; // email → {id, sequence_queued_at}
+    foreach (array_chunk(array_unique(array_values($emails_all)), 150) as $chunk) {
+        $qs    = implode(',', array_map('rawurlencode', $chunk));
+        $found = sb_get('leads?email=in.(' . $qs . ')&select=id,email,sequence_queued_at&limit=' . count($chunk));
+        foreach ($found as $l) { $existing[strtolower($l['email'])] = $l; }
+    }
+
+    // ── 3. Separar: pular já enrolados / resolver ID dos existentes / criar novos ──
+    $lead_ids  = []; // key → uuid
+    $to_create = []; // [[key, row_data], ...]
+    $skipped   = 0;
+    $errors    = 0;
+    $imported  = 0;
+
+    foreach ($by_key as $key => $rd) {
+        $email = $rd['email'];
+        if ($email && isset($existing[$email])) {
+            if (!empty($existing[$email]['sequence_queued_at'])) { $skipped++; continue; }
+            $lead_ids[$key] = $existing[$email]['id'];
         } else {
-            $created = sb_get_with_return('leads', [
-                'name'            => $name,
-                'email'           => $email  ?: null,
-                'phone'           => $phone  ?: null,
-                'cidade'          => $cidade ?: null,
-                'estado'          => $estado ?: null,
-                'sabotador'       => $sab    ?: null,
-                'source'          => 'import',
-                'source_campaign' => 'reengajamento_2026',
-                'utm_medium'      => $tipo   ?: null,
-            ]);
-            if (empty($created[0]['id'])) { $errors++; continue; }
-            $lead_id = $created[0]['id'];
+            $to_create[] = [$key, $rd];
         }
+    }
 
-        $perfis_nomes = [
-            'A' => 'Recompensadora', 'B' => 'Piloto Automático',
-            'C' => 'Prisioneira do Esforço', 'D' => 'Compensadora Noturna',
-        ];
+    // Batch-criar novos leads (100 por lote)
+    foreach (array_chunk($to_create, 100) as $chunk) {
+        $inserts = array_map(fn($pair) => [
+            'name'            => $pair[1]['name'],
+            'email'           => $pair[1]['email'] ?: null,
+            'phone'           => $pair[1]['phone']  ?: null,
+            'cidade'          => $pair[1]['cidade'] ?: null,
+            'estado'          => $pair[1]['estado'] ?: null,
+            'sabotador'       => $pair[1]['sab']    ?: null,
+            'source'          => 'import',
+            'source_campaign' => 'reengajamento_2026',
+            'utm_medium'      => $pair[1]['tipo']   ?: null,
+        ], $chunk);
+
+        $r = sb_request('POST', 'leads', $inserts);
+
+        if (is_array($r['body'])) {
+            foreach ($r['body'] as $created) {
+                if (empty($created['id'])) continue;
+                $cemail = strtolower($created['email'] ?? '');
+                $cphone = preg_replace('/\D/', '', $created['phone'] ?? '');
+                $ckey   = $cemail ?: ('phone_' . $cphone);
+                $lead_ids[$ckey] = $created['id'];
+            }
+            $errors += max(0, count($chunk) - count($r['body']));
+        } else {
+            $errors += count($chunk);
+        }
+    }
+
+    // ── 4. Montar todos os itens de fila em memória ───────────────────────
+    $email_q    = [];
+    $wpp_q      = [];
+    $update_ids = [];
+
+    foreach ($by_key as $key => $rd) {
+        $lead_id = $lead_ids[$key] ?? null;
+        if (!$lead_id) continue;
+
+        $email       = $rd['email'];
+        $phone       = $rd['phone'];
+        $name        = $rd['name'];
+        $sab         = $rd['sab'];
         $nome_perfil = $sab ? ($perfis_nomes[$sab] ?? 'Perfil Sabotador') : 'Perfil Sabotador';
+        $tel         = $phone ? '55' . ltrim($phone, '0') : '';
 
         $vars_email = [
             '{{nome}}'             => htmlspecialchars($name),
@@ -1519,13 +1574,13 @@ function import_with_sequence() {
             '{{link_wpp}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
             '{{link_vip}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
             '{{link_hotmart}}'     => getenv('HOTMART_LINK') ?: 'https://pay.hotmart.com/emagreser',
-            '{{link_descadastro}}' => 'https://www.oficialemagreser.com/descadastro.php?email='.urlencode($email),
+            '{{link_descadastro}}' => 'https://www.oficialemagreser.com/descadastro.php?email=' . urlencode($email),
             '{{link_video_ira}}'   => $link_video_ira,
-            '{{emoji}}'            => '🎯', '{{tipo}}' => $nome_perfil,
-            '{{titulo}}'           => 'Descubra seu padrão comportamental', '{{descricao}}' => '',
+            '{{emoji}}'            => '🎯',
+            '{{tipo}}'             => $nome_perfil,
+            '{{titulo}}'           => 'Descubra seu padrão comportamental',
+            '{{descricao}}'        => '',
         ];
-
-        $tel = $phone ? '55' . ltrim($phone, '0') : '';
 
         foreach ($seq_items as $item) {
             $type = $item['type'] ?? '';
@@ -1539,7 +1594,7 @@ function import_with_sequence() {
             if ($type === 'email' && $email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $slug = trim($item['template_slug'] ?? '');
                 if (!$slug) continue;
-                sb_request('POST', 'email_queue', [[
+                $email_q[] = [
                     'lead_id'       => $lead_id,
                     'template_slug' => $slug,
                     'to_email'      => $email,
@@ -1547,29 +1602,41 @@ function import_with_sequence() {
                     'extra_vars'    => $vars_email,
                     'scheduled_at'  => $send_at,
                     'status'        => 'pending',
-                ]]);
+                ];
             } elseif ($type === 'wpp' && $tel && strlen($phone) >= 10) {
                 $msg = seq_sub_vars_proxy($item['message'] ?? '', $name, $nome_perfil, $link_video_ira);
                 if (!$msg) continue;
-                sb_request('POST', 'whatsapp_queue', [[
+                $wpp_q[] = [
                     'lead_id'      => $lead_id,
                     'to_phone'     => $tel,
                     'to_name'      => $name,
                     'message'      => $msg,
                     'scheduled_at' => $send_at,
                     'status'       => 'pending',
-                ]]);
+                ];
             }
         }
 
-        sb_request('PATCH', 'leads?id=eq.' . rawurlencode($lead_id), [
-            'sequence_queued_at' => $base->format(DateTime::ATOM),
-            'source_campaign'    => 'reengajamento_2026',
-            'source'             => 'import',
-        ]);
-
+        $update_ids[] = $lead_id;
         $imported++;
-        usleep(50000);
+    }
+
+    // ── 5. Inserir filas em lote (100 por vez) ────────────────────────────
+    foreach (array_chunk($email_q, 100) as $chunk) {
+        sb_request('POST', 'email_queue', $chunk);
+    }
+    foreach (array_chunk($wpp_q, 100) as $chunk) {
+        sb_request('POST', 'whatsapp_queue', $chunk);
+    }
+
+    // ── 6. Atualizar leads em lote (200 por vez) ──────────────────────────
+    foreach (array_chunk($update_ids, 200) as $chunk) {
+        $ids_qs = implode(',', array_map('rawurlencode', $chunk));
+        sb_request('PATCH', 'leads?id=in.(' . $ids_qs . ')', [
+            'sequence_queued_at' => $now_atom,
+            'source'             => 'import',
+            'source_campaign'    => 'reengajamento_2026',
+        ]);
     }
 
     echo json_encode(['ok'=>true,'total'=>$total,'imported'=>$imported,'skipped'=>$skipped,'errors'=>$errors]);
