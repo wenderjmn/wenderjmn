@@ -29,7 +29,8 @@
 <link rel="dns-prefetch" href="https://drgrwpmhmrrhxuwxabow.supabase.co">
 <link rel="dns-prefetch" href="https://www.googletagmanager.com">
 <link rel="dns-prefetch" href="https://connect.facebook.net">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
 <style>
 :root{
   --bg:#fafaf8;--bg2:#f4f3ef;--bg3:#eceae4;--white:#fff;
@@ -833,28 +834,33 @@ function buildHeroVideo(){
 
 async function init(){
   try{
-    const[cfgRows,qRows,testRows,mentorRows]=await Promise.all([
+    // Fase 1 — dados críticos
+    const[cfgRows,qRows]=await Promise.all([
       sb('site_config','select=key,value'),
       sb('quiz_questions','active=eq.true&select=id,order_index,question_text,option_a,option_b,option_c,option_d,weight_a,weight_b,weight_c,weight_d&order=order_index'),
-      sb('testimonials','active=eq.true&select=id,name,result,quote,profession,video_url,type,order_index&order=order_index').catch(()=>[]),
-      sb('mentors','active=eq.true&select=id,name,role,bio,photo_url,photo_position,instagram_url,facebook_url,order_index&order=order_index').catch(()=>[])
     ]);
     cfgRows.forEach(r=>{cfg[r.key]=r.value;});
     questions=qRows;
     applyConfig();
     buildHeroVideo();
-    buildMentors(mentorRows);
-    buildTestimonials(testRows);
-    buildPrintDepos();
-    buildFooterSocial();
     buildQuiz();
-  }catch(e){console.error('Init:',e);}
+  }catch(e){console.error('Init crítico:',e);}
   startCountdown();
   initAnims();
   initFloating();
   initTracking();
   track('page_view');
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeQuizModal();});
+  // Fase 2 — conteúdo abaixo da dobra
+  Promise.all([
+    sb('testimonials','active=eq.true&select=id,name,result,quote,profession,video_url,type,order_index&order=order_index').catch(()=>[]),
+    sb('mentors','active=eq.true&select=id,name,role,bio,photo_url,photo_position,instagram_url,facebook_url,order_index&order=order_index').catch(()=>[]),
+  ]).then(([testRows,mentorRows])=>{
+    buildMentors(mentorRows);
+    buildTestimonials(testRows);
+    buildPrintDepos();
+    buildFooterSocial();
+  });
 }
 
 function safeHtml(v){
