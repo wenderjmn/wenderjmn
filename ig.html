@@ -1024,7 +1024,7 @@ function buildQuiz(){
 function renderQ(idx){
   const body=document.getElementById('quiz-body');
   if(!body||!questions[idx])return;
-  if(!_trackedQ.has(idx)&&idx<4){_trackedQ.add(idx);track('quiz_q'+(idx+1),{step:idx+1});}
+  if(!_trackedQ.has(idx)&&idx<4&&document.getElementById('quiz-section')?.classList.contains('open')){_trackedQ.add(idx);track('quiz_q'+(idx+1),{step:idx+1});}
   const q=questions[idx];
   const total=questions.length;
   const pct=(idx/total)*100;
