@@ -1240,97 +1240,39 @@ function finishQuiz(){
   };
   const p=profiles[profile];
 
-  // Unlock matched perfil card on the page
+  // Destrava card do perfil na página
   document.querySelectorAll('.perfil-card').forEach(c=>{
     if(c.dataset.letter===profile){c.classList.remove('locked');c.classList.add('unlocked');}
   });
 
-  // Build result HTML
-  const wppLink=k('whatsapp_link')||'#';
-  const vId=ytId(p.video||'');
-  const videoHtml=vId?`<div class="res-video-wrap" style="max-width:200px;aspect-ratio:9/16;border-radius:var(--r);overflow:hidden;margin:0 auto 20px;box-shadow:var(--shadow-md)"><iframe src="https://www.youtube.com/embed/${vId}?playsinline=1&rel=0" allow="accelerometer;autoplay;clipboard-write;encrypted-media" allowfullscreen loading="lazy" style="width:100%;height:100%;border:none;display:block"></iframe></div>`:'';
+  // Preenche o teaser do #resultado (emoji + tipo + titulo — conteúdo completo bloqueado)
+  document.getElementById('res-emoji').textContent=p.emoji;
+  document.getElementById('res-tipo').textContent=p.tipo;
+  document.getElementById('res-titulo').textContent=p.titulo||p.tipo;
 
-  const leadBlock=leadData?`
-    <div class="sucesso-card" style="padding:24px 20px">
-      <span class="sucesso-icon">🎉</span>
-      <h3 class="sucesso-title" style="font-size:1.1rem">Mapeamento completo!</h3>
-      <p class="sucesso-desc" style="font-size:.85rem;margin-bottom:18px">Entre no Grupo VIP no WhatsApp e receba tudo sobre a Masterclass.</p>
-      <a href="${wppLink}" class="btn btn-wpp" target="_blank" rel="noopener" style="display:inline-flex;min-height:46px;padding:12px 22px;font-size:.84rem">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        ENTRAR NO GRUPO VIP
-      </a>
-    </div>`:`
-    <div class="lead-form-card">
-      <h3 class="form-title" style="font-size:1.1rem">🔒 Libere seu mapeamento completo</h3>
-      <p class="form-sub" style="font-size:.8rem">Preencha seus dados para receber o resultado do seu mapeamento e entrar no Grupo VIP.</p>
-      <form id="modal-result-form" novalidate>
-        <div class="form-group"><label>Nome *</label><input type="text" id="rln" placeholder="Como posso te chamar?" required></div>
-        <div class="form-group"><label>E-mail *</label><input type="email" id="rle" placeholder="seu@email.com" required></div>
-        <div class="form-group"><label>WhatsApp *</label><input type="tel" id="rlp" placeholder="(11) 99999-9999" required></div>
-        <div class="form-group"><label>Sua idade *</label><select id="rlfe" required><option value="">Selecione</option><option>18–24 anos</option><option>25–34 anos</option><option>35–44 anos</option><option>45–54 anos</option><option>55+ anos</option></select></div>
-        <div id="res-form-err" class="form-err hidden"></div>
-        <button type="submit" class="btn btn-teal form-submit" id="res-form-btn">VER MEU MAPEAMENTO COMPLETO</button>
-        <p class="form-privacy">🔒 100% seguro. Sem spam.</p>
-      </form>
-    </div>`;
+  // Guarda dados no form para revealFullResult() e saveLead() após submit
+  const form=document.getElementById('lead-form');
+  form.dataset.profile=profile;
+  form.dataset.sabotador=p.sabotador;
+  form.dataset.scores=JSON.stringify(counts);
+  form.dataset.titulo=p.titulo||p.tipo;
+  form.dataset.desc=p.desc||'';
+  form.dataset.insight=p.insight||'';
+  form.dataset.video=p.video||'';
 
-  const container=document.querySelector('#quiz-section .container');
-  container.innerHTML=`
-    <button class="quiz-close" onclick="closeQuizModal()" aria-label="Fechar">✕</button>
-    <div class="resultado-wrap">
-      <div class="res-badge" style="text-align:center;margin-bottom:20px">
-        <span style="font-size:3rem;display:block;margin-bottom:10px">${p.emoji}</span>
-        <div class="res-tipo">${p.tipo}</div>
-        <h2 class="res-titulo" style="font-size:clamp(1.1rem,3vw,1.5rem);margin-top:10px">${p.titulo||p.tipo}</h2>
-      </div>
-      ${videoHtml}
-      ${p.desc?`<div class="res-desc" style="margin-bottom:14px">${p.desc}</div>`:''}
-      ${p.insight?`<div class="res-insight" style="margin-bottom:28px">${p.insight}</div>`:''}
-      ${leadBlock}
-    </div>`;
+  // Garante estado limpo (caso refaça o quiz)
+  document.getElementById('lead-form-wrap').classList.remove('hidden');
+  document.getElementById('resultado-completo').classList.add('hidden');
+  document.getElementById('sucesso-wrap').classList.add('hidden');
+  const fb=document.getElementById('form-btn');
+  if(fb){fb.textContent=k('cta_final_btn')||'QUERO MEU MAPEAMENTO + GRUPO VIP';fb.disabled=false;}
 
-  container.scrollTop=0;
-  document.querySelector('#quiz-section').scrollTop=0;
-
-  if(leadData){
-    saveLead(leadData, profile, p.sabotador, counts);
-  }else{
-    track('form_opened');
-    // Attach form handler
-    const resForm=document.getElementById('modal-result-form');
-    if(resForm){
-      document.getElementById('rlp').addEventListener('input',function(){
-        let v=this.value.replace(/\D/g,'').slice(0,11);
-        if(v.length>2)v=`(${v.slice(0,2)}) ${v.slice(2)}`;
-        if(v.length>10)v=v.slice(0,10)+'-'+v.slice(10);
-        this.value=v;
-      });
-      resForm.addEventListener('submit',async function(e){
-        e.preventDefault();
-        const btn=document.getElementById('res-form-btn');
-        const errEl=document.getElementById('res-form-err');
-        const name=document.getElementById('rln').value.trim();
-        const email=document.getElementById('rle').value.trim();
-        const phone=document.getElementById('rlp').value.trim();
-        const faixa_etaria=document.getElementById('rlfe')?.value||null;
-        errEl.classList.add('hidden');
-        if(!name){errEl.textContent='Informe seu nome.';errEl.classList.remove('hidden');return;}
-        if(!email||!email.includes('@')){errEl.textContent='E-mail inválido.';errEl.classList.remove('hidden');return;}
-        if(!phone||phone.replace(/\D/g,'').length<10){errEl.textContent='WhatsApp com DDD obrigatório.';errEl.classList.remove('hidden');return;}
-        if(!faixa_etaria){errEl.textContent='Selecione sua faixa de idade.';errEl.classList.remove('hidden');return;}
-        btn.textContent='Enviando...';btn.disabled=true;
-        leadData={name,email,phone,cidade:null,estado:null,faixa_etaria,faixa_renda:null};
-        await saveLead(leadData, profile, p.sabotador, counts);
-        // Show success
-        document.querySelector('#quiz-section .lead-form-card').outerHTML=`
-          <div class="sucesso-card" style="padding:24px 20px;text-align:center">
-            <span class="sucesso-icon">🎉</span>
-            <h3 class="sucesso-title" style="font-size:1.1rem">Mapeamento liberado!</h3>
-            <a href="${wppLink}" class="btn btn-wpp" target="_blank" rel="noopener" style="display:inline-flex;margin-top:12px">ENTRAR NO GRUPO VIP</a>
-          </div>`;
-      });
-    }
-  }
+  // Fecha modal e mostra seção #resultado (com conteúdo bloqueado)
+  closeQuizModal();
+  const resultadoEl=document.getElementById('resultado');
+  resultadoEl.classList.remove('hidden');
+  setTimeout(()=>resultadoEl.scrollIntoView({behavior:'smooth',block:'start'}),300);
+  track('form_opened');
 }
 
 async function saveLead(ld, profileLetter, sabotadorNome, scores){
@@ -1482,9 +1424,7 @@ document.addEventListener('keydown',function(e){
 
 function goToQuiz(){
   if(quizState.done){
-    // Reabrir modal mostrando o resultado já calculado
-    const sec=document.getElementById('quiz-section');
-    if(sec){sec.classList.add('open');document.body.style.overflow='hidden';}
+    document.getElementById('resultado')?.scrollIntoView({behavior:'smooth',block:'start'});
     return;
   }
   openQuizModal();
