@@ -4545,9 +4545,55 @@ async function ifSubmit() {
   if (btn) { btn.disabled = false; btn.textContent = 'Importar e enfileirar'; }
   if (res) {
     if (r.ok) {
-      res.innerHTML = `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px;font-size:.85rem;color:#166534">
-        <strong>Concluído!</strong> Total: ${r.total} | Importados: ${r.imported} | Ignorados: ${r.skipped} | Erros: ${r.errors}
-      </div>`;
+      const hasIssues = (r.skipped > 0 || r.errors > 0);
+      const summaryColor = r.errors > 0 ? '#7c2d12' : (r.skipped > 0 ? '#92400e' : '#166534');
+      const summaryBg    = r.errors > 0 ? '#fef2f2' : (r.skipped > 0 ? '#fffbeb' : '#f0fdf4');
+      const summaryBorder= r.errors > 0 ? '#fecaca' : (r.skipped > 0 ? '#fde68a' : '#86efac');
+
+      let detailHtml = '';
+      if (Array.isArray(r.detail) && r.detail.length) {
+        const statusBadge = s => {
+          if (s === 'importado') return `<span style="background:#dcfce7;color:#166534;border-radius:4px;padding:2px 7px;font-size:.75rem;font-weight:600">✓ Importado</span>`;
+          if (s === 'ignorado')  return `<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:2px 7px;font-size:.75rem;font-weight:600">— Ignorado</span>`;
+          if (s === 'erro')      return `<span style="background:#fee2e2;color:#991b1b;border-radius:4px;padding:2px 7px;font-size:.75rem;font-weight:600">✗ Erro</span>`;
+          return `<span style="background:#f3f4f6;color:#6b7280;border-radius:4px;padding:2px 7px;font-size:.75rem">${escHtml(s)}</span>`;
+        };
+        const rows_html = r.detail.map(d => `
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:6px 10px;font-size:.78rem">${escHtml(d.name||'—')}</td>
+            <td style="padding:6px 10px;font-size:.78rem;color:var(--text2)">${escHtml(d.email||'—')}</td>
+            <td style="padding:6px 10px;font-size:.78rem;color:var(--text2)">${escHtml(d.phone||'—')}</td>
+            <td style="padding:6px 10px">${statusBadge(d.status)}</td>
+            <td style="padding:6px 10px;font-size:.78rem;color:var(--text2)">${escHtml(d.reason||'')}</td>
+          </tr>`).join('');
+        const toggleId = 'if-detail-body';
+        detailHtml = `
+          <div style="margin-top:10px">
+            <button onclick="const t=document.getElementById('${toggleId}');t.style.display=t.style.display==='none'?'':'none';this.textContent=t.style.display===''?'▲ Ocultar detalhes':'▼ Ver detalhes (${r.detail.length} linhas)'"
+              style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:.8rem;cursor:pointer;color:var(--text2)">
+              ${hasIssues ? '▼ Ver detalhes (' + r.detail.length + ' linhas)' : '▼ Ver detalhes (' + r.detail.length + ' linhas)'}
+            </button>
+            <div id="${toggleId}" style="display:${hasIssues?'':'none'};margin-top:8px;overflow-x:auto;border:1px solid var(--border);border-radius:8px;max-height:340px;overflow-y:auto">
+              <table style="width:100%;border-collapse:collapse;min-width:560px">
+                <thead style="position:sticky;top:0;background:#f9fafb;z-index:1">
+                  <tr>
+                    <th style="padding:7px 10px;text-align:left;font-size:.75rem;color:var(--text2);border-bottom:1px solid var(--border)">Nome</th>
+                    <th style="padding:7px 10px;text-align:left;font-size:.75rem;color:var(--text2);border-bottom:1px solid var(--border)">E-mail</th>
+                    <th style="padding:7px 10px;text-align:left;font-size:.75rem;color:var(--text2);border-bottom:1px solid var(--border)">Telefone</th>
+                    <th style="padding:7px 10px;text-align:left;font-size:.75rem;color:var(--text2);border-bottom:1px solid var(--border)">Status</th>
+                    <th style="padding:7px 10px;text-align:left;font-size:.75rem;color:var(--text2);border-bottom:1px solid var(--border)">Motivo</th>
+                  </tr>
+                </thead>
+                <tbody>${rows_html}</tbody>
+              </table>
+            </div>
+          </div>`;
+      }
+
+      res.innerHTML = `
+        <div style="background:${summaryBg};border:1px solid ${summaryBorder};border-radius:8px;padding:14px;font-size:.85rem;color:${summaryColor}">
+          <strong>Concluído!</strong> Total: ${r.total} | Importados: ${r.imported} | Ignorados: ${r.skipped} | Erros: ${r.errors}
+        </div>${detailHtml}`;
       toast(`${r.imported} lead(s) importado(s)!`);
     } else {
       res.innerHTML = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:14px;font-size:.85rem;color:var(--red)">Erro: ${escHtml(r.error||'')}</div>`;

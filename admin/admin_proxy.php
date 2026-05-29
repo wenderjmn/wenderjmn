@@ -1465,8 +1465,10 @@ function import_with_sequence() {
     ];
 
     // ── 1. Normalizar e deduplicar ────────────────────────────────────────
-    $by_key  = []; // unique key (email ou 'phone_N') → row data
-    $total   = 0;
+    $by_key     = []; // unique key (email ou 'phone_N') → row data
+    $total      = 0;
+    $detail     = []; // log detalhado de cada linha do CSV
+    $key_detail = []; // key → índice em $detail (para linhas que passaram na normalização)
 
     foreach ($rows as $i => $row) {
         $name   = trim($row['nome']     ?? $row['name']      ?? '');
@@ -1479,20 +1481,35 @@ function import_with_sequence() {
 
         $has_email = $email && filter_var($email, FILTER_VALIDATE_EMAIL);
         $has_phone = strlen($phone) >= 10;
+        $display_name = $name ?: ($has_email ? explode('@', $email)[0] : ($phone ?: 'Linha ' . ($i + 2)));
 
-        if ($canal === 'email' && !$has_email) continue;
-        if ($canal === 'wpp'   && !$has_phone) continue;
-        if ($canal === 'ambos' && !$has_email && !$has_phone) continue;
+        if ($canal === 'email' && !$has_email) {
+            $detail[] = ['name'=>$display_name,'email'=>$email,'phone'=>$phone,'status'=>'ignorado','reason'=>'E-mail inválido ou ausente (canal: só e-mail)'];
+            continue;
+        }
+        if ($canal === 'wpp' && !$has_phone) {
+            $detail[] = ['name'=>$display_name,'email'=>$email,'phone'=>$phone,'status'=>'ignorado','reason'=>'Telefone inválido ou ausente (canal: só WPP)'];
+            continue;
+        }
+        if ($canal === 'ambos' && !$has_email && !$has_phone) {
+            $detail[] = ['name'=>$display_name,'email'=>$email,'phone'=>$phone,'status'=>'ignorado','reason'=>'Sem e-mail nem telefone válidos'];
+            continue;
+        }
 
         if (!$name) $name = $has_email ? explode('@', $email)[0] : 'Lead ' . ($i + 2);
 
         $key = $has_email ? $email : ('phone_' . $phone);
-        if (isset($by_key[$key])) continue; // deduplica
+        if (isset($by_key[$key])) {
+            $detail[] = ['name'=>$name,'email'=>$email,'phone'=>$phone,'status'=>'ignorado','reason'=>'E-mail/telefone duplicado no arquivo CSV'];
+            continue;
+        }
         $by_key[$key] = compact('name', 'email', 'phone', 'cidade', 'estado', 'sab', 'tipo');
+        $key_detail[$key] = count($detail);
+        $detail[] = ['name'=>$name,'email'=>$email,'phone'=>$phone,'status'=>'pendente','reason'=>''];
         $total++;
     }
 
-    if (!$total) { echo json_encode(['ok'=>true,'total'=>0,'imported'=>0,'skipped'=>0,'errors'=>0]); return; }
+    if (!$total) { echo json_encode(['ok'=>true,'total'=>0,'imported'=>0,'skipped'=>0,'errors'=>0,'detail'=>$detail]); return; }
 
     // ── 2. Batch-lookup de leads existentes por email ─────────────────────
     $emails_all = array_filter(array_map(fn($rd) => $rd['email'], $by_key));
@@ -1513,8 +1530,18 @@ function import_with_sequence() {
     foreach ($by_key as $key => $rd) {
         $email = $rd['email'];
         if ($email && isset($existing[$email])) {
-            if (!empty($existing[$email]['sequence_queued_at'])) { $skipped++; continue; }
+            if (!empty($existing[$email]['sequence_queued_at'])) {
+                $skipped++;
+                if (isset($key_detail[$key])) {
+                    $detail[$key_detail[$key]]['status'] = 'ignorado';
+                    $detail[$key_detail[$key]]['reason'] = 'Já possui sequência ativa (importado anteriormente)';
+                }
+                continue;
+            }
             $lead_ids[$key] = $existing[$email]['id'];
+            if (isset($key_detail[$key])) {
+                $detail[$key_detail[$key]]['reason'] = 'Lead existente — sequência adicionada';
+            }
         } else {
             $to_create[] = [$key, $rd];
         }
@@ -1537,15 +1564,33 @@ function import_with_sequence() {
         $r = sb_request('POST', 'leads', $inserts);
 
         if (is_array($r['body'])) {
+            $created_emails = [];
             foreach ($r['body'] as $created) {
                 if (empty($created['id'])) continue;
                 $cemail = strtolower($created['email'] ?? '');
                 $cphone = preg_replace('/\D/', '', $created['phone'] ?? '');
                 $ckey   = $cemail ?: ('phone_' . $cphone);
                 $lead_ids[$ckey] = $created['id'];
+                $created_emails[$ckey] = true;
+                if (isset($key_detail[$ckey])) {
+                    $detail[$key_detail[$ckey]]['reason'] = 'Novo lead criado';
+                }
+            }
+            // Marcar como erro os que não foram criados
+            foreach ($chunk as [$ckey2, $rd2]) {
+                if (!isset($created_emails[$ckey2]) && isset($key_detail[$ckey2])) {
+                    $detail[$key_detail[$ckey2]]['status'] = 'erro';
+                    $detail[$key_detail[$ckey2]]['reason'] = 'Falha ao criar no banco de dados';
+                }
             }
             $errors += max(0, count($chunk) - count($r['body']));
         } else {
+            foreach ($chunk as [$ckey2]) {
+                if (isset($key_detail[$ckey2])) {
+                    $detail[$key_detail[$ckey2]]['status'] = 'erro';
+                    $detail[$key_detail[$ckey2]]['reason'] = 'Falha ao criar no banco de dados';
+                }
+            }
             $errors += count($chunk);
         }
     }
@@ -1619,6 +1664,10 @@ function import_with_sequence() {
 
         $update_ids[] = $lead_id;
         $imported++;
+        // Marcar como importado no detail (se ainda pendente)
+        if (isset($key_detail[$key]) && $detail[$key_detail[$key]]['status'] === 'pendente') {
+            $detail[$key_detail[$key]]['status'] = 'importado';
+        }
     }
 
     // ── 5. Inserir filas em lote (100 por vez) ────────────────────────────
@@ -1639,7 +1688,13 @@ function import_with_sequence() {
         ]);
     }
 
-    echo json_encode(['ok'=>true,'total'=>$total,'imported'=>$imported,'skipped'=>$skipped,'errors'=>$errors]);
+    // Marcar como erro qualquer linha que ficou pendente (não foi processada)
+    foreach ($detail as &$d) {
+        if ($d['status'] === 'pendente') { $d['status'] = 'erro'; $d['reason'] = 'Não processado (sem ID gerado)'; }
+    }
+    unset($d);
+
+    echo json_encode(['ok'=>true,'total'=>$total,'imported'=>$imported,'skipped'=>$skipped,'errors'=>$errors,'detail'=>$detail]);
 }
 
 // ── FASE A — LEAD PROFILE & FUNNEL ───────────────────────────────────────────
