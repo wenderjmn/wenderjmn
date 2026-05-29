@@ -3671,6 +3671,17 @@ function seqItemTypeChange() {
 }
 function seqMediaContentChange() {
   const mt = document.querySelector('input[name="sif-media-type"]:checked')?.value || 'text';
+  const msgEl     = document.getElementById('sif-message');
+  const captionEl = document.getElementById('sif-media-caption');
+
+  // Carrega texto do modo anterior para não perder o conteúdo
+  if (mt !== 'text' && msgEl && captionEl && !captionEl.value.trim() && msgEl.value.trim()) {
+    captionEl.value = msgEl.value;
+  }
+  if (mt === 'text' && captionEl && msgEl && !msgEl.value.trim() && captionEl.value.trim()) {
+    msgEl.value = captionEl.value;
+  }
+
   document.getElementById('sif-text-block').style.display  = mt==='text'  ? '' : 'none';
   document.getElementById('sif-media-block').style.display = mt!=='text'  ? '' : 'none';
   const lbl = document.getElementById('sif-media-type-label');
