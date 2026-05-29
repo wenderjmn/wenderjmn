@@ -1451,6 +1451,10 @@ function import_with_sequence() {
     if (empty($seq_data[0]['items'])) { echo json_encode(['ok'=>false,'error'=>'Sequência não encontrada ou inativa']); return; }
     $seq_items = $seq_data[0]['items'];
 
+    // Link do vídeo da Ira (configurável em site_config)
+    $cfg_ira        = sb_get('site_config?key=eq.link_video_ira&select=value&limit=1');
+    $link_video_ira = $cfg_ira[0]['value'] ?? '';
+
     $tz   = new DateTimeZone('America/Sao_Paulo');
     $base = new DateTime('now', $tz);
 
@@ -1516,6 +1520,7 @@ function import_with_sequence() {
             '{{link_vip}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
             '{{link_hotmart}}'     => getenv('HOTMART_LINK') ?: 'https://pay.hotmart.com/emagreser',
             '{{link_descadastro}}' => 'https://www.oficialemagreser.com/descadastro.php?email='.urlencode($email),
+            '{{link_video_ira}}'   => $link_video_ira,
             '{{emoji}}'            => '🎯', '{{tipo}}' => $nome_perfil,
             '{{titulo}}'           => 'Descubra seu padrão comportamental', '{{descricao}}' => '',
         ];
@@ -1544,7 +1549,7 @@ function import_with_sequence() {
                     'status'        => 'pending',
                 ]]);
             } elseif ($type === 'wpp' && $tel && strlen($phone) >= 10) {
-                $msg = seq_sub_vars_proxy($item['message'] ?? '', $name, $nome_perfil);
+                $msg = seq_sub_vars_proxy($item['message'] ?? '', $name, $nome_perfil, $link_video_ira);
                 if (!$msg) continue;
                 sb_request('POST', 'whatsapp_queue', [[
                     'lead_id'      => $lead_id,
@@ -1895,10 +1900,10 @@ function seq_schedule_proxy(array $item, DateTime $base, DateTimeZone $tz): ?str
     return $dt->format(DateTime::ATOM);
 }
 
-function seq_sub_vars_proxy(string $msg, string $name, string $perfil): string {
+function seq_sub_vars_proxy(string $msg, string $name, string $perfil, string $link_video_ira = ''): string {
     return str_replace(
-        ['{{nome_lead}}', '{{nome}}', '{{nome_perfil}}', '{{link_vip}}', '{{link_hotmart}}', '{{link_site}}'],
-        [$name, $name, $perfil, 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ', getenv('HOTMART_LINK') ?: 'https://pay.hotmart.com/emagreser', 'https://www.oficialemagreser.com'],
+        ['{{nome_lead}}', '{{nome}}', '{{nome_perfil}}', '{{link_vip}}', '{{link_hotmart}}', '{{link_site}}', '{{link_video_ira}}'],
+        [$name, $name, $perfil, 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ', getenv('HOTMART_LINK') ?: 'https://pay.hotmart.com/emagreser', 'https://www.oficialemagreser.com', $link_video_ira],
         $msg
     );
 }

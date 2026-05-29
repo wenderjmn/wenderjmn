@@ -71,6 +71,11 @@ $within_window = ($hora_brt >= SEND_HOUR_START && $hora_brt < SEND_HOUR_END);
 
 // ── PROCESSAR FILA DE E-MAILS ────────────────────────────────────
 $now_iso = gmdate('Y-m-d\TH:i:s\Z'); // sem '+' no timezone, evita quebra de URL
+
+// Pré-carrega link_video_ira uma vez para usar em toda a fila
+$_cfg_ira     = sb_get('site_config?key=eq.link_video_ira&select=value&limit=1');
+$link_video_ira = $_cfg_ira[0]['value'] ?? '';
+
 $pending = sb_get("email_queue?status=eq.pending&scheduled_at=lte.{$now_iso}&attempts=lt.3&order=scheduled_at.asc&limit=" . BATCH_SIZE);
 
 foreach ($pending as $item) {
@@ -115,6 +120,7 @@ foreach ($pending as $item) {
         '{{link_wpp}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
         '{{link_hotmart}}'     => 'https://pay.hotmart.com/emagreser',
         '{{link_site}}'        => 'https://www.oficialemagreser.com',
+        '{{link_video_ira}}'   => $link_video_ira,
         '{{emoji}}'            => '',
         '{{tipo}}'             => '',
         '{{titulo}}'           => '',

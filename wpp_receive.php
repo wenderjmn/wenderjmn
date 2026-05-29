@@ -113,11 +113,16 @@ $nome  = $lead ? (explode(' ', $lead['name'])[0]) : 'você';
 // ── OPT-IN / OPT-OUT ──────────────────────────────────────────────────
 // Resposta SIM ao pedido de consentimento de WPP importados
 if ($text === 'SIM') {
-    $lead_exists = $lead !== null;
-    if ($lead_exists) {
-        sb_patch("leads?id=eq.{$lead['id']}", ['wpp_optout' => false]);
+    if ($lead !== null) {
+        $lead_id = $lead['id'];
+        sb_patch("leads?id=eq.{$lead_id}", ['wpp_optout' => false, 'optin_status' => 'confirmed']);
+        $lead_full = sb_get("leads?id=eq.{$lead_id}&select=id,name,phone,email,sabotador,source,sequence_queued_at&limit=1");
+        $lf = $lead_full[0] ?? null;
+        if ($lf && ($lf['source'] === 'import') && empty($lf['sequence_queued_at'])) {
+            wpp_enqueue_followup_sequence($lf, $phone);
+        }
     }
-    $msg_sim = "Ótimo, {$nome}! 🎉 Você confirmou o recebimento das nossas mensagens.\n\nEm breve enviaremos conteúdos exclusivos sobre emagrecimento para você. Fique ligada! 💚";
+    $msg_sim = "Que bom, {$nome}! 🎉 Confirmamos sua participação.\n\nVocê vai receber conteúdos exclusivos da *Daniely* e da *Ira* sobre como superar os padrões que sabotam seu emagrecimento.\n\nFique ligada! 💚\n\n*Daniely e Ira*\nPrograma EmagreSer";
     zapi_send($phone, $msg_sim);
     echo json_encode(['ok' => true, 'replied' => true, 'action' => 'optin_confirmed']);
     exit;
@@ -222,6 +227,81 @@ if (isset($respostas_quiz[$text])) {
 echo json_encode(['ok' => true, 'skipped' => 'no_match', 'text' => $text]);
 
 // ── FUNÇÕES ───────────────────────────────────────────────────────────
+
+// Enfileira a sequência de follow-up quando lead importado responde SIM
+function wpp_enqueue_followup_sequence(array $lead, string $phone_normalized): void {
+    $config    = sb_get('site_config?key=eq.optin_followup_sequence_id&select=value&limit=1');
+    $seq_id    = $config[0]['value'] ?? null;
+    if (!$seq_id) return;
+
+    $seq_data  = sb_get("sequences?id=eq.{$seq_id}&is_active=eq.true&select=name,items&limit=1");
+    if (empty($seq_data[0]['items'])) return;
+    $seq_items = $seq_data[0]['items'];
+
+    $cfg_ira        = sb_get('site_config?key=eq.link_video_ira&select=value&limit=1');
+    $link_video_ira = $cfg_ira[0]['value'] ?? '';
+
+    $perfis_nomes = ['A'=>'Recompensadora','B'=>'Piloto Automático','C'=>'Prisioneira do Esforço','D'=>'Compensadora Noturna'];
+    $sab         = strtoupper($lead['sabotador'] ?? '');
+    $nome_perfil = $sab ? ($perfis_nomes[$sab] ?? 'Perfil Sabotador') : 'Perfil Sabotador';
+    $name        = $lead['name'] ?? 'você';
+    $email       = $lead['email'] ?? '';
+    $lead_id     = $lead['id'];
+
+    $tz   = new DateTimeZone('America/Sao_Paulo');
+    $base = new DateTime('now', $tz);
+    $now  = $base->format(DateTime::ATOM);
+
+    foreach ($seq_items as $item) {
+        $type    = $item['type'] ?? '';
+        $send_at = wpp_seq_schedule($item, $base, $tz);
+        if (!$send_at || strtotime($send_at) < time() - 60) continue;
+
+        if ($type === 'wpp' && strlen($phone_normalized) >= 10) {
+            $msg = wpp_sub_vars($item['message'] ?? '', $name, $nome_perfil, $link_video_ira);
+            if (!$msg) continue;
+            $tel = '55' . ltrim(preg_replace('/\D/', '', $phone_normalized), '0');
+            sb_post('whatsapp_queue', [['lead_id'=>$lead_id,'to_phone'=>$tel,'to_name'=>$name,'message'=>$msg,'scheduled_at'=>$send_at,'status'=>'pending']]);
+        } elseif ($type === 'email' && $email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $slug = trim($item['template_slug'] ?? '');
+            if (!$slug) continue;
+            $extra_vars = [
+                '{{nome}}'             => htmlspecialchars($name),
+                '{{nome_lead}}'        => htmlspecialchars($name),
+                '{{nome_perfil}}'      => htmlspecialchars($nome_perfil),
+                '{{link_site}}'        => 'https://www.oficialemagreser.com',
+                '{{link_wpp}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
+                '{{link_vip}}'         => 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ',
+                '{{link_hotmart}}'     => getenv('HOTMART_LINK') ?: 'https://pay.hotmart.com/emagreser',
+                '{{link_descadastro}}' => 'https://www.oficialemagreser.com/descadastro.php?email='.urlencode($email),
+                '{{link_video_ira}}'   => $link_video_ira,
+            ];
+            sb_post('email_queue', [['lead_id'=>$lead_id,'template_slug'=>$slug,'to_email'=>$email,'to_name'=>$name,'extra_vars'=>json_encode($extra_vars),'scheduled_at'=>$send_at,'status'=>'pending']]);
+        }
+    }
+
+    sb_patch("leads?id=eq.{$lead_id}", ['sequence_queued_at' => $now, 'automation_enrolled' => true]);
+}
+
+function wpp_seq_schedule(array $item, DateTime $base, DateTimeZone $tz): ?string {
+    if (!empty($item['fixed_date'])) {
+        $time = $item['fixed_time'] ?? '09:00';
+        $dt   = DateTime::createFromFormat('Y-m-d H:i', $item['fixed_date'] . ' ' . $time, $tz);
+        return $dt ? $dt->format(DateTime::ATOM) : null;
+    }
+    $hours = (int)($item['delay_hours'] ?? 0);
+    $dt    = clone $base;
+    $dt->modify("+{$hours} hours");
+    return $dt->format(DateTime::ATOM);
+}
+
+function wpp_sub_vars(string $msg, string $name, string $perfil, string $link_video_ira = ''): string {
+    return str_replace(
+        ['{{nome_lead}}', '{{nome}}', '{{nome_perfil}}', '{{link_vip}}', '{{link_hotmart}}', '{{link_site}}', '{{link_video_ira}}'],
+        [$name, $name, $perfil, 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ', getenv('HOTMART_LINK') ?: 'https://pay.hotmart.com/emagreser', 'https://www.oficialemagreser.com', $link_video_ira],
+        $msg
+    );
+}
 
 function zapi_send(string $phone, string $message): bool {
     if (!ZAPI_INSTANCE || !ZAPI_TOKEN) return false;
