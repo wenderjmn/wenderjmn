@@ -257,20 +257,42 @@ function send_smtp(string $to, string $toName, string $subject, string $body): a
 }
 
 // ── Z-API WHATSAPP ────────────────────────────────────────────────
-function send_whatsapp(string $phone, string $message): array {
-    $url = ZAPI_URL . '/send-text';
-    $payload = json_encode(['phone' => $phone, 'message' => $message]);
 
-    $ch = curl_init($url);
+// Detecta se a mensagem carrega mídia embutida: [VIDEO:url] ou [IMAGE:url]
+// Formato: "[VIDEO:https://url.mp4]Caption opcional aqui"
+// Retorna ['type'=>'video'|'image'|'text', 'url'=>'...', 'caption'|'message'=>'...']
+function parse_wpp_message(string $message): array {
+    if (preg_match('/^\[(VIDEO|IMAGE):([^\]]+)\](.*)/si', $message, $m)) {
+        return [
+            'type'    => strtolower($m[1]),
+            'url'     => trim($m[2]),
+            'caption' => trim($m[3]),
+        ];
+    }
+    return ['type' => 'text', 'message' => $message];
+}
+
+function send_whatsapp(string $phone, string $message): array {
+    $parsed = parse_wpp_message($message);
+
+    if ($parsed['type'] === 'video') {
+        return send_whatsapp_video($phone, $parsed['url'], $parsed['caption']);
+    }
+    if ($parsed['type'] === 'image') {
+        return send_whatsapp_image($phone, $parsed['url'], $parsed['caption']);
+    }
+
+    // Detecta se a mensagem contém URL para ativar link preview
+    $has_url = (bool) preg_match('/https?:\/\/\S+/', $message);
+    $payload = json_encode(['phone' => $phone, 'message' => $message, 'linkPreview' => $has_url]);
+
+    $ch = curl_init(ZAPI_URL . '/send-text');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => $payload,
         CURLOPT_TIMEOUT        => 15,
-        CURLOPT_HTTPHEADER     => [
-            'Content-Type: application/json',
-            'Client-Token: ' . ZAPI_CLIENT_TOKEN,
-        ],
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'Client-Token: ' . ZAPI_CLIENT_TOKEN],
     ]);
     $res  = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -278,6 +300,54 @@ function send_whatsapp(string $phone, string $message): array {
 
     $data = json_decode($res, true);
     if ($code === 200 && !empty($data['zaapId'])) return ['ok'=>true,'msg'=>'sent','zaapId'=>$data['zaapId']];
+    return ['ok'=>false,'msg'=>$res,'zaapId'=>null];
+}
+
+function send_whatsapp_video(string $phone, string $video_url, string $caption = ''): array {
+    $payload = json_encode(array_filter([
+        'phone'   => $phone,
+        'video'   => $video_url,
+        'caption' => $caption ?: null,
+    ], fn($v) => $v !== null));
+
+    $ch = curl_init(ZAPI_URL . '/send-video');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'Client-Token: ' . ZAPI_CLIENT_TOKEN],
+    ]);
+    $res  = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $data = json_decode($res, true);
+    if ($code === 200 && !empty($data['zaapId'])) return ['ok'=>true,'msg'=>'video_sent','zaapId'=>$data['zaapId']];
+    return ['ok'=>false,'msg'=>$res,'zaapId'=>null];
+}
+
+function send_whatsapp_image(string $phone, string $image_url, string $caption = ''): array {
+    $payload = json_encode(array_filter([
+        'phone'   => $phone,
+        'image'   => $image_url,
+        'caption' => $caption ?: null,
+    ], fn($v) => $v !== null));
+
+    $ch = curl_init(ZAPI_URL . '/send-image');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'Client-Token: ' . ZAPI_CLIENT_TOKEN],
+    ]);
+    $res  = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $data = json_decode($res, true);
+    if ($code === 200 && !empty($data['zaapId'])) return ['ok'=>true,'msg'=>'image_sent','zaapId'=>$data['zaapId']];
     return ['ok'=>false,'msg'=>$res,'zaapId'=>null];
 }
 

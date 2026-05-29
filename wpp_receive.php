@@ -305,17 +305,31 @@ function wpp_sub_vars(string $msg, string $name, string $perfil, string $link_vi
 
 function zapi_send(string $phone, string $message): bool {
     if (!ZAPI_INSTANCE || !ZAPI_TOKEN) return false;
-    $url = "https://api.z-api.io/instances/" . ZAPI_INSTANCE . "/token/" . ZAPI_TOKEN . "/send-text";
-    $ch = curl_init($url);
+    $base = "https://api.z-api.io/instances/" . ZAPI_INSTANCE . "/token/" . ZAPI_TOKEN;
+
+    // Suporte a [VIDEO:url]caption e [IMAGE:url]caption
+    if (preg_match('/^\[(VIDEO|IMAGE):([^\]]+)\](.*)/si', $message, $m)) {
+        $type    = strtolower($m[1]);
+        $url_m   = trim($m[2]);
+        $caption = trim($m[3]);
+        $endpoint = $base . '/send-' . $type;
+        $field    = $type; // 'video' ou 'image'
+        $body = array_filter(['phone' => $phone, $field => $url_m, 'caption' => $caption ?: null], fn($v) => $v !== null);
+        $timeout = 30;
+    } else {
+        $has_url  = (bool) preg_match('/https?:\/\/\S+/', $message);
+        $endpoint = $base . '/send-text';
+        $body     = ['phone' => $phone, 'message' => $message, 'linkPreview' => $has_url];
+        $timeout  = 15;
+    }
+
+    $ch = curl_init($endpoint);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => json_encode(['phone' => $phone, 'message' => $message]),
-        CURLOPT_TIMEOUT        => 15,
-        CURLOPT_HTTPHEADER     => [
-            'Content-Type: application/json',
-            'Client-Token: ' . ZAPI_CLIENT_TOKEN,
-        ],
+        CURLOPT_POSTFIELDS     => json_encode($body),
+        CURLOPT_TIMEOUT        => $timeout,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'Client-Token: ' . ZAPI_CLIENT_TOKEN],
     ]);
     $res  = curl_exec($ch);
     $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
