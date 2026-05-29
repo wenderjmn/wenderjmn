@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-Plataforma de marketing e automação de comunicação para o **Programa EmagreSer** (Psicóloga Daniely + Nutricionista Ira). O sistema capta leads via landing pages, identifica o perfil sabotador do lead via quiz, e executa sequências automáticas de e-mail e WhatsApp.
+Plataforma de marketing e automação de comunicação para o **Programa EmagreSer** (Psicóloga Daniely + Nutricionista Ira). O sistema capta leads via landing pages, identifica o perfil sabotador do lead via quiz, e executa sequências automáticas de e-mail e WhatsApp. Possui também um fluxo completo de importação de leads externos com opt-in ativo via WhatsApp.
 
 ---
 
@@ -12,7 +12,7 @@ Plataforma de marketing e automação de comunicação para o **Programa EmagreS
 |--------|-----------|
 | Hospedagem | Hostinger (PHP 8.x) |
 | Banco de dados | Supabase (PostgreSQL) |
-| E-mail transacional | Resend.com (SMTP via API) |
+| E-mail transacional | Resend.com (API REST) |
 | WhatsApp | Z-API (instância própria) |
 | Admin | SPA HTML/JS puro (sem framework) |
 | Landing pages | HTML/CSS/JS puro |
@@ -29,9 +29,9 @@ Plataforma de marketing e automação de comunicação para o **Programa EmagreS
 ├── descadastro.php         # Página de descadastro de e-mail (link nos rodapés)
 ├── email_trigger.php       # Enfileira sequência ao novo lead orgânico
 ├── email_worker.php        # Worker cron: processa email_queue + whatsapp_queue
-├── import_leads.php        # Importação de CSV com sequência configurável
+├── import_leads.php        # Importação de CSV com sequência configurável (legacy)
 ├── cron.php                # Auto-enrola leads importados (cron-job.org, horário)
-├── wpp_receive.php         # Webhook Z-API: processa respostas dos leads
+├── wpp_receive.php         # Webhook Z-API: processa respostas + opt-in SIM/NÃO
 ├── wpp_status.php          # Webhook Z-API: callback de status de entrega (RECEIVED/READ)
 ├── painel.php              # Painel PHP de manutenção de filas (fallback)
 ├── _env.php                # Variáveis de ambiente (não versionado)
@@ -52,20 +52,24 @@ Plataforma de marketing e automação de comunicação para o **Programa EmagreS
 |--------|------|-----------|
 | `id` | uuid PK | |
 | `name`, `email`, `phone` | text | |
-| `sabotador` | text | Perfil: A/B/C/D ou nome |
+| `sabotador` | text | Perfil: A/B/C/D |
+| `sabotador_score` | jsonb | Pontuação por perfil |
 | `funnel_stage` | text | novo / engajado / interessado / quente / convertido / frio |
 | `sequence_queued_at` | timestamptz | Quando a sequência foi enfileirada (null = ainda não) |
 | `sequence_paused` | boolean | Pausa temporária da automação |
+| `automation_enrolled` | boolean | Lead importado já enrolado pelo cron |
 | `email_optout` | boolean | Clicou no link de descadastro |
 | `email_blocked` | boolean | Bloqueio manual pelo admin |
 | `wpp_optout` | boolean | Respondeu palavra de opt-out no WPP |
-| `optin_wpp`, `optin_email` | boolean | Consentimento formal |
-| `automation_enrolled` | boolean | Lead importado já enrolado pelo cron |
+| `optin_status` | text | Status do opt-in: pending / confirmed / declined |
 | `faixa_etaria`, `faixa_renda` | text | Dados demográficos |
-| `cidade`, `estado` | text | |
-| `source`, `source_campaign` | text | Origem do lead |
-| `notes` | text | Anotações do admin |
+| `cidade`, `estado` | text | Localização |
+| `source` | text | Origem: organic / import / etc |
+| `source_campaign` | text | Campanha de origem / batch de importação |
+| `utm_medium` | text | Tipo de canal (preenchido na importação) |
 | `created_at` | timestamptz | |
+
+> **Atenção:** As colunas `optin_wpp`, `optin_email` e `notes` **não existem** na tabela. Use `optin_status`, `wpp_optout` e `email_optout` respectivamente.
 
 #### `email_queue`
 | Coluna | Tipo | Descrição |
@@ -97,19 +101,46 @@ Plataforma de marketing e automação de comunicação para o **Programa EmagreS
 | `error_msg` | text | |
 
 #### `email_templates`
-Slugs dos templates HTML de e-mail. Variáveis: `{{nome}}`, `{{link_descadastro}}`, `{{link_wpp}}`, `{{link_site}}`, `{{emoji}}`.
+Templates HTML de e-mail. Variáveis disponíveis:
+`{{nome}}`, `{{nome_lead}}`, `{{nome_perfil}}`, `{{link_descadastro}}`, `{{link_wpp}}`, `{{link_vip}}`, `{{link_site}}`, `{{link_hotmart}}`, `{{link_video_ira}}`, `{{emoji}}`, `{{titulo}}`, `{{descricao}}`
+
+Templates ativos relevantes:
+| Slug | Descrição |
+|------|-----------|
+| `ira_optin_importados` | E-mail HTML de opt-in para leads importados (vídeo Ira + botão VIP + instrução SIM/NÃO) |
+| `mc_boas_vindas` | Boas-vindas Masterclass 2026 |
+| `mc_conteudo_perfil` | Conteúdo sobre o perfil sabotador |
+| `mc_prova_social` | Depoimentos e prova social |
+| `mc_vespera` | Véspera da Masterclass |
+| `mc_objecao_tempo` | Quebra de objeção pós-Masterclass |
+| `mc_carta_daniely` | Carta pessoal da Daniely |
+| `mc_ultimo_dia` | Último dia de vendas |
 
 #### `wpp_templates`
-Templates de mensagem WhatsApp com variáveis.
+Templates de mensagem WhatsApp com variáveis inline. Mesmo set de variáveis dos e-mails.
+
+Templates ativos relevantes:
+| Slug | Descrição |
+|------|-----------|
+| `ira_optin_importados` | WPP de opt-in (referência — conteúdo inline na sequência) |
 
 #### `sequences`
-Sequências reutilizáveis (itens com `type`, `template_slug`, `delay_hours`, `fixed_date`). Usadas no painel de importação.
+Sequências reutilizáveis. Cada item tem: `type` (wpp/email), `template_slug` (email), `message` (wpp inline), `delay_hours` ou `fixed_date`/`fixed_time`.
+
+Sequências ativas:
+| ID | Nome | Itens | Uso |
+|----|------|-------|-----|
+| `2aecfbb8-ab1a-49e0-ac87-ff0696662d5b` | Aquecimento Importados | 3 | Primeira abordagem de leads importados |
+| `6733dd19-9090-4cec-ad72-bfc4fd1ec30e` | Masterclass 2026 — Sequência Completa | 20 | Após SIM no opt-in |
 
 #### `site_config`
-Configurações da landing page: textos, URLs de vídeo, datas, pixel IDs, etc.
+Configurações da landing page e do sistema.
 
-#### `testimonials`, `depoimentos_prints`
-Depoimentos em vídeo e capturas de tela exibidos na LP.
+Chaves relevantes:
+| Chave | Valor atual | Descrição |
+|-------|-------------|-----------|
+| `link_video_ira` | `https://youtube.com/shorts/sRicNLmjFGI?feature=share` | Vídeo da Ira para opt-in importados |
+| `optin_followup_sequence_id` | `6733dd19-9090-4cec-ad72-bfc4fd1ec30e` | ID da sequência enrolada após SIM |
 
 #### `page_events`
 Eventos de funil gravados pelas landing pages via `track.php`.
@@ -119,17 +150,20 @@ Eventos de funil gravados pelas landing pages via `track.php`.
 | `session_id` | text | ID único de sessão (gerado no browser, persiste em sessionStorage) |
 | `event` | text | page_view / quiz_opened / quiz_q1-q4 / quiz_completed / form_opened / form_submitted / vip_click |
 | `page` | text | index ou ig |
-| `step` | int | Número da pergunta (1–4) para eventos quiz_qN |
-| `sabotador` | text | Perfil A/B/C/D (preenchido em quiz_completed e form_submitted) |
-| `source` | text | utm_source do visitante |
+| `step` | int | Número da pergunta (1–4) |
+| `sabotador` | text | Perfil A/B/C/D |
+| `source` | text | utm_source |
 | `source_campaign` | text | utm_campaign |
 | `referrer` | text | document.referrer (máx 200 chars) |
-| `city` | text | Cidade do visitante (geolocalização por IP, só em page_view) |
-| `region` | text | Estado/região (geolocalização por IP) |
-| `country` | text | País (geolocalização por IP) |
+| `city` | text | Cidade (geolocalização por IP, só em page_view) |
+| `region` | text | Estado/região |
+| `country` | text | País |
 | `created_at` | timestamptz | |
 
-**RLS:** INSERT permitido para anon (landing pages gravam sem auth); SELECT restrito ao service_role (proxy admin).
+**RLS:** INSERT permitido para anon; SELECT restrito ao service_role.
+
+#### `testimonials`, `depoimentos_prints`
+Depoimentos em vídeo e capturas de tela exibidos na LP.
 
 ---
 
@@ -138,32 +172,127 @@ Eventos de funil gravados pelas landing pages via `track.php`.
 ```
 Visitante acessa ig.html ou index.html
   ↓  track('page_view') gravado em page_events
+
 ig.html  → Preenche formulário VIP na Hero (nome/email/phone)
            → track('form_opened') ao focar o campo Nome
-           → track('form_submitted') + track('vip_click') ao salvar com sucesso
-           → POST email_trigger.php → 7 e-mails + 13 WPPs enfileirados
+           → track('form_submitted') + track('vip_click') ao salvar
+           → POST email_trigger.php → sequência enfileirada
            → sequence_queued_at = now
   OU
-ig.html  → Clica botão "DESCOBRIR MEU PERFIL" → track('quiz_opened')
-           → Faz quiz → track('quiz_q1..q4') por pergunta
-           → track('quiz_completed', {sabotador}) ao terminar
+ig.html  → Clica "DESCOBRIR MEU PERFIL" → track('quiz_opened')
+           → Faz quiz → track('quiz_q1..q4')
+           → track('quiz_completed', {sabotador})
            → Preenche formulário resultado → track('form_submitted')
 
 index.html → Clica botão quiz → track('form_opened') ao abrir lead-modal
-           → Preenche lead-modal → openQuizModal → track('quiz_opened')
+           → openQuizModal → track('quiz_opened')
            → Faz quiz (4 perguntas) → track('quiz_q1..q4')
-           → Resultado → track('quiz_completed', {sabotador})
+           → track('quiz_completed', {sabotador})
            → Preenche formulário resultado → track('form_submitted')
            → POST email_trigger.php → sequência enfileirada
   ↓
 email_worker.php (cron a cada 10 min)
-  → Lê email_queue WHERE status=pending AND scheduled_at<=now AND attempts<3
-  → Verifica email_blocked / email_optout → pula se true
-  → Envia via Resend.com → status=sent
-  → Lê whatsapp_queue WHERE status=pending AND scheduled_at<=now
-  → Verifica wpp_optout → cancela se true
-  → Envia via Z-API → status=sent
+  → email_queue: verifica email_blocked/email_optout → envia via Resend.com
+  → whatsapp_queue: verifica wpp_optout → envia via Z-API
+  → Janela de envio: 08h–21h BRT (primeiro envio de cada lead sempre imediato)
 ```
+
+---
+
+## Fluxo de Lead Importado (v26)
+
+```
+Admin → Funções Importação → Upload CSV → Seleciona "Aquecimento Importados" → Importar
+  ↓ (importação em lote — admin_proxy.php / import_with_sequence)
+  → Cria/resolve leads em lote (batch de 100)
+  → Enfileira 3 itens por lead:
+
+  [Agora]     📱 WPP 1 — Ira se apresenta + vídeo 1 ({{link_video_ira}})
+  [Agora]     📧 Email — HTML ira_optin_importados (vídeo + botão VIP + instrução SIM/NÃO)
+  [+30 min]   📱 WPP 2 — Daniely se apresenta + vídeo 2 + pergunta SIM/NÃO
+
+  ↓ Lead responde SIM no WhatsApp
+  → wpp_receive.php detecta "SIM"
+  → Marca optin_status = 'confirmed', wpp_optout = false
+  → Verifica: source='import' E sequence_queued_at IS NULL
+  → Busca optin_followup_sequence_id em site_config
+  → Enfileira "Masterclass 2026 — Sequência Completa" para o lead
+  → Atualiza sequence_queued_at = now, automation_enrolled = true
+
+  ↓ Lead responde NÃO (qualquer palavra de opt-out)
+  → wpp_receive.php detecta opt-out
+  → wpp_optout = true + cancela whatsapp_queue pending
+  → Envia confirmação de remoção
+
+  ↓ Masterclass 2026 (20 itens, dias 0–11/06)
+  → WPP boas-vindas + vídeos Ira e Daniely + link VIP
+  → Emails de conteúdo, prova social, urgência
+  → WPPs de engajamento e fechamento de vendas
+```
+
+### Vídeos configurados (Campanha Importados 2026)
+| Vídeo | Mentora | Link | Uso |
+|-------|---------|------|-----|
+| Vídeo 1 | Ira | `https://youtube.com/shorts/sRicNLmjFGI?feature=share` | WPP 1 do opt-in (via `{{link_video_ira}}`) |
+| Vídeo 2 | Ira | `https://youtube.com/shorts/X0E-F269QDQ?feature=share` | WPP 1 da Masterclass (hardcoded) |
+| Vídeo 3 | Daniely | `https://youtube.com/shorts/82Y1WY8okKc?feature=share` | WPP 2 do opt-in + WPP 1 da Masterclass (hardcoded) |
+
+---
+
+## Sequência "Aquecimento Importados" (ID: `2aecfbb8`)
+
+| # | Tipo | Delay | Conteúdo |
+|---|------|-------|----------|
+| 1 | WPP | 0h | Ira se apresenta + `{{link_video_ira}}` (sem pergunta SIM/NÃO) |
+| 2 | Email | 0h | Template `ira_optin_importados` (HTML completo) |
+| 3 | WPP | 0.5h | Daniely se apresenta + vídeo dela + pergunta SIM/NÃO |
+
+---
+
+## Sequência "Masterclass 2026 — Sequência Completa" (ID: `6733dd19`)
+
+| # | Tipo | Timing | Conteúdo |
+|---|------|--------|----------|
+| 1 | WPP | 0h | Boas-vindas + vídeo Ira + vídeo Daniely + link VIP |
+| 2 | Email | 0h | `mc_boas_vindas` |
+| 3 | Email | 24h | `mc_conteudo_perfil` |
+| 4 | WPP | 32h | Pergunta de engajamento emocional |
+| 5 | Email | 72h | `mc_prova_social` |
+| 6 | WPP | 80h | Quebra de objeções (Daniely e Ira) |
+| 7 | WPP | 143h | Amanhã é o dia (véspera) |
+| 8 | Email | 143h | `mc_vespera` |
+| 9 | WPP | 154h | Noite antes — assinatura Daniely e Ira |
+| 10 | WPP | 08/06 09h | Pós-Masterclass — vagas abertas |
+| 11 | Email | 08/06 09h | `mc_objecao_tempo` |
+| 12 | WPP | 08/06 17h | O que aconteceu ontem na Masterclass |
+| 13 | WPP | 09/06 09h | Vagas acabando |
+| 14 | WPP | 09/06 19h | Última coisa — reflexão 12 semanas |
+| 15 | Email | 10/06 09h | `mc_carta_daniely` |
+| 16 | WPP | 10/06 17h | Amanhã as vagas fecham — Daniely e Ira |
+| 17 | WPP | 11/06 08h | Último dia |
+| 18 | Email | 11/06 08h | `mc_ultimo_dia` |
+| 19 | WPP | 11/06 14h | Últimas horas |
+| 20 | WPP | 11/06 19h | 5 horas — Daniely e Ira |
+
+---
+
+## Substituição de Variáveis
+
+### Variáveis em templates de e-mail (`email_worker.php`)
+| Variável | Fonte |
+|----------|-------|
+| `{{nome}}` / `{{nome_lead}}` | `to_name` na fila |
+| `{{nome_perfil}}` | `extra_vars` |
+| `{{link_descadastro}}` | Gerado com e-mail do lead |
+| `{{link_vip}}` / `{{link_wpp}}` | Hardcoded (grupo VIP) |
+| `{{link_hotmart}}` | `HOTMART_LINK` env ou fallback |
+| `{{link_site}}` | Hardcoded |
+| `{{link_video_ira}}` | `site_config.link_video_ira` (pré-carregado uma vez) |
+| `{{emoji}}`, `{{titulo}}`, `{{descricao}}` | `extra_vars` |
+
+### Variáveis em mensagens WPP (inline nas sequências)
+Função `seq_sub_vars_proxy()` em `admin_proxy.php` e `wpp_sub_vars()` em `wpp_receive.php`:
+`{{nome_lead}}`, `{{nome}}`, `{{nome_perfil}}`, `{{link_vip}}`, `{{link_hotmart}}`, `{{link_site}}`, `{{link_video_ira}}`
 
 ---
 
@@ -175,10 +304,9 @@ Todo e-mail contém `{{link_descadastro}}` no rodapé:
 https://www.oficialemagreser.com/descadastro.php?email=xxx@yyy.com
 ```
 → Seta `email_optout=true` + cancela `email_queue` pending do lead
-→ Exibe página de confirmação
 
 ### WhatsApp (automático via wpp_receive.php)
-Webhook Z-API detecta as seguintes palavras/frases (case-insensitive, uppercase):
+Detecta palavras/frases de opt-out (case-insensitive):
 ```
 NÃO, NAO, N, PARAR, PARA, STOP, CANCELAR, CANCELA, CANCEL,
 SAIR, SAIO, REMOVER, REMOVE, DESCADASTRAR, DESCADASTRE, DESCADASTRO,
@@ -187,21 +315,59 @@ PODE PARAR, PODE CANCELAR, ME REMOVE, ME REMOVA,
 SAIR DA LISTA, REMOVER DA LISTA, EXCLUIR, EXCLUI,
 DESINSCREVER, DESINSCRITO, UNSUBSCRIBE
 ```
-→ Seta `wpp_optout=true` + cancela `whatsapp_queue` pending + envia confirmação
+→ `wpp_optout=true` + cancela `whatsapp_queue` pending + envia confirmação
+
+### Opt-in (SIM — leads importados)
+Quando lead importado responde **SIM** no WhatsApp:
+- `optin_status = 'confirmed'`, `wpp_optout = false`
+- Se `source='import'` e `sequence_queued_at IS NULL`: enrola na sequência `optin_followup_sequence_id`
+- Confirma com mensagem personalizada assinada por Daniely e Ira
 
 ### Manual (admin)
-No perfil de cada lead → card "Jornada na automação":
-- **🚫 Cancelar fila e-mail** — `email_optout=true` + muda pending → cancelled
-- **🚫 Cancelar fila WPP** — `wpp_optout=true` + muda pending → cancelled
-- **🗑 Excluir histórico e-mail** — DELETE todas as linhas de `email_queue`
-- **🗑 Excluir histórico WPP** — DELETE todas as linhas de `whatsapp_queue`
-- **🗑 Excluir tudo das filas** — DELETE em ambas
+No perfil do lead → card "Jornada na automação":
+- 🚫 Cancelar fila e-mail / WPP
+- 🗑 Excluir histórico e-mail / WPP / ambos
+
+---
+
+## wpp_receive.php — Funções Internas
+
+| Função | Descrição |
+|--------|-----------|
+| `zapi_send()` | Envia mensagem via Z-API |
+| `sb_get()` | GET no Supabase REST |
+| `sb_patch()` | PATCH no Supabase REST |
+| `sb_post()` | POST no Supabase REST |
+| `wpp_enqueue_followup_sequence()` | Enfileira sequência pós-SIM para lead importado |
+| `wpp_seq_schedule()` | Calcula `scheduled_at` de cada item da sequência |
+| `wpp_sub_vars()` | Substitui variáveis em mensagens WPP inline |
+
+---
+
+## import_with_sequence — Operações em Lote (v26)
+
+Reescrito para suportar grandes volumes (5.000+ leads) sem timeout:
+
+```
+set_time_limit(300)
+
+Passo 1: Normalizar e deduplicar todas as linhas do CSV em memória
+Passo 2: Batch-lookup de emails existentes (150 por request)
+Passo 3: Separar novos / já enrolados (skip) / existentes sem sequência
+Passo 4: Batch-criar novos leads (100 por request, retorna IDs)
+Passo 5: Montar todos os itens de fila em memória (email_q + wpp_q)
+Passo 6: Batch-inserir email_queue (100 por request)
+Passo 7: Batch-inserir whatsapp_queue (100 por request)
+Passo 8: Batch-atualizar sequence_queued_at nos leads (200 por request)
+```
+
+Para 5.420 leads: de ~21.700 requests (~30 min) para ~200 requests (~20 seg).
 
 ---
 
 ## Painel Admin (`admin/index.html`)
 
-SPA single-page autenticada via sessão PHP. Navegação por grupos:
+SPA single-page autenticada via sessão PHP (4h de inatividade).
 
 ### Grupo: Visão Geral
 | Página | Função | Descrição |
@@ -209,14 +375,14 @@ SPA single-page autenticada via sessão PHP. Navegação por grupos:
 | Dashboard | `dashboard()` | Stats de filas + últimos envios + leads recentes |
 | Leads | `leadsPage()` | Lista/busca/filtro de leads com exportação CSV |
 | Funil de Vendas | `funilPage()` | Cards por estágio + accordion com leads + mover estágio |
-| Funil de Conversão | `funilConversaoPage()` | Rastreamento de visitantes: onde desistem no quiz/formulário |
+| Funil de Conversão | `funilConversaoPage()` | Rastreamento de visitantes: onde desistem no quiz/formulário + top cidades/estados |
 
 ### Grupo: Gestão
 | Página | Função | Descrição |
 |--------|--------|-----------|
 | Perguntas Quiz | `quizPage()` | CRUD das perguntas e opções do quiz |
 | Resultados/Perfis | `resultadosPage()` | Textos dos perfis sabotadores |
-| Config Geral | `configPage()` | Editor de site_config (textos, vídeos, datas) |
+| Config Geral | `configPage()` | Editor de site_config (textos, vídeos, datas, link_video_ira) |
 
 ### Grupo: Configuração
 | Página | Função | Descrição |
@@ -228,16 +394,16 @@ SPA single-page autenticada via sessão PHP. Navegação por grupos:
 ### Grupo: Importação
 | Página | Função | Descrição |
 |--------|--------|-----------|
-| Funções Importação | `importFuncoesPage()` | Upload CSV + seleção de sequência + canal |
-| Lista Importados | `leadsImportadosPage()` | Leads importados com filtros |
+| Funções Importação | `importFuncoesPage()` | Upload CSV + seleção de sequência + canal + `import_with_sequence` |
+| Lista Importados | `leadsImportadosPage()` | Leads importados com filtros (usa `optin_status`, não `optin_wpp`) |
 | Dashboard | `importDashboardPage()` | Stats de importações |
-| Gestão | `importGestaoPage()` | Gerenciar lotes de importação |
+| Gestão | `importGestaoPage()` | Leads agrupados por batch/campanha |
 
 ### Grupo: Comunicação
 | Página | Função | Descrição |
 |--------|--------|-----------|
-| Fila E-mail | `painelFilaEmailPage()` | Aguardando / Enviados por lead (accordion) |
-| Fila WPP | `painelFilaWppPage()` | Aguardando / Enviados por lead (accordion) |
+| Fila E-mail | `painelFilaEmailPage()` | Aguardando / Enviados por lead |
+| Fila WPP | `painelFilaWppPage()` | Aguardando / Enviados por lead |
 
 ### Grupo: Configurações (Admin)
 | Página | Função | Descrição |
@@ -250,75 +416,83 @@ SPA single-page autenticada via sessão PHP. Navegação por grupos:
 
 ## Perfil do Lead (leadDetailPage)
 
-Acessível clicando em qualquer lead. Exibe:
 - **Dados pessoais**: sabotador, faixa etária, renda, cidade, origem, data
-- **Jornada na automação**: contagem enviados/pendentes, próximos agendamentos, botões de ação
+- **Jornada na automação**: contagem enviados/pendentes, próximos agendamentos
 - **Timeline unificada**: todos os e-mails e WPPs em ordem cronológica
 
 **Ações disponíveis:**
-- Mover estágio do funil (select inline)
+- Mover estágio do funil
 - ⏸ Pausar / ▶ Retomar automação
-- 📧 Enviar e-mail agora (select template)
-- 💬 Enviar WPP agora (select template)
-- 🚫 Cancelar fila e-mail / WPP (opt-out + cancelar pending)
-- 🗑 Excluir histórico e-mail / WPP / ambos (DELETE físico)
+- 📧 Enviar e-mail agora / 💬 Enviar WPP agora
+- 🚫 Cancelar fila e-mail / WPP
+- 🗑 Excluir histórico e-mail / WPP / ambos
 
 ---
 
 ## Rastreamento de Funil de Conversão
 
-### Como funciona
+Cada landing page gera `session_id` único (sessionStorage) e dispara eventos via `fetch('track.php')`.
 
-Cada landing page (`index.html`, `ig.html`) gera um `session_id` único por aba/sessão (salvo em `sessionStorage`) e dispara eventos via `fetch('track.php', ...)` de forma assíncrona (fire-and-forget, sem impacto na UX).
+| Evento | Quando |
+|--------|--------|
+| `page_view` | Ao carregar a página |
+| `quiz_opened` | Ao abrir o modal do quiz |
+| `quiz_q1` – `quiz_q4` | Ao exibir cada pergunta |
+| `quiz_completed` | Ao finalizar o quiz (inclui `sabotador`) |
+| `form_opened` | Ao abrir formulário de captura |
+| `form_submitted` | Ao salvar lead com sucesso |
+| `vip_click` | Ao clicar botão WPP/VIP |
 
-### Eventos rastreados
+`track.php`: rate limit 120 req/min por IP, valida evento contra allowlist, geo por ip-api.com (cache APCu 24h, só em `page_view`).
 
-| Evento | Quando dispara |
-|--------|---------------|
-| `page_view` | Ao carregar a página (fim de `init()`) |
-| `quiz_opened` | Ao abrir o modal do quiz (`openQuizModal()`) |
-| `quiz_q1` | Ao exibir a pergunta 1 pela primeira vez (`renderQ(0)`) |
-| `quiz_q2` | Ao exibir a pergunta 2 pela primeira vez (`renderQ(1)`) |
-| `quiz_q3` | Ao exibir a pergunta 3 pela primeira vez (`renderQ(2)`) |
-| `quiz_q4` | Ao exibir a pergunta 4 pela primeira vez (`renderQ(3)`) |
-| `quiz_completed` | Ao finalizar o quiz (`finishQuiz()`), inclui `sabotador` |
-| `form_opened` | Ao abrir o formulário de captura de lead |
-| `form_submitted` | Ao salvar o lead com sucesso (`saveLead()`), inclui `sabotador` |
-| `vip_click` | Ao clicar em botão WPP/VIP (delegado via `.btn-wpp`) |
-
-> **ig.html específico:** `form_opened` dispara no primeiro foco dos campos do hero form; `form_submitted` + `vip_click` disparam juntos ao salvar via hero form com sucesso.
-
-### Arquivo `track.php`
-
-- Endpoint público (sem autenticação)
-- Rate limit: 120 req/min por IP via APCu (skip silencioso sem APCu)
-- Valida `event` contra allowlist de 10 eventos
-- Sanitiza todos os campos antes de gravar
-- Grava via Supabase REST API com `SUPABASE_SERVICE_KEY`
-
-### Página "Funil de Conversão" no admin
-
-Filtros: período (7 / 14 / 30 / 90 dias / tudo) e página (todas / index / ig).
-
-Exibe:
-- **5 cards de resumo**: visitantes únicos, quiz abertos, quiz concluídos, leads salvos, taxa de conversão
-- **Barras horizontais por etapa**: sessões únicas por evento, % do anterior em verde (≥80%) / amarelo (≥50%) / vermelho (<50%)
-- **Tabela de origens** (utm_source) com contagem e % do total de eventos
-- **Tabela de perfis sabotadores** concluídos com distribuição %
-
-A agregação é feita em PHP (`funnel_stats()` em `admin_proxy.php`) — busca até 200k linhas de `page_events` e conta sessões únicas por evento com `array_fill_keys` + sets de session_id.
+Admin exibe: 5 cards de resumo, barras de funil com drop-off, tabela de origens (utm_source), perfis sabotadores, **Top 15 Cidades** e **Top 10 Estados**.
 
 ---
 
 ## Funil de Vendas
 
-Estágios (em ordem):
-1. **novo** — lead recém cadastrado
-2. **engajado** — abriu e-mails / interagiu
-3. **interessado** — demonstrou interesse
-4. **quente** — pronto para compra
-5. **convertido** — comprou
-6. **frio** — sem engajamento
+| Estágio | Descrição |
+|---------|-----------|
+| `novo` | Lead recém cadastrado |
+| `engajado` | Abriu e-mails / interagiu |
+| `interessado` | Demonstrou interesse |
+| `quente` | Pronto para compra |
+| `convertido` | Comprou |
+| `frio` | Sem engajamento |
+
+---
+
+## Janela de Envio
+
+`email_worker.php` só envia entre **08h–21h BRT** (`America/Sao_Paulo`):
+- Primeiro envio de cada lead: **sempre imediato** (qualquer horário)
+- Envios subsequentes: adiados fora da janela, reprocessados na próxima execução
+
+Constantes: `TZ_BRT='America/Sao_Paulo'`, `SEND_HOUR_START=8`, `SEND_HOUR_END=21`
+
+---
+
+## Status de Entrega WPP
+
+### wpp_status.php
+Configure no Z-API: **Webhooks → "Na entrega"** → `https://www.oficialemagreser.com/wpp_status.php`
+
+- Valida `ZAPI_CLIENT_TOKEN` via header `Client-Token`
+- `RECEIVED`/`DELIVERED`/`RECEIVEDCALLBACK` → `received` + `delivered_at`
+- `READ`/`PLAYED`/`READCALLBACK` → `read` + `read_at`
+- Status nunca regride (`sent < received < read`)
+
+### wpp_receive.php (fallback inline)
+Detecta callbacks de status antes de processar respostas de texto.
+
+---
+
+## Geolocalização de Visitantes
+
+`track.php` consulta `ip-api.com` somente em `page_view`:
+- IPs privados (127.x, 192.168.x, 10.x) ignorados
+- Cache APCu 24h; timeout 2s; falha silenciosa
+- Grava `city`, `region`, `country` em `page_events`
 
 ---
 
@@ -326,13 +500,14 @@ Estágios (em ordem):
 
 ```php
 putenv('SUPABASE_SERVICE_KEY=...');   // service_role key
-putenv('ADMIN_PASSWORD=...');         // senha do admin
+putenv('ADMIN_PASSWORD=...');         // senha do admin (legacy)
 putenv('RESEND_API_KEY=...');         // chave Resend.com
 putenv('ZAPI_INSTANCE=...');          // ID da instância Z-API
 putenv('ZAPI_TOKEN=...');             // token Z-API
 putenv('ZAPI_CLIENT_TOKEN=...');      // client-token Z-API (validação webhook)
 putenv('WORKER_SECRET=...');          // secret para chamar email_worker.php
 putenv('CRON_SECRET=...');            // secret para chamar cron.php
+putenv('HOTMART_LINK=...');           // URL de pagamento Hotmart (opcional, tem fallback)
 ```
 
 ---
@@ -348,111 +523,74 @@ putenv('CRON_SECRET=...');            // secret para chamar cron.php
 
 ## Admin — Responsividade Mobile
 
-O painel admin é responsivo com sidebar em modo drawer para telas ≤768px:
-- **Topbar mobile** (`#mobile-topbar`): logo + botão hamburguer (☰) e botão fechar (✕)
-- **Sidebar overlay** (`#sidebar-overlay`): fundo escuro semitransparente — clique fecha o drawer
-- Funções: `toggleSidebar()` e `closeSidebar()`
-- `goPage()` chama `closeSidebar()` automaticamente ao navegar
-- CSS: `@media(max-width:768px)` transforma a sidebar em drawer com `transform: translateX(-100%)`
-
----
-
-## Janela de Envio (v25)
-
-`email_worker.php` só envia mensagens entre **08h–21h BRT** (`America/Sao_Paulo`). Regra:
-- A primeira mensagem de cada lead (sem histórico `sent`) é sempre enviada imediatamente, em qualquer horário.
-- As mensagens subsequentes são puladas fora da janela e reprocessadas na próxima execução do cron dentro do horário.
-- Constantes: `TZ_BRT='America/Sao_Paulo'`, `SEND_HOUR_START=8`, `SEND_HOUR_END=21`.
-
----
-
-## Status de Entrega WPP (v25)
-
-### wpp_status.php (endpoint dedicado)
-Configure no painel Z-API: **Webhooks → "Na entrega"** → `https://www.oficialemagreser.com/wpp_status.php`
-
-Valida `ZAPI_CLIENT_TOKEN` via header `Client-Token`. Mapeamento:
-- `RECEIVED` / `DELIVERED` / `RECEIVEDCALLBACK` / `DELIVERYCALLBACK` → `received` + grava `delivered_at`
-- `READ` / `PLAYED` / `READCALLBACK` → `read` + grava `read_at`
-- Status nunca regride (ordem: `sent=0 < received=1 < read=2`)
-
-### wpp_receive.php (inline, fallback)
-Se a Z-API enviar callbacks de status pelo mesmo webhook de recebimento, `wpp_receive.php` os detecta primeiro (antes de processar respostas de texto) e atualiza `delivery_status` da mesma forma.
-
----
-
-## Geolocalização de Visitantes (v25)
-
-`track.php` consulta `http://ip-api.com/json/{ip}` **somente em eventos `page_view`**:
-- IPs privados (127.x, 192.168.x, 10.x) não são consultados.
-- Resultado cacheado por 24h via APCu (`geo_{md5(ip)}`). Sem APCu: consulta a cada page_view.
-- Timeout de 2s; falhas silenciosas (grava `null` nos campos).
-- Campos gravados em `page_events`: `city`, `region` (estado), `country`.
-
-O admin exibe **Top 15 Cidades** e **Top 10 Estados** no Funil de Conversão, agregados a partir de eventos `page_view`.
-
-> **Migração Supabase necessária:** `ALTER TABLE page_events ADD COLUMN city TEXT, ADD COLUMN region TEXT, ADD COLUMN country TEXT;`
+Sidebar em drawer para telas ≤768px:
+- `#mobile-topbar`: logo + hamburguer (☰) + fechar (✕)
+- `#sidebar-overlay`: fundo escuro — clique fecha o drawer
+- `toggleSidebar()` / `closeSidebar()` — fecha ao navegar via `goPage()`
 
 ---
 
 ## Histórico de Versões
 
-### v25 — Janela de envio, status de entrega WPP e geolocalização
-- **`email_worker.php`**: janela de envio 08h–21h BRT — primeiro envio por lead sempre imediato; subsequentes adiados fora da janela
-- **`wpp_status.php`** (novo): endpoint dedicado para callback de status Z-API (RECEIVED/READ); valida Client-Token; nunca regride status; loga em `wpp_status.log`
-- **`wpp_receive.php`**: detecção inline de callbacks de status antes de processar respostas de texto
-- **`track.php`**: geolocalização por IP via ip-api.com com cache APCu 24h; somente em `page_view`; grava `city`/`region`/`country` em `page_events`
-- **`admin/admin_proxy.php`**: `funnel_stats()` agora seleciona e agrega `city`/`region`/`country`; retorna top 15 cidades e top 10 estados
-- **`admin/index.html`**: tabelas "Top Cidades" e "Top Estados" na página Funil de Conversão
-- **Supabase**: migração necessária para adicionar colunas `city`, `region`, `country` em `page_events`
+### v26 — Fluxo opt-in importados + correção HTTP 500 + vídeos Ira/Daniely
 
-### v24 — Funil de Conversão Nativo (rastreamento de eventos)
-- **`track.php`** (novo): endpoint público com rate limit por IP, valida 10 eventos e grava em `page_events`
-- **`index.html`** + **`ig.html`**: helper `track()` com `session_id` único por sessão; eventos `page_view`, `quiz_opened`, `quiz_q1–q4`, `quiz_completed`, `form_opened`, `form_submitted`, `vip_click` wired nos pontos corretos
-- **`admin_proxy.php`**: ação `funnel_stats` — agrega `page_events` por período/página, retorna sessões únicas por etapa, origens e perfis sabotadores
-- **`admin/index.html`**: página "📉 Funil de Conversão" no sidebar com cards de resumo, barras de funil com drop-off colorido e tabelas de origens/perfis
-- **Supabase**: tabela `page_events` com RLS — INSERT anon (landing pages) + SELECT service_role (admin)
+#### Novas funcionalidades
+- **Sequência "Aquecimento Importados"** (3 itens): WPP Ira (vídeo 1) → Email HTML opt-in → WPP Daniely +30min (vídeo 2 + pergunta SIM/NÃO)
+- **Sequência "Masterclass 2026"** (20 itens): Completa da boas-vindas ao fechamento 11/06, com nomes Daniely + Ira em todos os WPPs, vídeos de ambas no primeiro WPP
+- **Template `ira_optin_importados`**: E-mail HTML com vídeo da Ira, botão VIP e instrução para responder SIM/NÃO no WhatsApp
+- **Fluxo SIM automático**: lead importado responde SIM → `wpp_receive.php` detecta → enrola automaticamente na Masterclass 2026 via `wpp_enqueue_followup_sequence()`
+- **Variável `{{link_video_ira}}`**: disponível em todos os templates e sequências WPP; valor configurável em `site_config.link_video_ira`
+- **site_config**: `link_video_ira` e `optin_followup_sequence_id` configurados
+
+#### Correções críticas
+- **HTTP 500 nas importações** (`import_with_sequence`): reescrito com operações em lote; `set_time_limit(300)`; de ~30min para ~20seg para 5.420 leads
+- **`list_imported_leads`**: removidas colunas inexistentes `optin_wpp`, `optin_email`, `notes` da query Supabase; substituídas por `optin_status`, `email_optout`
+- **`toggle_imported_optin`**: removidos `optin_wpp`/`optin_email` do allowlist de campos válidos
+
+#### Arquivos modificados
+- **`wpp_receive.php`**: handler SIM atualizado; 3 novas funções: `wpp_enqueue_followup_sequence()`, `wpp_seq_schedule()`, `wpp_sub_vars()`
+- **`email_worker.php`**: pré-carrega `link_video_ira` de `site_config`; variável disponível em todos os templates
+- **`admin/admin_proxy.php`**: `import_with_sequence` reescrito (batch); `seq_sub_vars_proxy()` e `import_with_sequence()` suportam `{{link_video_ira}}`; `list_imported_leads` e `toggle_imported_optin` corrigidos
+
+---
+
+### v25 — Janela de envio, status de entrega WPP e geolocalização
+- **`email_worker.php`**: janela 08h–21h BRT; primeiro envio sempre imediato
+- **`wpp_status.php`** (novo): endpoint dedicado para callback Z-API
+- **`wpp_receive.php`**: detecção inline de callbacks de status
+- **`track.php`**: geolocalização por IP via ip-api.com (APCu 24h)
+- **`admin_proxy.php`**: `funnel_stats()` retorna top 15 cidades e top 10 estados
+- **`admin/index.html`**: tabelas "Top Cidades" e "Top Estados"
+
+### v24 — Funil de Conversão Nativo
+- **`track.php`** (novo): endpoint com rate limit, 10 eventos, grava em `page_events`
+- **`index.html`** + **`ig.html`**: helper `track()` com `session_id`
+- **`admin_proxy.php`**: ação `funnel_stats`
+- **`admin/index.html`**: página "📉 Funil de Conversão"
+- **Supabase**: tabela `page_events` com RLS
 
 ### v23 — Admin responsivo mobile
-- Sidebar em drawer com overlay para telas ≤768px
-- Topbar mobile com hamburguer e botão fechar
-- `toggleSidebar()` e `closeSidebar()` — drawer fecha ao navegar
-- Grid `.g2` colapsa de 2 para 1 coluna em mobile
+- Sidebar drawer com overlay para ≤768px
+- Topbar mobile com hamburguer
 
 ### v22 — Dashboard redesenhado + CLAUDE.md
-- Dashboard com 8 stats de filas, accordions de itens falhos, tabelas de últimos envios e leads recentes
-- `dashQueueAction(op)`: manutenção de filas (reset stuck, retry failed, cancel pending) por canal
-- `CLAUDE.md`: documentação completa do projeto (criado do zero)
-
-### v20 — Descadastro automático e manual
-- **`descadastro.php`** (novo): landing page para o link de descadastro dos e-mails
-- **`wpp_receive.php`**: opt-out expandido de 3 para +20 palavras-chave
-- **`admin_proxy.php`**: ações `lead_unsubscribe_email` e `lead_unsubscribe_wpp`
-- **`admin/index.html`**: botões 🚫 Cancelar fila no perfil do lead
+- Dashboard com 8 stats, accordions, tabelas de envios recentes
+- `CLAUDE.md` criado do zero
 
 ### v21 — Excluir filas completas por lead
-- **`admin_proxy.php`**: ação `lead_purge_queues` (DELETE físico, canal email/wpp/both)
-- **`admin/index.html`**: botões 🗑 Excluir histórico (e-mail / WPP / tudo)
+- `lead_purge_queues` (DELETE físico email/wpp/both)
 
-### v19 — Correção botões ig.html (type=button)
-- Todos os 7 botões de quiz abaixo da Hero com `type="button"` explícito
-- Evita comportamento de submit padrão do browser
+### v20 — Descadastro automático e manual
+- **`descadastro.php`** (novo)
+- Opt-out WPP expandido para +20 palavras-chave
+- Botões 🚫 Cancelar fila no perfil do lead
 
-### v18 — Fluxo ig.html: botões abaixo da Hero → Quiz
-- Topbar "ENTRAR NO GRUPO VIP" mantida → `scrollToIgForm()`
-- 7 botões abaixo da Hero alterados: `scrollToIgForm()` → `goToQuiz()`
-- Textos dos botões atualizados para refletir o quiz
-
-### v17 — Funil de Vendas (admin)
-- Nova página "Funil de Vendas" no sidebar (grupo Visão Geral)
-- 6 cards por estágio com contagem, barra de progresso e % do total
-- Accordion por estágio com tabela de leads
-- Botões de mover estágio (avançar/recuar) com atualização instantânea
+### v17 — Funil de Vendas
+- Página "Funil de Vendas" com 6 cards por estágio
 
 ### v16 e anteriores
-- Setup inicial das landing pages (index.html, ig.html)
-- Sistema de quiz sabotadores com 4 perfis (A/B/C/D)
-- Painel admin completo (leads, templates, sequências, importação)
+- Setup inicial das landing pages
+- Sistema de quiz (4 perfis A/B/C/D)
+- Painel admin completo
 - Integração Supabase + Resend.com + Z-API
 - Filas de e-mail e WhatsApp com worker cron
-- Webhook wpp_receive.php para respostas interativas
