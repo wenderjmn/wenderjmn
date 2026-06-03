@@ -2015,17 +2015,22 @@ function leads_list() {
 
 function funnel_stats() {
     $hours_param = max(0, (int)($_POST['hours'] ?? 0));
-    $days_param  = max(1, min(365, (int)($_POST['days']  ?? 30)));
+    $days_param  = (int)($_POST['days']  ?? 30); // 0 = todo o período (sem filtro de data)
     $page_filter = in_array($_POST['page_filter'] ?? '', ['index','ig','programa'], true) ? $_POST['page_filter'] : null;
+
+    $params = 'select=event,page,session_id,source,sabotador,city,region,country'
+            . '&limit=200000&order=created_at.desc';
 
     if ($hours_param > 0) {
         $since = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$hours_param} hours"));
-    } else {
+        $params .= '&created_at=gte.' . urlencode($since);
+    } elseif ($days_param > 0) {
+        $days_param = max(1, min(730, $days_param));
         $since = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$days_param} days"));
+        $params .= '&created_at=gte.' . urlencode($since);
     }
-    $params = 'select=event,page,session_id,source,sabotador,city,region,country'
-            . '&created_at=gte.' . urlencode($since)
-            . '&limit=200000&order=created_at.asc';
+    // days=0: sem filtro de data — retorna todos os eventos (mais recentes primeiro)
+
     if ($page_filter) {
         $params .= '&page=eq.' . urlencode($page_filter);
     } else {
