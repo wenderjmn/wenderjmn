@@ -732,8 +732,23 @@ async function sb(table,params){
   return r.json();
 }
 
+/* ── TRACKING ── */
+const SESSION_KEY='ems_sid_programa';
+function getSid(){let s=sessionStorage.getItem(SESSION_KEY);if(!s){s=Math.random().toString(36).slice(2)+Date.now().toString(36);sessionStorage.setItem(SESSION_KEY,s);}return s;}
+function track(event,extra={}){
+  const p=new URLSearchParams(window.location.search);
+  fetch('/track.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    session_id:getSid(),event,page:'programa',
+    source:p.get('utm_source')||'',
+    source_campaign:p.get('utm_campaign')||'',
+    referrer:document.referrer.slice(0,200),
+    ...extra
+  })}).catch(()=>{});
+}
+
 /* ── INIT ── */
 async function init(){
+  track('page_view');
   try{
     const[cfgRows,mentorRows]=await Promise.all([
       sb('site_config','select=key,value').catch(()=>[]),

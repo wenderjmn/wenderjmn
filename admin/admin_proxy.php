@@ -2016,7 +2016,7 @@ function leads_list() {
 function funnel_stats() {
     $hours_param = max(0, (int)($_POST['hours'] ?? 0));
     $days_param  = max(1, min(365, (int)($_POST['days']  ?? 30)));
-    $page_filter = in_array($_POST['page_filter'] ?? '', ['index','ig'], true) ? $_POST['page_filter'] : null;
+    $page_filter = in_array($_POST['page_filter'] ?? '', ['index','ig','programa'], true) ? $_POST['page_filter'] : null;
 
     if ($hours_param > 0) {
         $since = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$hours_param} hours"));
@@ -2026,7 +2026,12 @@ function funnel_stats() {
     $params = 'select=event,page,session_id,source,sabotador,city,region,country'
             . '&created_at=gte.' . urlencode($since)
             . '&limit=200000&order=created_at.asc';
-    if ($page_filter) $params .= '&page=eq.' . urlencode($page_filter);
+    if ($page_filter) {
+        $params .= '&page=eq.' . urlencode($page_filter);
+    } else {
+        // Restringe às landing pages reais — exclui tráfego de outras fontes
+        $params .= '&page=in.(index,ig,programa)';
+    }
 
     $ch = curl_init(SUPABASE_URL . '/rest/v1/page_events?' . $params);
     curl_setopt_array($ch, [

@@ -78,7 +78,7 @@ $geo = ($event === 'page_view') ? geo_lookup($ip) : ['city'=>null,'region'=>null
 $row = [
     'session_id'      => substr(preg_replace('/[^a-zA-Z0-9_-]/', '', $data['session_id']), 0, 64),
     'event'           => $event,
-    'page'            => in_array($data['page'] ?? '', ['index','ig'], true) ? $data['page'] : 'index',
+    'page'            => in_array($data['page'] ?? '', ['index','ig','programa'], true) ? $data['page'] : 'index',
     'step'            => isset($data['step']) ? (int)$data['step'] : null,
     'sabotador'       => isset($data['sabotador']) ? substr(strip_tags($data['sabotador']), 0, 10) : null,
     'source'          => isset($data['source']) ? substr(strip_tags($data['source']), 0, 60) : null,
