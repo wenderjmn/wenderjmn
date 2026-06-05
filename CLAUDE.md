@@ -25,6 +25,7 @@ Plataforma de marketing e automação de comunicação para o **Programa EmagreS
 /
 ├── index.html              # LP principal (tráfego pago / orgânico)
 ├── ig.html                 # LP específica para Instagram
+├── programa.html           # Página de vendas do Programa (funil — noindex)
 ├── track.php               # Endpoint público de rastreamento de eventos de funil
 ├── descadastro.php         # Página de descadastro de e-mail (link nos rodapés)
 ├── email_trigger.php       # Enfileira sequência ao novo lead orgânico
@@ -531,6 +532,46 @@ Sidebar em drawer para telas ≤768px:
 ---
 
 ## Histórico de Versões
+
+### v27 — página programa.html + WPPs diários + correção funil de conversão
+
+#### Novas funcionalidades
+
+- **`programa.html`** (novo): página de vendas do Programa EmagreSer, acessível em `/programa`
+  - Design idêntico ao `index.html`: fontes Playfair Display + DM Sans, paleta `--teal:#0d9488`, `--bg:#fafaf8`
+  - Mesmos componentes: announcement bar com countdown para 11/06 20h, topbar sticky, footer dark navy, floating CTA mobile, `.fade-up` IntersectionObserver
+  - Carrega `site_config` (hotmart_link, whatsapp_link) e mentoras do Supabase dinamicamente
+  - Seções: Hero com price card → Para quem é → Como funciona → O que inclui → 4 perfis sabotadores → Mentoras → Cronograma 12 semanas → Investimento → 2 Bônus → FAQ (8 itens) → CTA final
+  - `noindex` meta (página de funil — não indexada)
+  - Grava `page_view` via `track.php` com `page='programa'`
+
+- **3 novos WPPs diários em `email_trigger.php`** (sequência orgânica expandida de 13 para 16 mensagens):
+  | # | Timing | Conteúdo |
+  |---|--------|----------|
+  | WPP 3 | D+2 +48h | Ira Soraya se apresenta + @irasorayanutri + irasorayanutri.com.br |
+  | WPP 5 | D+4 +96h | Daniely Albuquerque se apresenta + @psidanielyalbuquerque + danielydealbuquerque.com.br |
+  | WPP 6 | D+5 +120h | Link para programa.html com resumo do que encontrar lá |
+
+#### Correções do Funil de Conversão
+
+- **`track.php`**: adiciona `'programa'` na allowlist de pages aceitas (era só `index` e `ig`)
+- **`admin_proxy.php` `funnel_stats()`**:
+  - Quando "Todas": filtra `page IN (index, ig, programa)` — exclui tráfego de outras fontes/bots com page inválida
+  - Muda `order=created_at.asc` para `order=created_at.desc` — prioriza eventos mais recentes dentro do limite de 200k rows
+  - `days=0` = "Todo o período": não aplica filtro `created_at` (verdadeiro all-time)
+  - Causa do paradoxo "3 dias > total": `limit=200000` + `order=ASC` retornava os 200k eventos mais antigos, excluindo tráfego recente do query longo
+- **`admin/index.html`**:
+  - Dropdown "Página" adiciona opção `programa.html`
+  - "Todo o período" muda de `value=365` para `value=0`
+
+#### Arquivos modificados
+- **`programa.html`** (novo): 854 linhas, design alinhado com index.html
+- **`email_trigger.php`**: sequência WPP orgânica expandida para 16 mensagens
+- **`track.php`**: `'programa'` na allowlist de pages
+- **`admin/admin_proxy.php`**: `funnel_stats()` reescrita com order DESC, days=0 all-time, filtro IN pages
+- **`admin/index.html`**: opção programa no dropdown + valor 0 para all-time
+
+---
 
 ### v26 — Fluxo opt-in importados + correção HTTP 500 + vídeos Ira/Daniely
 
