@@ -1255,6 +1255,10 @@ document.getElementById('ig-hero-form').addEventListener('submit',async function
       igLeadId=rows[0]?.id||null;
       leadData={name,email,phone};
 
+      if(igLeadId){
+        fetch('email_trigger.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lead_id:igLeadId,event:'new_lead'})}).catch(()=>{});
+      }
+
       document.getElementById('ig-hero-form').classList.add('hidden');
       const succEl=document.getElementById('ig-sucesso');
       const wppLink=k('whatsapp_link')||'#';

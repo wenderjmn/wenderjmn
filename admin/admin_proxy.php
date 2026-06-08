@@ -1500,7 +1500,8 @@ function painel_test_wpp() {
 }
 
 function painel_activate_leads() {
-    $unqueued = sb_get('leads?sequence_queued_at=is.null&select=id,name,email&limit=200');
+    // Exclui leads importados — eles têm fluxo próprio (opt-in WhatsApp + sequência "Aquecimento Importados")
+    $unqueued = sb_get('leads?sequence_queued_at=is.null&source=neq.import&select=id,name,email&limit=200');
     $count = 0;
     foreach ($unqueued as $lead) {
         if (empty($lead['email'])) continue;
@@ -2021,6 +2022,7 @@ function funnel_stats() {
     $params = 'select=event,page,session_id,source,sabotador,city,region,country'
             . '&limit=200000&order=created_at.desc';
 
+    $since = null;
     if ($hours_param > 0) {
         $since = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$hours_param} hours"));
         $params .= '&created_at=gte.' . urlencode($since);
@@ -2029,7 +2031,7 @@ function funnel_stats() {
         $since = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$days_param} days"));
         $params .= '&created_at=gte.' . urlencode($since);
     }
-    // days=0: sem filtro de data — retorna todos os eventos (mais recentes primeiro)
+    // days=0 e hours=0: sem filtro de data — retorna todos os eventos (mais recentes primeiro)
 
     if ($page_filter) {
         $params .= '&page=eq.' . urlencode($page_filter);
@@ -2097,7 +2099,8 @@ function funnel_stats() {
         'regions'    => array_slice($regions,  0, 10, true),
         'total_rows' => count($rows),
         'since'      => $since,
-        'days'       => $days,
+        'days'       => $days_param,
+        'hours'      => $hours_param,
     ]);
 }
 
