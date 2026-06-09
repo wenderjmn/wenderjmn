@@ -691,7 +691,7 @@ function applyConfig(){
   vipWppLink=wLink;
   document.querySelectorAll('a[href*="chat.whatsapp.com"]').forEach(el=>{el.href=wLink;});
   if(k('prog_ann_text')){const el=document.querySelector('#anuncio-bar .ann-inner span');if(el)el.innerHTML=k('prog_ann_text');}
-  if(k('prog_turma_mes')||k('prog_turma_ano')){const el=document.querySelector('.price-main');if(el){const mes=k('prog_turma_mes')||'Setembro';const ano=k('prog_turma_ano')||'2026';el.innerHTML=`${mes.charAt(0).toUpperCase()+mes.slice(1)}<br><span style="font-size:1.2rem;font-family:var(--fb);font-weight:500;color:var(--text2)">${ano}</span>`;}}
+  if(k('prog_turma_data')){const el=document.querySelector('.price-main');if(el){const raw=k('prog_turma_data').trim();const parts=raw.split('|');if(parts.length>=2){el.innerHTML=`${parts[0].trim()}<br><span style="font-size:1.2rem;font-family:var(--fb);font-weight:500;color:var(--text2)">${parts[1].trim()}</span>`;}else{el.innerHTML=raw;}}}
   if(k('prog_hero_titulo')){const el=document.querySelector('.hero h1');if(el)el.innerHTML=k('prog_hero_titulo');}
   if(k('prog_hero_sub')){const el=document.querySelector('.hero-sub');if(el)el.textContent=k('prog_hero_sub');}
   loadInstagramReels();
