@@ -347,7 +347,11 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
         <div class="price-card">
           <p class="price-from" style="text-decoration:none;font-size:.78rem;font-weight:700;color:var(--teal);letter-spacing:.12em;text-transform:uppercase">Próxima turma</p>
           <div class="price-main" style="font-size:2.5rem;line-height:1.1">Setembro<br><span style="font-size:1.2rem;font-family:var(--fb);font-weight:500;color:var(--text2)">2026</span></div>
-          <p class="price-install" style="margin-top:10px">Datas e condições especiais divulgadas com antecedência exclusivamente para o Grupo VIP.</p>
+          <p class="price-install" id="price-install-txt" style="margin-top:10px">Datas e condições especiais divulgadas com antecedência exclusivamente para o Grupo VIP.</p>
+          <div id="prog-preco-block" style="display:none;margin:12px 0 0;text-align:center">
+            <div style="font-family:var(--fd);font-size:2.2rem;font-weight:700;color:var(--text)" id="prog-preco-val"></div>
+            <div style="font-size:.82rem;color:var(--text2);margin-top:3px" id="prog-preco-inst"></div>
+          </div>
           <ul class="price-perks">
             <li>12 encontros ao vivo no Google Meet</li>
             <li>Grupo pequeno e exclusivo</li>
@@ -636,13 +640,13 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
     <div class="bonus-grid">
       <div class="bonus-card">
         <div class="bonus-label">Bônus 1 — Primeiras inscritas</div>
-        <h3>Consulta individual de 1h com Daniely e Ira</h3>
-        <p>Um encontro exclusivo com as duas mentoras para as primeiras mulheres que garantirem vaga na turma. Bônus reservado para quem está no Grupo VIP e age rápido.</p>
+        <h3 data-prog="bonus1_titulo">Consulta individual de 1h com Daniely e Ira</h3>
+        <p data-prog="bonus1_desc">Um encontro exclusivo com as duas mentoras para as primeiras mulheres que garantirem vaga na turma. Bônus reservado para quem está no Grupo VIP e age rápido.</p>
       </div>
       <div class="bonus-card">
         <div class="bonus-label">Bônus 2</div>
-        <h3>Sorteio de 1 vaga gratuita na próxima turma</h3>
-        <p>Entre todas as participantes que concluírem o programa, uma vaga completa para a próxima edição do EmagreSer será sorteada ao final das 12 semanas.</p>
+        <h3 data-prog="bonus2_titulo">Sorteio de 1 vaga gratuita na próxima turma</h3>
+        <p data-prog="bonus2_desc">Entre todas as participantes que concluírem o programa, uma vaga completa para a próxima edição do EmagreSer será sorteada ao final das 12 semanas.</p>
       </div>
     </div>
   </div>
@@ -656,7 +660,7 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
         <div class="section-label">DÚVIDAS</div>
         <h2>Perguntas frequentes</h2>
       </div>
-      <div class="faq-list">
+      <div class="faq-list" id="faq-list">
 
         <div class="faq-item">
           <button class="faq-q" onclick="toggleFaq(this)">
@@ -872,6 +876,24 @@ function applyConfig(){
   if(k('prog_turma_data')){const el=document.querySelector('.price-main');if(el){const raw=k('prog_turma_data').trim();const parts=raw.split('|');if(parts.length>=2){el.innerHTML=`${parts[0].trim()}<br><span style="font-size:1.2rem;font-family:var(--fb);font-weight:500;color:var(--text2)">${parts[1].trim()}</span>`;}else{el.innerHTML=raw;}}}
   if(k('prog_hero_titulo')){const el=document.querySelector('.hero h1');if(el)el.innerHTML=k('prog_hero_titulo');}
   if(k('prog_hero_sub')){const el=document.querySelector('.hero-sub');if(el)el.textContent=k('prog_hero_sub');}
+  if(k('prog_preco')){
+    const b=document.getElementById('prog-preco-block');
+    if(b){
+      document.getElementById('prog-preco-val').textContent=k('prog_preco');
+      document.getElementById('prog-preco-inst').textContent=k('prog_preco_parcelado')||'';
+      b.style.display='';
+      const instTxt=document.getElementById('price-install-txt');
+      if(instTxt)instTxt.style.display='none';
+    }
+  }
+  if(k('prog_cta_aberto')==='0'){
+    document.querySelectorAll('#price-cta,#hero-cta,#topbar-cta').forEach(el=>{if(el){el.href='#faq';el.textContent='Avise-me quando abrir →';}});
+  }
+  ['bonus1_titulo','bonus1_desc','bonus2_titulo','bonus2_desc'].forEach(key=>{
+    const val=k('prog_'+key);
+    if(val){const el=document.querySelector(`[data-prog="${key}"]`);if(el)el.textContent=val;}
+  });
+  if(k('prog_faq')){try{const items=JSON.parse(k('prog_faq'));if(Array.isArray(items)&&items.length){const el=document.getElementById('faq-list');if(el){el.innerHTML=items.map(item=>`<div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)"><span>${item.q||''}</span><span class="faq-arrow">+</span></button><div class="faq-a">${item.a||''}</div></div>`).join('');}}}catch(e){}}
   loadInstagramReels();
 }
 function openVipModal(){

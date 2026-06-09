@@ -142,6 +142,20 @@ Chaves relevantes:
 |-------|-------------|-----------|
 | `link_video_ira` | `https://youtube.com/shorts/sRicNLmjFGI?feature=share` | Vídeo da Ira para opt-in importados |
 | `optin_followup_sequence_id` | `6733dd19-9090-4cec-ad72-bfc4fd1ec30e` | ID da sequência enrolada após SIM |
+| `prog_ann_text` | — | Texto da barra de anúncio (HTML) |
+| `prog_turma_data` | — | Data da turma (suporta `\|` para split de linha) |
+| `prog_hero_titulo` | — | Título H1 da hero (HTML) |
+| `prog_hero_sub` | — | Subtítulo da hero |
+| `prog_mentor_video` | — | URL YouTube do vídeo das mentoras (seção Depoimentos) |
+| `prog_preco` | — | Preço exibido no price card (ex: "R$ 997") |
+| `prog_preco_parcelado` | — | Texto de parcelamento |
+| `prog_cta_aberto` | `1` | `1` = inscrições abertas · `0` = CTA "Avise-me" |
+| `prog_bonus1_titulo` | — | Título do Bônus 1 |
+| `prog_bonus1_desc` | — | Descrição do Bônus 1 |
+| `prog_bonus2_titulo` | — | Título do Bônus 2 |
+| `prog_bonus2_desc` | — | Descrição do Bônus 2 |
+| `prog_faq` | — | FAQ como JSON array `[{"q":"...","a":"..."}]` |
+| `print_depo_1`…`print_depo_6` | — | URLs das imagens de prints de depoimentos |
 
 #### `page_events`
 Eventos de funil gravados pelas landing pages via `track.php`.
@@ -532,6 +546,52 @@ Sidebar em drawer para telas ≤768px:
 ---
 
 ## Histórico de Versões
+
+### v28 — index.html = página do programa + depoimentos + automação admin expandida
+
+#### index.html agora é a página do programa
+- `index.html` substituído: era LP de captação de leads (quiz), agora é a página de vendas do Programa EmagreSer (idêntica à `programa.html`)
+- A antiga LP de captação (quiz + formulário) está preservada em `ig.html` e voltará como home em setembro/2026
+- Botão "DESCOBRIR MEU PERFIL" na seção de perfis sabotadores aponta para `/ig.html` + rastreia `quiz_opened`
+
+#### Seção de Depoimentos (ambas as páginas)
+Adicionada em `index.html` e `programa.html` entre `#instagram` e `#cronograma`:
+- **Vídeo das mentoras**: URL configurável via `site_config.prog_mentor_video` (YouTube embed)
+- **Vídeos de depoimentos**: carregados de `testimonials` (active=true, `video_url` preenchido)
+- **Prints de depoimentos**: carregados de `site_config.print_depo_1` a `print_depo_6`
+- Seções ocultas até haver conteúdo configurado (`.hidden` → removido pelo JS)
+- Helper `ytEmbed(url)` converte URLs YouTube/Shorts para embed
+
+#### Automação Admin — novos campos em `CONFIG_KEYS_PAGES`
+| Chave | Uso |
+|-------|-----|
+| `prog_mentor_video` | URL YouTube do vídeo das mentoras (seção depoimentos) |
+| `prog_preco` | Preço da turma exibido no price card (ex: "R$ 997") |
+| `prog_preco_parcelado` | Texto de parcelamento (ex: "ou 12x de R$ 97,00") |
+| `prog_cta_aberto` | `1` = inscrições abertas · `0` = CTA vira "Avise-me quando abrir" |
+| `prog_bonus1_titulo` | Título do Bônus 1 |
+| `prog_bonus1_desc` | Descrição do Bônus 1 |
+| `prog_bonus2_titulo` | Título do Bônus 2 |
+| `prog_bonus2_desc` | Descrição do Bônus 2 |
+| `prog_faq` | JSON de FAQ: `[{"q":"Pergunta?","a":"Resposta."}]` — substitui FAQ hardcoded |
+
+- Bônus têm `data-prog` attributes nos elementos H3/P para substituição via JS
+- `#faq-list` tem `id` nas duas páginas para substituição dinâmica pelo JSON
+- Price block tem `id="prog-preco-block"` (oculto por padrão), `id="prog-preco-val"` e `id="prog-preco-inst"`
+- Quando preço é configurado, o texto estático "Datas e condições especiais..." é ocultado automaticamente
+
+#### Correções de conteúdo em programa.html
+- Item "Plano alimentar" → "Estratégia alimentar adaptável ao seu perfil" (ferramentas, não cardápio genérico)
+- Perfis sabotadores com blur + overlay quiz CTA (botão "DESCOBRIR MEU PERFIL →" para `/ig.html`)
+- Bônus 1 label → "Primeiras inscritas" com descrição de exclusividade
+- Price card bullet corrigido em ambas as páginas
+
+#### Arquivos modificados
+- **`index.html`**: depoimentos CSS/HTML/JS, applyConfig() estendido, data-prog attributes, price block, quiz button tracking
+- **`programa.html`**: mesmas correções de index.html + todas as correções de conteúdo listadas
+- **`admin/index.html`**: 8 novos campos em CONFIG_KEYS_PAGES com hint para FAQ JSON
+
+---
 
 ### v27 — página programa.html + WPPs diários + correção funil de conversão
 

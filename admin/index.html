@@ -1361,10 +1361,18 @@ const CONFIG_KEYS = [
 
 const CONFIG_KEYS_PAGES = [
   { label: 'Barra de anúncio — texto (HTML permitido)', key: 'prog_ann_text', type: 'textarea' },
-  { label: 'Data da próxima turma (ex: outubro/2026 · 24 de outubro · 24/10/2026)', key: 'prog_turma_data' },
+  { label: 'Data da próxima turma (ex: outubro/2026 · outubro | 2026 · 24/10/2026)', key: 'prog_turma_data' },
   { label: 'Hero — Título principal (HTML permitido)', key: 'prog_hero_titulo', type: 'textarea' },
   { label: 'Hero — Subtítulo', key: 'prog_hero_sub', type: 'textarea' },
-  { label: 'Vídeo das mentoras — URL do YouTube (seção Depoimentos)', key: 'prog_mentor_video' },
+  { label: 'Vídeo das mentoras — URL YouTube (seção Depoimentos)', key: 'prog_mentor_video' },
+  { label: 'Preço da turma (ex: R$ 997) — deixe vazio para não exibir', key: 'prog_preco' },
+  { label: 'Parcelamento (ex: ou 12x de R$ 97,00)', key: 'prog_preco_parcelado' },
+  { label: 'Inscrições abertas? (1 = sim, 0 = não — altera CTA para "Avise-me")', key: 'prog_cta_aberto' },
+  { label: 'Bônus 1 — Título', key: 'prog_bonus1_titulo' },
+  { label: 'Bônus 1 — Descrição', key: 'prog_bonus1_desc', type: 'textarea' },
+  { label: 'Bônus 2 — Título', key: 'prog_bonus2_titulo' },
+  { label: 'Bônus 2 — Descrição', key: 'prog_bonus2_desc', type: 'textarea' },
+  { label: 'FAQ — JSON (deixe vazio para usar as perguntas padrão da página)', key: 'prog_faq', type: 'textarea', hint: '[{"q":"Pergunta?","a":"Resposta."},{"q":"...","a":"..."}]' },
 ];
 
 async function configPage() {
@@ -1390,7 +1398,7 @@ async function configPage() {
         <div class="field-group">
           <label>${c.label}</label>
           ${c.type==='textarea'
-            ? `<textarea id="cfg-${c.key}" rows="3" style="resize:vertical;width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:.85rem">${escHtml(cfgMap[c.key]||'')}</textarea>`
+            ? `<textarea id="cfg-${c.key}" rows="3" style="resize:vertical;width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:.85rem">${escHtml(cfgMap[c.key]||'')}</textarea>${c.hint?`<p style="font-size:.72rem;color:var(--text3);margin-top:3px">Formato: <code style="background:#f3f4f6;padding:1px 5px;border-radius:3px">${escHtml(c.hint)}</code></p>`:''}`
             : `<input id="cfg-${c.key}" value="${escHtml(cfgMap[c.key]||'')}">`}
         </div>`).join('')}
       <button class="btn-save" onclick="savePageConfig()">Salvar Textos das Páginas</button>
