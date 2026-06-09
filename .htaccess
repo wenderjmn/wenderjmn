@@ -1,0 +1,33 @@
+# ── Variáveis de ambiente — NÃO enviar para o Git ──────────────────────
+SetEnv SUPABASE_SERVICE_KEY ***REMOVED_SUPABASE_KEY***
+SetEnv RESEND_API_KEY       ***REMOVED_RESEND_KEY***
+SetEnv ZAPI_INSTANCE        ***REMOVED_ZAPI_INSTANCE***
+SetEnv ZAPI_TOKEN           ***REMOVED_ZAPI_TOKEN***
+SetEnv ZAPI_CLIENT_TOKEN    ***REMOVED_ZAPI_CLIENT_TOKEN***
+SetEnv WORKER_SECRET        ***REMOVED_WORKER_SECRET***
+SetEnv IMPORT_PASS          ***REMOVED_IMPORT_PASS***
+
+# ── URLs limpas (sem .html / .php) ───────────────────────────────────
+RewriteEngine On
+
+# ── 1. Canonical: /foo.html → /foo (301) ────────────────────────────
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^.]+)\.html[\s?] [NC]
+RewriteRule ^ /%1 [R=301,L]
+
+# ── 2. Canonical: /painel.php → /painel (301) ───────────────────────
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /painel\.php[\s?] [NC]
+RewriteRule ^ /painel [R=301,L]
+
+# ── 3. Regras específicas (sem extensão → arquivo) ───────────────────
+# /admin → admin.html  (precisa de regra própria: existe pasta admin/ que
+#           confunde a regra geral baseada em !-d)
+RewriteRule ^admin$ admin.html [L]
+
+# /painel → painel.php
+RewriteRule ^painel$ painel.php [L]
+
+# ── 4. Regra geral: /slug → slug.html (se o arquivo existir) ─────────
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^([^.]+)$ $1.html [L]
