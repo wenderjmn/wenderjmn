@@ -142,7 +142,7 @@ section[id]{scroll-margin-top:68px}
 
 /* PERFIS */
 #perfis{background:var(--white);padding:80px 0}
-.perfis-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin:36px 0}
+.perfis-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
 @media(min-width:1024px){.perfis-grid{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:600px){.perfis-grid{grid-template-columns:1fr}}
 .perfil-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:26px 22px;position:relative;overflow:hidden;transition:all .2s}
@@ -152,6 +152,33 @@ section[id]{scroll-margin-top:68px}
 .perfil-tipo{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--teal);margin-bottom:4px}
 .perfil-sabotador{font-family:var(--fd);font-size:1.05rem;font-weight:700;margin-bottom:7px;color:var(--text)}
 .perfil-short{font-size:.83rem;color:var(--text2);line-height:1.55}
+/* Perfis quiz overlay */
+.perfis-wrap{position:relative;margin:36px 0 4px}
+.perfis-grid.blurred .perfil-card{filter:blur(5px);pointer-events:none;user-select:none}
+.perfis-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:28px;z-index:2;background:linear-gradient(to bottom,rgba(255,255,255,.05) 0%,rgba(255,255,255,.65) 28%,rgba(255,255,255,.97) 52%)}
+.perfis-ov-title{font-family:var(--fd);font-size:1.2rem;font-weight:700;color:var(--text);text-align:center;padding:0 16px;margin-bottom:8px}
+.perfis-ov-sub{font-size:.86rem;color:var(--text2);text-align:center;max-width:360px;line-height:1.55;padding:0 16px;margin-bottom:18px}
+/* Incluso items — layout centralizado */
+.incluso-item{flex-direction:column;align-items:center;text-align:center}
+.incluso-icon{margin-bottom:6px}
+
+/* DEPOIMENTOS */
+#depoimentos{background:var(--white);padding:80px 0}
+.mentor-video-wrap{max-width:720px;margin:36px auto 0;border-radius:var(--rl);overflow:hidden;box-shadow:var(--shadow-lg);position:relative;padding-bottom:56.25%;height:0}
+.mentor-video-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%}
+.depo-videos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;margin-top:16px}
+.depo-video-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--shadow)}
+.depo-video-thumb{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;background:var(--bg3)}
+.depo-video-thumb iframe{position:absolute;top:0;left:0;width:100%;height:100%}
+.depo-video-info{padding:14px 16px}
+.depo-video-name{font-weight:600;font-size:.9rem;color:var(--text)}
+.depo-video-result{font-size:.78rem;color:var(--teal);font-weight:600;margin-top:3px}
+.depo-video-quote{font-size:.8rem;color:var(--text2);margin-top:6px;line-height:1.5;font-style:italic}
+.depo-prints-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;max-width:780px;margin-left:auto;margin-right:auto}
+@media(max-width:600px){.depo-prints-grid{grid-template-columns:repeat(2,1fr)}}
+.depo-print-img{width:100%;border-radius:var(--r);box-shadow:var(--shadow-md);object-fit:cover;aspect-ratio:9/16;cursor:zoom-in;transition:transform .2s}
+.depo-print-img:hover{transform:scale(1.03)}
+.depo-sub-title{font-family:var(--fd);font-size:1.15rem;font-weight:700;color:var(--text);margin:44px 0 0;text-align:center}
 
 /* MENTORAS */
 #mentoras{background:var(--bg2);padding:80px 0}
@@ -326,7 +353,7 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
             <li>Grupo pequeno e exclusivo</li>
             <li>Suporte direto com Daniely e Ira via WhatsApp</li>
             <li>Caderno de Bordo digital com materiais semanais</li>
-            <li>Bônus: consulta individual de 1h com as duas mentoras</li>
+            <li>Bônus para as primeiras inscritas: consulta individual de 1h com as duas mentoras</li>
             <li>Condições especiais para quem está na lista VIP</li>
           </ul>
           <a id="price-cta" href="https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ" target="_blank" rel="noopener" class="btn btn-teal" style="width:100%;font-size:.95rem;padding:17px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;box-shadow:0 4px 14px rgba(13,148,136,.25)">ENTRAR NO GRUPO VIP →</a>
@@ -428,8 +455,8 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
       <div class="incluso-item">
         <div class="incluso-icon">🥗</div>
         <div class="incluso-body">
-          <div class="incluso-title">Plano alimentar personalizado para o seu perfil</div>
-          <div class="incluso-desc">Não é um cardápio genérico. É uma estratégia montada para o seu padrão, rotina e objetivos reais — pela Ira.</div>
+          <div class="incluso-title">Estratégia alimentar adaptável ao seu perfil</div>
+          <div class="incluso-desc">Não é um cardápio genérico. Você recebe ferramentas e estratégias para montar e adaptar sua alimentação à sua rotina real — com Daniely e Ira do seu lado em cada etapa.</div>
         </div>
       </div>
       <div class="incluso-item">
@@ -453,33 +480,39 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
     <div class="section-label">OS 4 PERFIS SABOTADORES</div>
     <h2>Qual mecanismo está te sabotando?</h2>
     <p style="color:var(--text2);margin-top:10px;max-width:560px;margin-left:auto;margin-right:auto;font-size:.97rem">Cada mulher tem um padrão diferente. O programa é construído em torno do seu perfil específico.</p>
-    <div class="perfis-grid">
-      <div class="perfil-card">
-        <span class="perfil-emoji">🍫</span>
-        <div class="perfil-tipo">Perfil A</div>
-        <div class="perfil-sabotador">A Recompensadora</div>
-        <div class="perfil-short">Você usa a comida como prêmio e alívio emocional. A lógica do "mereço" comanda suas escolhas.</div>
+    <div class="perfis-wrap">
+      <div class="perfis-grid blurred">
+        <div class="perfil-card">
+          <span class="perfil-emoji">🍫</span>
+          <div class="perfil-tipo">Perfil A</div>
+          <div class="perfil-sabotador">A Recompensadora</div>
+          <div class="perfil-short">Você usa a comida como prêmio e alívio emocional. A lógica do "mereço" comanda suas escolhas.</div>
+        </div>
+        <div class="perfil-card">
+          <span class="perfil-emoji">🤖</span>
+          <div class="perfil-tipo">Perfil B</div>
+          <div class="perfil-sabotador">A Piloto Automático</div>
+          <div class="perfil-short">Você come sem perceber — o cérebro assumiu o controle e as escolhas acontecem no piloto automático.</div>
+        </div>
+        <div class="perfil-card">
+          <span class="perfil-emoji">⚡</span>
+          <div class="perfil-tipo">Perfil C</div>
+          <div class="perfil-sabotador">A Prisioneira do Esforço</div>
+          <div class="perfil-short">Você esgota seu autocontrole ao longo do dia e desiste por exaustão mental — não por falta de vontade.</div>
+        </div>
+        <div class="perfil-card">
+          <span class="perfil-emoji">🌙</span>
+          <div class="perfil-tipo">Perfil D</div>
+          <div class="perfil-sabotador">A Compensadora Noturna</div>
+          <div class="perfil-short">Você restringe rigorosamente durante o dia e perde o controle à noite — o ciclo se repete.</div>
+        </div>
       </div>
-      <div class="perfil-card">
-        <span class="perfil-emoji">🤖</span>
-        <div class="perfil-tipo">Perfil B</div>
-        <div class="perfil-sabotador">A Piloto Automático</div>
-        <div class="perfil-short">Você come sem perceber — o cérebro assumiu o controle e as escolhas acontecem no piloto automático.</div>
-      </div>
-      <div class="perfil-card">
-        <span class="perfil-emoji">⚡</span>
-        <div class="perfil-tipo">Perfil C</div>
-        <div class="perfil-sabotador">A Prisioneira do Esforço</div>
-        <div class="perfil-short">Você esgota seu autocontrole ao longo do dia e desiste por exaustão mental — não por falta de vontade.</div>
-      </div>
-      <div class="perfil-card">
-        <span class="perfil-emoji">🌙</span>
-        <div class="perfil-tipo">Perfil D</div>
-        <div class="perfil-sabotador">A Compensadora Noturna</div>
-        <div class="perfil-short">Você restringe rigorosamente durante o dia e perde o controle à noite — o ciclo se repete.</div>
+      <div class="perfis-overlay">
+        <p class="perfis-ov-title">Qual é o seu perfil sabotador?</p>
+        <p class="perfis-ov-sub">Faça o mapeamento gratuito e descubra o padrão que está comandando suas escolhas alimentares.</p>
+        <a href="/ig.html" class="btn btn-teal" style="font-size:1rem;padding:18px 40px;min-height:56px;letter-spacing:.05em;text-transform:uppercase">DESCOBRIR MEU PERFIL →</a>
       </div>
     </div>
-    <p style="color:var(--text3);font-size:.85rem;margin-top:8px">Ainda não fez o mapeamento? <a href="/" style="color:var(--teal);font-weight:600">Descubra seu perfil gratuitamente →</a></p>
   </div>
 </section>
 
@@ -545,6 +578,32 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
   </div>
 </section>
 
+<!-- DEPOIMENTOS -->
+<section id="depoimentos" class="fade-up">
+  <div class="container text-center">
+    <div class="section-label">DEPOIMENTOS</div>
+    <h2>Resultados reais de mulheres reais</h2>
+    <p style="color:var(--text2);margin-top:10px;max-width:560px;margin-left:auto;margin-right:auto;font-size:.95rem">Veja o que acontece quando você finalmente entende o que estava te sabotando.</p>
+
+    <div id="mentor-video-wrap" class="hidden">
+      <p class="depo-sub-title">Daniely e Ira falam sobre o programa</p>
+      <div class="mentor-video-wrap">
+        <iframe id="mentor-video-iframe" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+      </div>
+    </div>
+
+    <div id="depo-videos-section" class="hidden">
+      <p class="depo-sub-title">O que dizem as participantes</p>
+      <div id="depo-videos-grid" class="depo-videos-grid"></div>
+    </div>
+
+    <div id="depo-prints-section" class="hidden">
+      <p class="depo-sub-title">Mensagens e resultados</p>
+      <div id="depo-prints-grid" class="depo-prints-grid"></div>
+    </div>
+  </div>
+</section>
+
 <!-- CRONOGRAMA -->
 <section id="cronograma" class="fade-up">
   <div class="container text-center">
@@ -576,9 +635,9 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
     <p style="color:var(--text2);margin-top:10px;margin-bottom:0;max-width:520px;margin-left:auto;margin-right:auto;font-size:.95rem">Incluídos para todas as participantes do Programa EmagreSer.</p>
     <div class="bonus-grid">
       <div class="bonus-card">
-        <div class="bonus-label">Bônus 1</div>
+        <div class="bonus-label">Bônus 1 — Primeiras inscritas</div>
         <h3>Consulta individual de 1h com Daniely e Ira</h3>
-        <p>Um encontro privado com as duas mentoras juntas para traçar um plano personalizado baseado no seu perfil sabotador, rotina e objetivos específicos.</p>
+        <p>Um encontro exclusivo com as duas mentoras para as primeiras mulheres que garantirem vaga na turma. Bônus reservado para quem está no Grupo VIP e age rápido.</p>
       </div>
       <div class="bonus-card">
         <div class="bonus-label">Bônus 2</div>
@@ -797,6 +856,7 @@ async function init(){
     cfgRows.forEach(r=>{cfg[r.key]=r.value;});
     applyConfig();
     if(mentorRows.length) buildMentors(mentorRows);
+    loadDepoimentos();
   }catch(e){console.error('init',e);}
   initAnims();
   initFloating();
@@ -859,6 +919,47 @@ function loadInstagramReels(){
   if(!grid)return;
   grid.innerHTML=posts.map(url=>`<blockquote class="instagram-media" data-instgrm-permalink="${url}" data-instgrm-version="14" style="min-width:280px;max-width:320px;margin:0 auto;border-radius:12px"></blockquote>`).join('');
   const s=document.createElement('script');s.src='https://www.instagram.com/embed.js';s.async=true;document.body.appendChild(s);
+}
+
+/* ── DEPOIMENTOS ── */
+function ytEmbed(url){
+  if(!url)return'';
+  const m=url.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]{11})/);
+  return m?`https://www.youtube.com/embed/${m[1]}`:'';
+}
+
+async function loadDepoimentos(){
+  const mvUrl=k('prog_mentor_video');
+  if(mvUrl){
+    const embed=ytEmbed(mvUrl);
+    if(embed){
+      const ifrm=document.getElementById('mentor-video-iframe');
+      if(ifrm){ifrm.src=embed;document.getElementById('mentor-video-wrap').classList.remove('hidden');}
+    }
+  }
+  const prints=[1,2,3,4,5,6].map(n=>k(`print_depo_${n}`)).filter(Boolean);
+  if(prints.length){
+    const grid=document.getElementById('depo-prints-grid');
+    if(grid){
+      grid.innerHTML=prints.map(url=>`<img src="${url}" alt="Depoimento" class="depo-print-img" loading="lazy" onerror="this.closest('.depo-print-img') && this.closest('.depo-print-img').remove()">`).join('');
+      document.getElementById('depo-prints-section').classList.remove('hidden');
+    }
+  }
+  try{
+    const rows=await sb('testimonials','active=eq.true&select=id,name,result,quote,video_url,order_index&order=order_index').catch(()=>[]);
+    const withVideo=(rows||[]).filter(r=>r.video_url);
+    if(withVideo.length){
+      const grid=document.getElementById('depo-videos-grid');
+      if(grid){
+        grid.innerHTML=withVideo.map(d=>{
+          const embed=ytEmbed(d.video_url);
+          const videoEl=embed?`<div class="depo-video-thumb"><iframe src="${embed}" frameborder="0" allow="autoplay;encrypted-media" allowfullscreen loading="lazy"></iframe></div>`:'';
+          return`<div class="depo-video-card">${videoEl}<div class="depo-video-info"><div class="depo-video-name">${d.name||''}</div>${d.result?`<div class="depo-video-result">${d.result}</div>`:''} ${d.quote?`<div class="depo-video-quote">&ldquo;${d.quote}&rdquo;</div>`:''}</div></div>`;
+        }).join('');
+        document.getElementById('depo-videos-section').classList.remove('hidden');
+      }
+    }
+  }catch(e){}
 }
 
 /* ── MENTORAS (from Supabase) ── */
