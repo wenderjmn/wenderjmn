@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Programa EmagreSer — 12 Semanas ao Vivo com Daniely e Ira</title>
-<meta name="description" content="Conheça o Programa EmagreSer: 12 semanas online ao vivo com psicóloga e nutricionista, grupo de até 12 mulheres. Metodologia científica para fim do efeito sanfona.">
+<meta name="description" content="Conheça o Programa EmagreSer: 12 semanas online ao vivo com psicóloga e nutricionista. Metodologia científica para acabar com o efeito sanfona.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.oficialemagreser.com">
 <meta property="og:title" content="Programa EmagreSer — 12 Semanas ao Vivo">
@@ -196,6 +196,26 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+/* MODAL VIP */
+#vip-modal{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .25s}
+#vip-modal.active{opacity:1;pointer-events:auto}
+.vip-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}
+.vip-box{position:relative;background:#fff;border-radius:var(--rl);padding:32px 28px;width:100%;max-width:440px;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto;z-index:1}
+.vip-box h3{font-family:var(--fd);font-size:1.3rem;margin-bottom:6px}
+.vip-sub{font-size:.87rem;color:var(--text2);margin-bottom:20px;line-height:1.55}
+.vip-close{position:absolute;top:12px;right:14px;font-size:1.4rem;color:var(--text3);cursor:pointer;background:none;border:none;line-height:1;padding:4px 6px}
+.vip-close:hover{color:var(--text)}
+.vip-group{margin-bottom:14px}
+.vip-label{display:block;font-size:.79rem;font-weight:600;color:var(--text2);margin-bottom:5px}
+.vip-req{color:var(--rose)}
+.vip-input,.vip-select{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-family:var(--fb);font-size:.9rem;color:var(--text);background:#fff;outline:none;transition:border-color .15s}
+.vip-input:focus,.vip-select:focus{border-color:var(--teal)}
+#vip-err{color:var(--rose);font-size:.8rem;margin-bottom:10px;min-height:18px}
+.vip-privacy{font-size:.72rem;color:var(--text3);text-align:center;margin-top:10px;line-height:1.5}
+#vip-success{text-align:center;padding:8px 0}
+.vip-ok-icon{font-size:2.8rem;margin-bottom:12px}
+#vip-success h4{font-family:var(--fd);font-size:1.2rem;margin-bottom:8px}
+#vip-success p{font-size:.88rem;color:var(--text2);line-height:1.6}
 </style>
 </head>
 <body>
@@ -226,7 +246,7 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
         <p class="hero-sub">12 semanas ao vivo, grupo pequeno, psicóloga e nutricionista juntas. Para mulheres que já sabem o que fazer — mas não conseguem manter.</p>
         <div class="hero-pills">
           <span class="hero-pill">12 semanas ao vivo</span>
-          <span class="hero-pill">Máx. 12 mulheres por turma</span>
+          <span class="hero-pill">Grupo pequeno e exclusivo</span>
           <span class="hero-pill">Google Meet — Terças 20h30</span>
           <span class="hero-pill">Suporte via WhatsApp</span>
         </div>
@@ -245,7 +265,7 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
           <p class="price-install" style="margin-top:10px">Datas e condições especiais divulgadas com antecedência exclusivamente para o Grupo VIP.</p>
           <ul class="price-perks">
             <li>12 encontros ao vivo no Google Meet</li>
-            <li>Grupo de até 12 mulheres por turma</li>
+            <li>Grupo pequeno e exclusivo</li>
             <li>Suporte direto com Daniely e Ira via WhatsApp</li>
             <li>Caderno de Bordo digital com materiais semanais</li>
             <li>Bônus: consulta individual de 1h com as duas mentoras</li>
@@ -255,7 +275,7 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
           <div class="price-trust" style="margin-top:16px">
             <span>🔒 Grupo exclusivo</span>
             <span>📅 Terças 20h30</span>
-            <span>👥 Máx. 12 mulheres</span>
+            <span>💬 Suporte WhatsApp</span>
           </div>
         </div>
       </div>
@@ -520,8 +540,8 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
           <div class="faq-a">Os encontros não são gravados — essa é uma escolha intencional. O ambiente de confidencialidade e presença do grupo é parte do que gera resultado. Por isso, a presença é importante. Em casos pontuais, a equipe pode orientar sobre os materiais daquela semana na plataforma Hotmart.</div>
         </div>
         <div class="faq-item">
-          <button class="faq-q" onclick="toggleFaq(this)"><span>Por que o grupo é limitado a 12 mulheres?</span><span class="faq-arrow">+</span></button>
-          <div class="faq-a">Porque o acompanhamento precisa ser próximo. Com grupos maiores, Daniely e Ira não conseguiriam garantir a qualidade de atenção que o programa exige. O limite de 12 participantes é o que permite que cada mulher seja realmente vista dentro do processo.</div>
+          <button class="faq-q" onclick="toggleFaq(this)"><span>Por que o grupo é pequeno e exclusivo?</span><span class="faq-arrow">+</span></button>
+          <div class="faq-a">Porque o acompanhamento precisa ser próximo. Com grupos maiores, Daniely e Ira não conseguiriam garantir a qualidade de atenção que o programa exige. O tamanho reduzido é o que permite que cada mulher seja realmente vista dentro do processo.</div>
         </div>
         <div class="faq-item">
           <button class="faq-q" onclick="toggleFaq(this)"><span>Tenho rotina cheia, filhos e trabalho em tempo integral. Isso funciona para mim?</span><span class="faq-arrow">+</span></button>
@@ -590,10 +610,55 @@ footer{background:#0f172a;color:#94a3b8;padding:34px 0;text-align:center}
   <a href="https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ" target="_blank" rel="noopener" class="btn btn-teal" id="floating-cta-btn" style="width:100%">ENTRAR NO GRUPO VIP →</a>
 </div>
 
+<div id="vip-modal" role="dialog" aria-modal="true" aria-labelledby="vip-modal-title">
+  <div class="vip-overlay" onclick="closeVipModal()"></div>
+  <div class="vip-box">
+    <button class="vip-close" onclick="closeVipModal()" aria-label="Fechar">✕</button>
+    <div id="vip-form-wrap">
+      <h3 id="vip-modal-title">Entrar no Grupo VIP</h3>
+      <p class="vip-sub">Preencha seus dados para garantir sua vaga e receber as condições especiais da próxima turma em primeira mão.</p>
+      <form id="vip-form" onsubmit="submitVipForm(event)" novalidate>
+        <div class="vip-group">
+          <label class="vip-label" for="vip-nome">Nome <span class="vip-req">*</span></label>
+          <input id="vip-nome" class="vip-input" type="text" placeholder="Seu nome completo" autocomplete="name">
+        </div>
+        <div class="vip-group">
+          <label class="vip-label" for="vip-email">E-mail <span class="vip-req">*</span></label>
+          <input id="vip-email" class="vip-input" type="email" placeholder="seu@email.com" autocomplete="email">
+        </div>
+        <div class="vip-group">
+          <label class="vip-label" for="vip-phone">Celular <span class="vip-req">*</span></label>
+          <input id="vip-phone" class="vip-input" type="tel" placeholder="(00) 00000-0000" autocomplete="tel">
+        </div>
+        <div class="vip-group">
+          <label class="vip-label" for="vip-faixa">Faixa etária</label>
+          <select id="vip-faixa" class="vip-select">
+            <option value="">Selecione...</option>
+            <option value="18-24">18 – 24 anos</option>
+            <option value="25-34">25 – 34 anos</option>
+            <option value="35-44">35 – 44 anos</option>
+            <option value="45-54">45 – 54 anos</option>
+            <option value="55+">55 anos ou mais</option>
+          </select>
+        </div>
+        <div id="vip-err"></div>
+        <button id="vip-submit" type="submit" class="btn btn-teal" style="width:100%;font-size:.93rem;padding:16px;text-transform:uppercase;letter-spacing:.05em">ENTRAR NO GRUPO VIP →</button>
+        <p class="vip-privacy">Seus dados são tratados com respeito. Sem spam — apenas novidades sobre o programa.</p>
+      </form>
+    </div>
+    <div id="vip-success" style="display:none">
+      <div class="vip-ok-icon">🎉</div>
+      <h4>Pronto! Você está na lista VIP.</h4>
+      <p>Redirecionando para o Grupo VIP no WhatsApp…</p>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL='https://drgrwpmhmrrhxuwxabow.supabase.co';
 const ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyZ3J3cG1obXJyaHh1d3hhYm93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0Nzg0OTcsImV4cCI6MjA5MzA1NDQ5N30._cjH7sFNaEVNf6cmp4f05x9UE-mfX2RT84BYdhy-9dQ';
 let cfg={};
+let vipWppLink='https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ';
 async function sb(table,params){
   const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`,{headers:{apikey:ANON_KEY,Authorization:`Bearer ${ANON_KEY}`}});
   if(!r.ok)throw new Error(r.status);
@@ -620,12 +685,51 @@ async function init(){
   initFloating();
 }
 function k(key){return cfg[key]||'';}
+function getUtm(key){return new URLSearchParams(window.location.search).get(key)||'';}
 function applyConfig(){
   const wLink=k('whatsapp_link')||'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ';
-  document.querySelectorAll('a[href*="chat.whatsapp.com"]').forEach(el=>el.href=wLink);
-  document.querySelectorAll('[id$="-cta"]').forEach(el=>{if(el.tagName==='A'&&el.href.includes('chat.whatsapp.com'))el.href=wLink;});
-  const fc=document.getElementById('floating-cta-btn');if(fc)fc.href=wLink;
+  vipWppLink=wLink;
+  document.querySelectorAll('a[href*="chat.whatsapp.com"]').forEach(el=>{el.href=wLink;});
+  if(k('prog_ann_text')){const el=document.querySelector('#anuncio-bar .ann-inner span');if(el)el.innerHTML=k('prog_ann_text');}
+  if(k('prog_turma_mes')||k('prog_turma_ano')){const el=document.querySelector('.price-main');if(el){const mes=k('prog_turma_mes')||'Setembro';const ano=k('prog_turma_ano')||'2026';el.innerHTML=`${mes.charAt(0).toUpperCase()+mes.slice(1)}<br><span style="font-size:1.2rem;font-family:var(--fb);font-weight:500;color:var(--text2)">${ano}</span>`;}}
+  if(k('prog_hero_titulo')){const el=document.querySelector('.hero h1');if(el)el.innerHTML=k('prog_hero_titulo');}
+  if(k('prog_hero_sub')){const el=document.querySelector('.hero-sub');if(el)el.textContent=k('prog_hero_sub');}
   loadInstagramReels();
+}
+function openVipModal(){
+  document.getElementById('vip-modal').classList.add('active');
+  document.getElementById('vip-form-wrap').style.display='';
+  document.getElementById('vip-success').style.display='none';
+  document.getElementById('vip-form').reset();
+  document.getElementById('vip-err').textContent='';
+  const btn=document.getElementById('vip-submit');if(btn){btn.disabled=false;btn.textContent='ENTRAR NO GRUPO VIP →';}
+}
+function closeVipModal(){document.getElementById('vip-modal').classList.remove('active');}
+async function submitVipForm(e){
+  e.preventDefault();
+  const btn=document.getElementById('vip-submit');
+  const err=document.getElementById('vip-err');
+  const nome=document.getElementById('vip-nome').value.trim();
+  const email=document.getElementById('vip-email').value.trim();
+  const phone=document.getElementById('vip-phone').value.trim().replace(/\D/g,'');
+  const faixa=document.getElementById('vip-faixa').value;
+  err.textContent='';
+  if(!nome){err.textContent='Informe seu nome.';return;}
+  if(!email||!/^[^@]+@[^@]+\.[^@]+$/.test(email)){err.textContent='Informe um e-mail válido.';return;}
+  if(phone.length<10){err.textContent='Informe um celular com DDD.';return;}
+  btn.disabled=true;btn.textContent='Aguarde…';
+  try{
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/leads`,{method:'POST',headers:{apikey:ANON_KEY,Authorization:`Bearer ${ANON_KEY}`,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify({name:nome,email,phone,faixa_etaria:faixa||null,source:getUtm('utm_source')||'organico',utm_medium:getUtm('utm_medium')||null,source_campaign:getUtm('utm_campaign')||null})});
+    const rows=await r.json();
+    const lead_id=Array.isArray(rows)&&rows[0]?rows[0].id:null;
+    if(lead_id){fetch('email_trigger.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lead_id,event:'new_lead'})}).catch(()=>{});track('form_submitted');}
+    document.getElementById('vip-form-wrap').style.display='none';
+    document.getElementById('vip-success').style.display='';
+    setTimeout(()=>{window.open(vipWppLink,'_blank','noopener');closeVipModal();},2000);
+  }catch(ex){
+    err.textContent='Erro ao salvar dados. Tente novamente.';
+    btn.disabled=false;btn.textContent='ENTRAR NO GRUPO VIP →';
+  }
 }
 function loadInstagramReels(){
   const raw=k('instagram_posts');if(!raw)return;
@@ -663,6 +767,8 @@ function toggleFaq(btn){
   document.querySelectorAll('.faq-item.open').forEach(el=>el.classList.remove('open'));
   if(!isOpen)item.classList.add('open');
 }
+document.addEventListener('click',e=>{const a=e.target.closest('a[href*="chat.whatsapp.com"]');if(a){e.preventDefault();openVipModal();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeVipModal();});
 init();
 </script>
 </body>

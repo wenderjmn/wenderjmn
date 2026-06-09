@@ -1359,6 +1359,14 @@ const CONFIG_KEYS = [
   { label: 'Forçar abertura do carrinho?', key: 'carrinho_forcar' },
 ];
 
+const CONFIG_KEYS_PAGES = [
+  { label: 'Barra de anúncio — texto (HTML permitido)', key: 'prog_ann_text', type: 'textarea' },
+  { label: 'Próxima turma — Mês (ex: setembro)', key: 'prog_turma_mes' },
+  { label: 'Próxima turma — Ano (ex: 2026)', key: 'prog_turma_ano' },
+  { label: 'Hero — Título principal (HTML permitido)', key: 'prog_hero_titulo', type: 'textarea' },
+  { label: 'Hero — Subtítulo', key: 'prog_hero_sub', type: 'textarea' },
+];
+
 async function configPage() {
   const main = document.getElementById('main-content');
   main.innerHTML = `<div class="page-title">Configurações</div><div class="page-sub">Configurações gerais: datas, links, preços e vídeos.</div><div id="cfg-body"><div style="text-align:center;padding:40px;color:var(--text3)">Carregando…</div></div>`;
@@ -1374,6 +1382,18 @@ async function configPage() {
           <input id="cfg-${c.key}" value="${escHtml(cfgMap[c.key]||'')}">
         </div>`).join('')}
       <button class="btn-save" onclick="saveAllConfig()">Salvar Configurações</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📝 Textos das Páginas do Programa</div>
+      <p style="font-size:.82rem;color:var(--text3);margin-bottom:18px">Textos exibidos nas páginas <strong>oficialemagreser.com</strong> e <strong>/programa</strong>. Deixe em branco para usar o texto padrão embutido na página.</p>
+      ${CONFIG_KEYS_PAGES.map(c => `
+        <div class="field-group">
+          <label>${c.label}</label>
+          ${c.type==='textarea'
+            ? `<textarea id="cfg-${c.key}" rows="3" style="resize:vertical;width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:.85rem">${escHtml(cfgMap[c.key]||'')}</textarea>`
+            : `<input id="cfg-${c.key}" value="${escHtml(cfgMap[c.key]||'')}">`}
+        </div>`).join('')}
+      <button class="btn-save" onclick="savePageConfig()">Salvar Textos das Páginas</button>
     </div>
     <div class="card">
       <div class="card-title">📁 Upload de Imagens</div>
@@ -1472,6 +1492,18 @@ async function saveAllConfig() {
   try {
     const results = await Promise.all(proms);
     if (results.every(r => r.ok)) toast('Configurações salvas!');
+    else toast('Alguns campos falharam', 'error');
+  } catch(e) { toast('Erro de conexão', 'error'); }
+}
+
+async function savePageConfig() {
+  const proms = CONFIG_KEYS_PAGES.map(c => {
+    const el = document.getElementById(`cfg-${c.key}`);
+    return proxyWrite({ action: 'update_config', key: c.key, value: el ? el.value : '' });
+  });
+  try {
+    const results = await Promise.all(proms);
+    if (results.every(r => r.ok)) toast('Textos das páginas salvos!');
     else toast('Alguns campos falharam', 'error');
   } catch(e) { toast('Erro de conexão', 'error'); }
 }
