@@ -98,7 +98,38 @@ O conteúdo já modelado (12 semanas, 61 missões, 22 badges, diário alimentar,
 
 Isso é um diferencial competitivo real: **funil de vendas + automação + experiência do aluno em uma única base de dados/tenant**, algo que exigiria integrar 3-4 ferramentas em qualquer concorrente pesquisado.
 
-### 4.3 Tabelas legadas/duplicadas encontradas (limpar na v2)
+### 4.3 ATUALIZAÇÃO: o frontend já existe — projeto "gamificacao" (Vercel)
+
+Confirmado nesta sessão via Briefing Executivo enviado pelo usuário + consulta ao Vercel: existe um projeto **Next.js 14 + TypeScript + Tailwind chamado `gamificacao`** (`prj_sRpYVF2BA3T5tPXpoYKzhtEaYjjk`, time `wenderjmns-projects`), já com deploy `READY` em `gamificacao-wenderjmns-projects.vercel.app`. Ou seja, **a seção 4 deste blueprint não é mais "uma proposta" — é a continuação direta de um trabalho em andamento**.
+
+**Estado do frontend (conforme briefing, ~3.500 LOC / 26 componentes / 9 rotas):**
+
+| Módulo | Status |
+|---|---|
+| Layout (Sidebar/BottomNav/Header com XP+streak) | ✅ Completo |
+| Onboarding (triagem 4 passos) | ✅ Completo |
+| Check-in emocional (modal, 6 emoções, intensidade 1-5) | ✅ Completo |
+| Teatro Interno (Sabotador vs Sábio) | ✅ Completo |
+| Medidor de Bem-Estar semanal (Paz c/ Comida, Energia, Sono) | ✅ Completo |
+| Passaporte da Autonomia | ⚠️ Parcial (faltam `AutonomyPassport` e página) |
+| CMS Mentoras (admin de missões por semana) | ✅ Completo |
+| Roda do Autocuidado / Diário | 🔲 Placeholders vazios |
+| **Integração Supabase (Auth, RLS, dados reais)** | 🔲 **0%** |
+
+**Importante — o schema real do Supabase (seção 4.1) é MAIS COMPLETO que o "Schema Proposto" do briefing.** O briefing propõe criar `users_profile`, `missions`, `user_missions`, `checkins`, `xp_transactions`, `user_badges` do zero — mas essas tabelas (e mais 7) **já existem, com RLS habilitado e conteúdo real seedado** (12 semanas/61 missões/22 badges/2 mentoras, já espelhando o cronograma do Programa EmagreSer). Mapeamento briefing → schema real:
+
+| Conceito do briefing | Tabela real já existente | Diferença |
+|---|---|---|
+| `users_profile` (sabotador_type, current_week, total_xp, streak_days) | `users_profile` | Real usa `behavioral_profile` (A-D) + `current_level`/`streak_record`/`turma_id`; sem `current_week` (calculado via `turmas.launch_date` + `weeks.unlock_day`) |
+| `missions` (week_number) | `missions` | Real usa `week_id` FK → `weeks` (não `week_number` direto); tem `mentor` (ira/dany/both), `required`, `order_index` |
+| `user_missions` (response_data jsonb) | `user_missions` | Real usa `content` (text) + `status` + `xp_earned` |
+| `checkins` (intensity, emotion, trigger) | **Não existe — substituído por 3 tabelas mais ricas**: `diary_entries` (diário alimentar), `sabotador_journals` (CBT/check-in emocional do sabotador), `theater_exercises` (Sabotador vs Sábio) |
+| `xp_transactions`, `user_badges`, `badges` | Idêntico, já existe e populado | — |
+| — (não previsto no briefing) | `community_posts`/`community_comments`, `mentors`, `turmas`, `weeks`, `page_content` | Módulos extras já modelados |
+
+**Conclusão prática:** a Fase 2 do roadmap do briefing ("Integração Supabase — criar schema") **já está feita e é superior ao planejado**. O trabalho real é conectar os componentes React existentes às tabelas reais (Auth, queries, engine de XP/badges/`unlock_day`), não criar schema novo.
+
+### 4.4 Tabelas legadas/duplicadas encontradas (limpar na v2)
 
 | Tabela | Linhas | Observação |
 |--------|--------|-----------|
@@ -164,6 +195,15 @@ Construir o app de membros sobre o schema já existente (seção 4):
 
 Esse módulo é o que justifica um SaaS "vendável": LP + automação por si só já tem concorrência (mesmo com gaps); **LP + automação + experiência de aluno gamificada em um único produto** é uma categoria nova.
 
+**Status real (atualizado):** o app `gamificacao` (Next.js, Vercel) já implementa boa parte da UI (seção 4.3). O trabalho restante para um MVP funcional:
+
+1. Conectar Supabase Auth (login/registro do aluno) no projeto `gamificacao`
+2. Implementar client Supabase (browser/server) + RLS por `auth.uid()` nas tabelas `users_profile`, `user_missions`, `diary_entries`, `sabotador_journals`, `theater_exercises`, `user_badges`, `xp_transactions`
+3. Engine de `unlock_day` (semana atual = `turmas.launch_date` + `weeks.unlock_day`)
+4. Engine de XP/Badges (trigger ou função no Supabase: missão concluída → `xp_transactions` → `users_profile.total_xp`/`current_level` → checa `badges` → `user_badges`)
+5. Conectar CMS Mentoras (admin do `gamificacao`) às tabelas `weeks`/`missions` reais
+6. Completar telas faltantes: `AutonomyPassport`, Roda do Autocuidado, Diário (3 formulários → `diary_entries`/`sabotador_journals`/`theater_exercises`)
+
 ---
 
 ## 7. Roadmap de migração por fases
@@ -173,7 +213,7 @@ Esse módulo é o que justifica um SaaS "vendável": LP + automação por si só
 | **0 — Agora até ~20/08** | Estratégia de nutrição de conteúdo (fora deste documento — discutido separadamente) + correções pontuais na v1 | — |
 | **1 — Fundação v2** | Setup Next.js + Vercel + Supabase Auth; schema multi-tenant (tenant_id em tabelas core); editor de blocos genérico | Decisão de stack (este doc) |
 | **2 — Migração de automação** | Portar sequences/templates/queues + workers (email/WPP) para Edge Functions; avaliar WhatsApp Cloud API | Fase 1 |
-| **3 — Área do Aluno (MVP)** | Login do aluno, dashboard de 12 semanas, missões + XP + badges | Fase 1 |
+| **3 — Área do Aluno (MVP)** | **Já em andamento** (projeto `gamificacao`, Vercel) — falta: integração Supabase (Auth, RLS, queries reais), engine de XP/badges/`unlock_day`, telas faltantes (seção 6.4) | Independe das demais — pode evoluir em paralelo |
 | **4 — Comunidade + Diários** | Mural, diário alimentar, diário do sabotador, teatro de assertividade | Fase 3 |
 | **5 — Self-service onboarding** | Tenant cria conta, configura sua turma/sequências/páginas sem suporte manual | Fases 1-4 |
 | **6 — Lançamento comercial** | Pricing BRL, planos, billing (Stripe/Mercado Pago) | Fase 5 |
