@@ -48,9 +48,9 @@ $email_schedule = [
     ['nutricao_d1',               2,    null],
     ['prova_social_d2',           4,    null],
     ['reengajamento_masterclass', 8,    null],
-    ['reengajamento_masterclass', null, '2026-06-08 09:00:00'],
-    ['masterclass_hoje',          null, '2026-06-11 08:00:00'],
-    ['masterclass_1h',            null, '2026-06-11 19:00:00'],
+    ['reengajamento_masterclass', null, '2026-08-31 09:00:00'],
+    ['masterclass_hoje',          null, '2026-09-03 08:00:00'],
+    ['masterclass_1h',            null, '2026-09-03 19:00:00'],
 ];
 
 // ── Sequência de WPP ─────────────────────────────────────────────
@@ -65,14 +65,14 @@ $wpp_messages = [
 
     // ── D+1: manhã + tarde ───────────────────────────────────────────
     [26, null,
-        "{{nome}}, uma coisa rápida 💡\n\nA maioria das pessoas que não consegue manter o peso não tem problema de falta de força de vontade.\n\nTem um *padrão neurológico* que repete em loop sem que a pessoa perceba.\n\nNa Masterclass do dia 11/06 a Daniely vai mostrar como identificar e quebrar esse padrão.\n\nEntra no grupo VIP para receber o link 👇\n" . WPP_LINK],
+        "{{nome}}, uma coisa rápida 💡\n\nA maioria das pessoas que não consegue manter o peso não tem problema de falta de força de vontade.\n\nTem um *padrão neurológico* que repete em loop sem que a pessoa perceba.\n\nNa Masterclass do dia 03/09 a Daniely vai mostrar como identificar e quebrar esse padrão.\n\nEntra no grupo VIP para receber o link 👇\n" . WPP_LINK],
 
     [34, null,
-        "{{nome}}, boa tarde! ☀️\n\nAinda dá tempo de garantir seu lugar na Masterclass *\"O Código dos Sabotadores\"*.\n\n📅 *11 de junho, 20h* — ao vivo e gratuita\n\nO link de acesso à transmissão vai sair exclusivamente no grupo VIP.\n\n👇\n" . WPP_LINK],
+        "{{nome}}, boa tarde! ☀️\n\nAinda dá tempo de garantir seu lugar na Masterclass *\"O Código dos Sabotadores\"*.\n\n📅 *3 de setembro, 20h* — ao vivo e gratuita\n\nO link de acesso à transmissão vai sair exclusivamente no grupo VIP.\n\n👇\n" . WPP_LINK],
 
     // ── D+2: manhã + tarde ───────────────────────────────────────────
     [50, null,
-        "Bom dia, {{nome}}! ☀️\n\nVocê sabia que 8 em cada 10 mulheres que tentam emagrecer falham — *não por falta de força de vontade*, mas porque nunca identificaram o padrão que as faz sabotar?\n\nExistem 4 perfis de sabotagem, e cada um tem uma estratégia específica. A Dra. Daniely vai revelar tudo na Masterclass do dia 11/06.\n\nEstá no grupo VIP? 👇\n" . WPP_LINK],
+        "Bom dia, {{nome}}! ☀️\n\nVocê sabia que 8 em cada 10 mulheres que tentam emagrecer falham — *não por falta de força de vontade*, mas porque nunca identificaram o padrão que as faz sabotar?\n\nExistem 4 perfis de sabotagem, e cada um tem uma estratégia específica. A Dra. Daniely vai revelar tudo na Masterclass do dia 03/09.\n\nEstá no grupo VIP? 👇\n" . WPP_LINK],
 
     [58, null,
         "{{nome}}, boa tarde! 🌸\n\nA Fernanda tentou 7 dietas em 3 anos. Sempre começava bem, depois desandava. Ela achava que o problema era ela.\n\nDepois que entendeu seu *perfil sabotador*, as coisas mudaram de vez.\n\n_\"Pela primeira vez, eu entendia meu próprio comportamento. Aí ficou mais fácil.\"_ — Fernanda, 41 anos\n\nQuer entender o seu? Grupo VIP gratuito 👇\n" . WPP_LINK],
@@ -82,67 +82,67 @@ $wpp_messages = [
         "{{nome}}, deixa eu te contar algo 🙌\n\nA Carol me escreveu essa semana:\n\n_\"Tentei tudo. Dieta, academia, aplicativo. Nada funcionava porque eu não entendia por que eu sabotava. Depois que entendi meu padrão, tudo mudou.\"_\n\nÉ exatamente sobre isso que a Masterclass vai falar.\n\nGrupo VIP gratuito 👇\n" . WPP_LINK],
 
     [82, null,
-        "{{nome}}, boa tarde! ☀️\n\nUma dica que você pode aplicar *hoje*:\n\nAntes de comer qualquer coisa fora do planejado, pare *10 segundos* e pergunte: estou com fome de verdade ou é outra coisa?\n\nEssa é uma das técnicas do Programa EmagreSer. Na Masterclass você aprende o método completo.\n\n📅 11/06 às 20h — gratuita 👇\n" . WPP_LINK],
+        "{{nome}}, boa tarde! ☀️\n\nUma dica que você pode aplicar *hoje*:\n\nAntes de comer qualquer coisa fora do planejado, pare *10 segundos* e pergunte: estou com fome de verdade ou é outra coisa?\n\nEssa é uma das técnicas do Programa EmagreSer. Na Masterclass você aprende o método completo.\n\n📅 03/09 às 20h — gratuita 👇\n" . WPP_LINK],
 
     // ── D+4: manhã + tarde ───────────────────────────────────────────
     [98, null,
-        "Bom dia, {{nome}}! 🌞\n\nFaltam poucos dias para a Masterclass *\"O Código dos Sabotadores\"*.\n\nSe você ainda não está no grupo VIP, é hora de entrar — o link da transmissão ao vivo vai sair apenas lá, antes do início.\n\n📅 11/06 às 20h | Gratuita | Ao vivo\n\n👇\n" . WPP_LINK],
+        "Bom dia, {{nome}}! 🌞\n\nFaltam poucos dias para a Masterclass *\"O Código dos Sabotadores\"*.\n\nSe você ainda não está no grupo VIP, é hora de entrar — o link da transmissão ao vivo vai sair apenas lá, antes do início.\n\n📅 03/09 às 20h | Gratuita | Ao vivo\n\n👇\n" . WPP_LINK],
 
     [106, null,
         "{{nome}}, boa tarde! 👋\n\nUma pergunta rápida:\n\nQual é o momento do dia que você mais perde o controle com a alimentação?\n\n⏰ À noite depois do jantar?\n💼 No trabalho?\n📱 Assistindo séries?\n😰 Quando está estressada?\n\nCada resposta tem uma estratégia específica que a Dra. Daniely vai apresentar na Masterclass 😊"],
 
     // ── D+5: manhã + tarde ───────────────────────────────────────────
     [122, null,
-        "{{nome}}, preciso te contar uma coisa importante 💚\n\nO que você chama de *falta de força de vontade* tem nome científico. E tem solução.\n\nA Masterclass *\"O Código dos Sabotadores\"* é dia 11/06 às 20h — ao vivo, gratuita.\n\nJá garantiu seu lugar? 👇\n" . WPP_LINK],
+        "{{nome}}, preciso te contar uma coisa importante 💚\n\nO que você chama de *falta de força de vontade* tem nome científico. E tem solução.\n\nA Masterclass *\"O Código dos Sabotadores\"* é dia 03/09 às 20h — ao vivo, gratuita.\n\nJá garantiu seu lugar? 👇\n" . WPP_LINK],
 
     [130, null,
         "{{nome}}, boa tarde! ⏳\n\nA Masterclass está chegando — e o grupo VIP está quase cheio.\n\nSão centenas de mulheres que já garantiram presença. Não fica de fora!\n\n💬 Grupo VIP gratuito 👇\n" . WPP_LINK],
 
     // ── Jun 7 (D-4): 3 mensagens — manhã / tarde / noite ────────────
-    [null, '2026-06-07 09:00:00',
-        "{{nome}} 🗓️\n\n*Faltam 4 dias* para a Masterclass \"O Código dos Sabotadores\"!\n\nJá separou no calendário? 📅 11/06 às 20h — ao vivo\n\nO conteúdo é ao vivo e não há garantia de gravação. Quem não estiver na transmissão, perde.\n\nEstá no grupo VIP? 👇\n" . WPP_LINK],
+    [null, '2026-08-30 09:00:00',
+        "{{nome}} 🗓️\n\n*Faltam 4 dias* para a Masterclass \"O Código dos Sabotadores\"!\n\nJá separou no calendário? 📅 03/09 às 20h — ao vivo\n\nO conteúdo é ao vivo e não há garantia de gravação. Quem não estiver na transmissão, perde.\n\nEstá no grupo VIP? 👇\n" . WPP_LINK],
 
-    [null, '2026-06-07 14:00:00',
-        "{{nome}}, boa tarde! ☀️\n\nO que te impediu de emagrecer nas últimas tentativas?\n\n🔴 Começa bem mas não consegue manter\n🔴 Fica restringindo demais e depois compensa\n🔴 Sabe o que fazer mas não faz\n🔴 Emagrece e depois recupera tudo\n\nSe a resposta foi qualquer uma dessas — a Masterclass é pra você. 11/06 às 20h 👇\n" . WPP_LINK],
+    [null, '2026-08-30 14:00:00',
+        "{{nome}}, boa tarde! ☀️\n\nO que te impediu de emagrecer nas últimas tentativas?\n\n🔴 Começa bem mas não consegue manter\n🔴 Fica restringindo demais e depois compensa\n🔴 Sabe o que fazer mas não faz\n🔴 Emagrece e depois recupera tudo\n\nSe a resposta foi qualquer uma dessas — a Masterclass é pra você. 03/09 às 20h 👇\n" . WPP_LINK],
 
-    [null, '2026-06-07 19:00:00',
-        "{{nome}}, boa noite! 🌙\n\nÀ noite é quando mais sabotamos — e não é por acaso.\n\nO cérebro cansado busca recompensa. É neurológico. É previsível. *E tem solução.*\n\nNa Masterclass você vai entender exatamente esse mecanismo — e como quebrar o ciclo de vez.\n\n📅 11/06 às 20h | Gratuita | Ao vivo\n\n👇\n" . WPP_LINK],
+    [null, '2026-08-30 19:00:00',
+        "{{nome}}, boa noite! 🌙\n\nÀ noite é quando mais sabotamos — e não é por acaso.\n\nO cérebro cansado busca recompensa. É neurológico. É previsível. *E tem solução.*\n\nNa Masterclass você vai entender exatamente esse mecanismo — e como quebrar o ciclo de vez.\n\n📅 03/09 às 20h | Gratuita | Ao vivo\n\n👇\n" . WPP_LINK],
 
     // ── Jun 8 (D-3): 3 mensagens — manhã / tarde / noite ────────────
-    [null, '2026-06-08 09:00:00',
-        "⚠️ {{nome}}, faltam *3 dias* para a Masterclass!\n\n📅 *11 de junho, 20h*\n\nSó recebe o link quem está no grupo VIP 👇\n" . WPP_LINK],
+    [null, '2026-08-31 09:00:00',
+        "⚠️ {{nome}}, faltam *3 dias* para a Masterclass!\n\n📅 *3 de setembro, 20h*\n\nSó recebe o link quem está no grupo VIP 👇\n" . WPP_LINK],
 
-    [null, '2026-06-08 14:00:00',
-        "{{nome}}, boa tarde! ☀️\n\nA Psicóloga Daniely identificou que todos os perfis de sabotagem têm uma coisa em comum:\n\n*O cérebro usa a comida como estratégia de regulação emocional.*\n\nNão é falta de vontade. É neurologia.\n\nE o que é neurológico, pode ser *reprogramado*. A Masterclass mostra como.\n\n📅 11/06 às 20h 👇\n" . WPP_LINK],
+    [null, '2026-08-31 14:00:00',
+        "{{nome}}, boa tarde! ☀️\n\nA Psicóloga Daniely identificou que todos os perfis de sabotagem têm uma coisa em comum:\n\n*O cérebro usa a comida como estratégia de regulação emocional.*\n\nNão é falta de vontade. É neurologia.\n\nE o que é neurológico, pode ser *reprogramado*. A Masterclass mostra como.\n\n📅 03/09 às 20h 👇\n" . WPP_LINK],
 
-    [null, '2026-06-08 19:00:00',
-        "{{nome}} 🌙\n\nUma pergunta honesta:\n\nHá quanto tempo você tenta emagrecer do mesmo jeito e obtém o mesmo resultado?\n\nEinstein dizia que loucura é repetir a mesma ação esperando resultados diferentes.\n\nA Masterclass *\"O Código dos Sabotadores\"* oferece um caminho diferente.\n\n📅 11/06 às 20h — ao vivo e gratuita 👇\n" . WPP_LINK],
+    [null, '2026-08-31 19:00:00',
+        "{{nome}} 🌙\n\nUma pergunta honesta:\n\nHá quanto tempo você tenta emagrecer do mesmo jeito e obtém o mesmo resultado?\n\nEinstein dizia que loucura é repetir a mesma ação esperando resultados diferentes.\n\nA Masterclass *\"O Código dos Sabotadores\"* oferece um caminho diferente.\n\n📅 03/09 às 20h — ao vivo e gratuita 👇\n" . WPP_LINK],
 
     // ── Jun 9 (D-2): 3 mensagens — manhã / tarde / noite ────────────
-    [null, '2026-06-09 09:00:00',
-        "Bom dia, {{nome}}! 🌅\n\n*Faltam apenas 2 dias* para a Masterclass!\n\nO que vai acontecer na transmissão:\n\n✅ Os 4 perfis de sabotagem revelados\n✅ A técnica do *Confronto Gentil*\n✅ Por que força de vontade não funciona — e o que funciona\n✅ Estratégias práticas para os primeiros 7 dias\n\nPrepara o caderninho! 📓 11/06 às 20h 👇\n" . WPP_LINK],
+    [null, '2026-09-01 09:00:00',
+        "Bom dia, {{nome}}! 🌅\n\n*Faltam apenas 2 dias* para a Masterclass!\n\nO que vai acontecer na transmissão:\n\n✅ Os 4 perfis de sabotagem revelados\n✅ A técnica do *Confronto Gentil*\n✅ Por que força de vontade não funciona — e o que funciona\n✅ Estratégias práticas para os primeiros 7 dias\n\nPrepara o caderninho! 📓 03/09 às 20h 👇\n" . WPP_LINK],
 
-    [null, '2026-06-09 14:00:00',
-        "{{nome}}, boa tarde! ☀️\n\nSabe o que é o *Confronto Gentil*?\n\nÉ uma técnica desenvolvida pela Psicóloga Daniely que ensina como dialogar com o sabotador interno — *sem culpa e sem repressão*.\n\nÉ uma das partes mais transformadoras da Masterclass.\n\nDois dias! 📅 11/06 às 20h 👇\n" . WPP_LINK],
+    [null, '2026-09-01 14:00:00',
+        "{{nome}}, boa tarde! ☀️\n\nSabe o que é o *Confronto Gentil*?\n\nÉ uma técnica desenvolvida pela Psicóloga Daniely que ensina como dialogar com o sabotador interno — *sem culpa e sem repressão*.\n\nÉ uma das partes mais transformadoras da Masterclass.\n\nDois dias! 📅 03/09 às 20h 👇\n" . WPP_LINK],
 
-    [null, '2026-06-09 19:00:00',
+    [null, '2026-09-01 19:00:00',
         "{{nome}} 🌙\n\nComo está a sua noite?\n\nA gente passa o dia inteiro controlando tudo — e à noite quer uma recompensa. Isso é humano.\n\nO problema não é querer a recompensa. O problema é quando a recompensa é *sempre comida*.\n\nNa Masterclass de domingo, a Daniely vai ensinar como trocar esse padrão. Devagar, sem sofrimento.\n\nAté domingo! 👇\n" . WPP_LINK],
 
     // ── Jun 10 (D-1): 3 mensagens — manhã / tarde / noite ───────────
-    [null, '2026-06-10 09:00:00',
-        "{{nome}}! 🔥 *Amanhã é o grande dia!*\n\nMasterclass *\"O Código dos Sabotadores\"*\n📅 11/06 às 20h — ao vivo\n\nSepara um cantinho tranquilo, bloqueia sua agenda e venha aprender o que nenhuma dieta te ensinou.\n\nO link vai sair no grupo VIP amanhã 👇\n" . WPP_LINK],
+    [null, '2026-09-02 09:00:00',
+        "{{nome}}! 🔥 *Amanhã é o grande dia!*\n\nMasterclass *\"O Código dos Sabotadores\"*\n📅 03/09 às 20h — ao vivo\n\nSepara um cantinho tranquilo, bloqueia sua agenda e venha aprender o que nenhuma dieta te ensinou.\n\nO link vai sair no grupo VIP amanhã 👇\n" . WPP_LINK],
 
-    [null, '2026-06-10 14:00:00',
-        "{{nome}}, boa tarde! ☀️\n\n🔴 Amanhã, 11/06 às 20h!\n\nEsta pode ser a noite que muda o seu relacionamento com a comida para sempre.\n\nO link sai no grupo VIP antes do início. Se ainda não está lá, corre! ⬇️\n\n👇\n" . WPP_LINK],
+    [null, '2026-09-02 14:00:00',
+        "{{nome}}, boa tarde! ☀️\n\n🔴 Amanhã, 03/09 às 20h!\n\nEsta pode ser a noite que muda o seu relacionamento com a comida para sempre.\n\nO link sai no grupo VIP antes do início. Se ainda não está lá, corre! ⬇️\n\n👇\n" . WPP_LINK],
 
-    [null, '2026-06-10 19:00:00',
-        "{{nome}} 🌟\n\nA véspera de uma coisa importante tem um sabor especial.\n\nAmanhã às 20h, você vai entender de uma vez por todas por que se sabota — e o que fazer para parar.\n\n*Anota no celular: 11/06 às 20h*\n\nO link estará no grupo VIP amanhã 👇\n" . WPP_LINK],
+    [null, '2026-09-02 19:00:00',
+        "{{nome}} 🌟\n\nA véspera de uma coisa importante tem um sabor especial.\n\nAmanhã às 20h, você vai entender de uma vez por todas por que se sabota — e o que fazer para parar.\n\n*Anota no celular: 03/09 às 20h*\n\nO link estará no grupo VIP amanhã 👇\n" . WPP_LINK],
 
     // ── Jun 11 (D-day): manhã + noite ────────────────────────────────
-    [null, '2026-06-11 08:00:00',
+    [null, '2026-09-03 08:00:00',
         "🔴 *HOJE É O DIA*, {{nome}}!\n\nMasterclass *\"O Código dos Sabotadores\"*\n⏰ Hoje às 20h — ao vivo\n\nO link vai sair no grupo VIP antes do início 👇\n" . WPP_LINK],
 
-    [null, '2026-06-11 19:00:00',
+    [null, '2026-09-03 19:00:00',
         "⏰ *Em 1 hora começa!*\n\n{{nome}}, corre que falta pouco!\n\nO link da live está no grupo VIP agora 👇\n" . WPP_LINK],
 ];
 

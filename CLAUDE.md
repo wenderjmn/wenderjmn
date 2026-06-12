@@ -547,6 +547,29 @@ Sidebar em drawer para telas ≤768px:
 
 ## Histórico de Versões
 
+### v29 — Masterclass remarcada para 03/09/2026 + automação pausada
+
+#### Mudança de data (11/06 → 03/09/2026 às 20h)
+- **Supabase `site_config`**: `live_data = 2026-09-03T20:00:00`, `masterclass_data = "03/09/2026 às 20h"`, `prog_turma_data = "setembro | 2026"`
+- **`email_templates`**: 18 templates corrigidos em massa (11/06 → 03/09, "11 de junho" → "3 de setembro")
+- **`sequences.items`**: datas corrigidas nos textos dos itens
+- **`ig.html`**: meta tags, barra de anúncio, passos, countdown fallback
+- **`admin/admin_proxy.php`**: mensagens de opt-in e convite
+- **`import_leads.php`** (legacy): textos + datas fixas remapeadas (07-11/06 → 30/08-03/09)
+
+#### Automação PARADA (12/06/2026)
+- **Filas**: 3 e-mails `pending` → `cancelled`; 9 WPPs `pending` → `skipped` (constraint não aceita cancelled) — todos referenciavam a Masterclass de 11/06
+- **Sequência "Masterclass 2026"** (`6733dd19`): `is_active = false` (datas fixas de junho já passadas)
+- **`optin_followup_sequence_id`**: esvaziado — `wpp_receive.php` (SIM) e `cron.php` não enrolam mais ninguém até nova sequência ser configurada
+- **Ainda ativo**: `email_trigger.php` (boas-vindas para leads orgânicos novos, com data corrigida) e sequência "Aquecimento Importados"
+
+#### Próxima fase (a construir)
+- Estratégia de nutrição de conteúdo de 12/06 até ~20/08 (14 dias antes do lançamento)
+- Sequência de pré-lançamento 20/08 → 03/09 + sequência de vendas pós-Masterclass
+- Discussão de refatoração SaaS (multi-tenant, autenticação) — pendente de decisões
+
+---
+
 ### v28 — index.html = página do programa + depoimentos + automação admin expandida
 
 #### index.html agora é a página do programa

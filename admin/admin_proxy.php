@@ -906,7 +906,7 @@ function send_optin_wpp() {
     }
 
     // Mensagem 2 (5 min depois): pergunta de opt-in
-    $msg2 = "*{$nome}*, o que achou? 😊\n\nGostaríamos de continuar te enviando conteúdos gratuitos e o acesso à nossa *Masterclass ao vivo* no dia *11/06 às 20h* — 100% gratuita.\n\n✅ *Responda SIM* para continuar recebendo.\n🚫 *Responda NÃO* se preferir não receber mais.\n\nSua resposta é muito importante para nós! 🙏";
+    $msg2 = "*{$nome}*, o que achou? 😊\n\nGostaríamos de continuar te enviando conteúdos gratuitos e o acesso à nossa *Masterclass ao vivo* no dia *03/09 às 20h* — 100% gratuita.\n\n✅ *Responda SIM* para continuar recebendo.\n🚫 *Responda NÃO* se preferir não receber mais.\n\nSua resposta é muito importante para nós! 🙏";
 
     $now      = gmdate('Y-m-d\TH:i:s\Z');
     $five_min = gmdate('Y-m-d\TH:i:s\Z', strtotime('+5 minutes'));
@@ -1136,7 +1136,7 @@ function enqueue_imported_lead() {
     }
     if (in_array($type, ['wpp','both']) && !empty($lead['phone'])) {
         $nome = $lead['name'] ?? 'você';
-        $msg  = "Olá, *{$nome}*! 🌱\n\nAqui é a Daniely, do Programa EmagreSer.\n\nVocê faz parte do nosso grupo especial e eu quero te convidar para a nossa Masterclass gratuita *\"O Código dos Sabotadores\"* — 11/06 às 20h.\n\nResponda esta mensagem para receber o link! 👇";
+        $msg  = "Olá, *{$nome}*! 🌱\n\nAqui é a Daniely, do Programa EmagreSer.\n\nVocê faz parte do nosso grupo especial e eu quero te convidar para a nossa Masterclass gratuita *\"O Código dos Sabotadores\"* — 03/09 às 20h.\n\nResponda esta mensagem para receber o link! 👇";
         $r = sb_request('POST', 'whatsapp_queue', [[
             'lead_id'      => $lead['id'],
             'to_phone'     => $lead['phone'],
@@ -1175,7 +1175,7 @@ function enqueue_imported_bulk() {
         }
         if (in_array($type, ['wpp','both']) && !empty($lead['phone'])) {
             $nome = $lead['name'] ?? 'você';
-            $wpp_rows[] = ['lead_id'=>$lead['id'],'to_phone'=>$lead['phone'],'to_name'=>$nome,'message'=>"Olá, *{$nome}*! Aqui é a Daniely do Programa EmagreSer. Masterclass gratuita 11/06 às 20h — guarde a data!",'scheduled_at'=>$now,'status'=>'pending'];
+            $wpp_rows[] = ['lead_id'=>$lead['id'],'to_phone'=>$lead['phone'],'to_name'=>$nome,'message'=>"Olá, *{$nome}*! Aqui é a Daniely do Programa EmagreSer. Masterclass gratuita 03/09 às 20h — guarde a data!",'scheduled_at'=>$now,'status'=>'pending'];
         }
     }
     $inserted = 0;
