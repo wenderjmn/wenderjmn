@@ -1,7 +1,0 @@
-git clone https://github.com/wenderjmn/wenderjmn.git
-cd wenderjmn
-git checkout -b claude/build-emagre-ser-landing-xzSnP
-# Copiar os arquivos modificados manualmente
-git add .
-git commit -m "feat: automação completa - painel, cron, email, whatsapp"
-git push origin claude/build-emagre-ser-landing-xzSnP
