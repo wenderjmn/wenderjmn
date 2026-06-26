@@ -26,7 +26,7 @@ define('SILENT_OPTIN_HOURS',   24); // horas sem resposta → auto-enrolar
 $is_http = php_sapi_name() !== 'cli';
 if ($is_http) {
     $token = $_GET['token'] ?? '';
-    if (CRON_SECRET && $token !== CRON_SECRET) {
+    if (!CRON_SECRET || $token !== CRON_SECRET) {
         http_response_code(403);
         echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
         exit;

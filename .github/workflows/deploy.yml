@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - master
-      - claude/build-emagre-ser-landing-xzSnP
 
 jobs:
   deploy:

@@ -15,10 +15,10 @@ putenv('ZAPI_INSTANCE=SUA_INSTANCIA_ZAPI');
 putenv('ZAPI_TOKEN=SEU_TOKEN_ZAPI');
 putenv('ZAPI_CLIENT_TOKEN=SEU_CLIENT_TOKEN_ZAPI');
 
-// Segredos internos
-putenv('WORKER_SECRET=troque_por_uma_senha_forte');
-putenv('IMPORT_SECRET=troque_por_uma_senha_forte');
-putenv('ADMIN_SECRET=troque_por_uma_senha_forte');
+// Segredos internos (obrigatórios — acesso negado se não configurados)
+putenv('WORKER_SECRET=troque_por_uma_senha_forte');  // email_worker.php
+putenv('IMPORT_PASS=troque_por_uma_senha_forte');    // import_leads.php
+putenv('CRON_SECRET=troque_por_uma_senha_forte');    // cron.php
 
 // Links do produto
 putenv('HOTMART_LINK=https://pay.hotmart.com/emagreser');

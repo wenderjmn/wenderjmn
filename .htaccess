@@ -1,13 +1,7 @@
-# ── Variáveis de ambiente — NÃO enviar para o Git ──────────────────────
-SetEnv SUPABASE_SERVICE_KEY ***REMOVED_SUPABASE_KEY***
-SetEnv RESEND_API_KEY       ***REMOVED_RESEND_KEY***
-SetEnv ZAPI_INSTANCE        ***REMOVED_ZAPI_INSTANCE***
-SetEnv ZAPI_TOKEN           ***REMOVED_ZAPI_TOKEN***
-SetEnv ZAPI_CLIENT_TOKEN    ***REMOVED_ZAPI_CLIENT_TOKEN***
-SetEnv WORKER_SECRET        ***REMOVED_WORKER_SECRET***
-SetEnv IMPORT_PASS          ***REMOVED_IMPORT_PASS***
-
 # ── URLs limpas (sem .html / .php) ───────────────────────────────────
+# ATENÇÃO: variáveis de ambiente (SUPABASE_SERVICE_KEY, RESEND_API_KEY,
+# ZAPI_*, WORKER_SECRET, IMPORT_PASS, CRON_SECRET) devem ser configuradas
+# via _env.php no servidor — NUNCA commitar valores reais aqui.
 RewriteEngine On
 
 # ── 1. Canonical: /foo.html → /foo (301) ────────────────────────────

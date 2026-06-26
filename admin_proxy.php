@@ -29,8 +29,13 @@ define('SESSION_LIFETIME', 14400);
 header('Content-Type: application/json; charset=utf-8');
 
 // Só aceitar de origens do próprio domínio em produção
+$allowed_origins = [
+    'https://www.oficialemagreser.com',
+    'https://oficialemagreser.com',
+    'https://emagreser.danielydealbuquerque.com.br',
+];
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($origin) {
+if ($origin && in_array($origin, $allowed_origins, true)) {
     header("Access-Control-Allow-Origin: {$origin}");
     header('Access-Control-Allow-Credentials: true');
     header('Access-Control-Allow-Methods: POST, OPTIONS');

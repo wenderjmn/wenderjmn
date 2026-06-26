@@ -128,6 +128,8 @@ if ($text === 'SIM') {
     exit;
 }
 
+$site_url = 'https://www.oficialemagreser.com';
+
 // Descadastro / opt-out — detecta qualquer intenção de sair da lista
 $optout_words = [
     'NÃO', 'NAO', 'N',
@@ -184,7 +186,6 @@ $respostas_quiz = [
     ],
 ];
 
-$site_url = 'https://www.oficialemagreser.com';
 $wpp_link = 'https://chat.whatsapp.com/GsMAVm3KVncGNR5nHRQ3yQ';
 
 // Verifica se é resposta ao quiz (letra A, B, C ou D)

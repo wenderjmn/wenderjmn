@@ -34,7 +34,7 @@ $is_cli = php_sapi_name() === 'cli';
 // ── Autenticação web ─────────────────────────────────────────────
 if (!$is_cli) {
     header('Content-Type: text/html; charset=UTF-8');
-    if (!isset($_SERVER['PHP_AUTH_PW']) || $_SERVER['PHP_AUTH_PW'] !== IMPORT_PASS) {
+    if (!IMPORT_PASS || !isset($_SERVER['PHP_AUTH_PW']) || $_SERVER['PHP_AUTH_PW'] !== IMPORT_PASS) {
         header('WWW-Authenticate: Basic realm="EmagreSer Import"');
         header('HTTP/1.0 401 Unauthorized');
         echo 'Senha incorreta.'; exit;
@@ -145,8 +145,6 @@ $wpp_messages = [
     [null, '2026-09-03 19:00:00',
         "⏰ *Em 1 hora começa!*\n\n{{nome}}, corre que falta pouco!\n\nO link da live está no grupo VIP agora 👇\n" . WPP_LINK],
 ];
-
-define('HOTMART_LINK', getenv('HOTMART_LINK') ?: 'https://pay.hotmart.com/emagreser');
 
 // ── Busca sequências ativas ───────────────────────────────────────
 $sequences_for_form = sb_get("sequences?is_active=eq.true&select=id,name,description,items&order=created_at.asc");
@@ -264,8 +262,7 @@ label.field-label{display:block;font-size:13px;font-weight:600;color:#374151;mar
   <div class="cred">
     <strong>🔐 Credenciais de acesso</strong>
     URL: <code>oficialemagreser.com/import_leads.php</code><br>
-    Usuário: qualquer valor · Senha: valor de <code>IMPORT_PASS</code> no <code>_env.php</code><br>
-    Senha padrão (sem _env.php): <code>import2026</code>
+    Usuário: qualquer valor · Senha: valor de <code>IMPORT_PASS</code> no <code>_env.php</code>
   </div>
 </div>
 <script>
