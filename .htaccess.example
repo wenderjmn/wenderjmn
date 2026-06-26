@@ -1,0 +1,22 @@
+# ── Variáveis de ambiente — copie este arquivo para .htaccess e preencha ──
+# .htaccess NÃO deve ser commitado no Git (está no .gitignore)
+SetEnv SUPABASE_SERVICE_KEY COLOQUE_AQUI
+SetEnv RESEND_API_KEY       COLOQUE_AQUI
+SetEnv ZAPI_INSTANCE        COLOQUE_AQUI
+SetEnv ZAPI_TOKEN           COLOQUE_AQUI
+SetEnv ZAPI_CLIENT_TOKEN    COLOQUE_AQUI
+SetEnv WORKER_SECRET        COLOQUE_AQUI
+SetEnv IMPORT_PASS          COLOQUE_AQUI
+
+# ── URLs limpas (sem .html) ────────────────────────────────────────────
+RewriteEngine On
+
+# /programa -> serve programa.html sem alterar a URL no navegador
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^([^.]+)$ $1.html [L]
+
+# /programa.html -> redireciona 301 para /programa (URL canônica, evita conteúdo duplicado no Google)
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^.]+)\.html[\s?] [NC]
+RewriteRule ^ /%1 [R=301,L]

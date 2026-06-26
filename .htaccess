@@ -1,0 +1,27 @@
+# ── URLs limpas (sem .html / .php) ───────────────────────────────────
+# ATENÇÃO: variáveis de ambiente (SUPABASE_SERVICE_KEY, RESEND_API_KEY,
+# ZAPI_*, WORKER_SECRET, IMPORT_PASS, CRON_SECRET) devem ser configuradas
+# via _env.php no servidor — NUNCA commitar valores reais aqui.
+RewriteEngine On
+
+# ── 1. Canonical: /foo.html → /foo (301) ────────────────────────────
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^.]+)\.html[\s?] [NC]
+RewriteRule ^ /%1 [R=301,L]
+
+# ── 2. Canonical: /painel.php → /painel (301) ───────────────────────
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /painel\.php[\s?] [NC]
+RewriteRule ^ /painel [R=301,L]
+
+# ── 3. Regras específicas (sem extensão → arquivo) ───────────────────
+# /admin → admin.html  (precisa de regra própria: existe pasta admin/ que
+#           confunde a regra geral baseada em !-d)
+RewriteRule ^admin$ admin.html [L]
+
+# /painel → painel.php
+RewriteRule ^painel$ painel.php [L]
+
+# ── 4. Regra geral: /slug → slug.html (se o arquivo existir) ─────────
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^([^.]+)$ $1.html [L]
