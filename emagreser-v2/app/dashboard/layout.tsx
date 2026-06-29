@@ -18,19 +18,25 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
-  if (!profile) {
-    // Create profile if first login
+  let resolvedProfile = profile
+  if (!resolvedProfile) {
     await supabase.from('users_profile').insert({
       id: user.id,
       email: user.email,
       name: user.email?.split('@')[0],
       full_name: user.email?.split('@')[0],
     })
+    const { data: newProfile } = await supabase
+      .from('users_profile')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+    resolvedProfile = newProfile
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <DashboardNav profile={profile} userId={user.id} />
+      <DashboardNav profile={resolvedProfile} userId={user.id} />
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
         {children}
       </main>

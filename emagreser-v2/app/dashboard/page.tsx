@@ -68,7 +68,7 @@ export default async function DashboardPage() {
 
   // XP level calculation
   const xpForNextLevel = profile.current_level * 500
-  const xpProgress = profile.total_xp % 500
+  const xpProgress = profile.total_xp % (profile.current_level * 500)
 
   return (
     <div className="space-y-6">

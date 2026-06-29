@@ -53,16 +53,18 @@ export default function MissionCard({ mission, userId }: Props) {
           .update({ status: 'pending', xp_earned: 0 })
           .eq('id', existingRecord.id)
 
-        await supabase
+        const { data: currentProfile } = await supabase
           .from('users_profile')
-          .update({ total_xp: supabase.rpc as never })
+          .select('total_xp')
           .eq('id', userId)
+          .single()
 
-        // Decrease XP
-        await supabase.rpc('decrement_xp' as never, {
-          user_id: userId,
-          amount: mission.xp_reward,
-        } as never)
+        if (currentProfile) {
+          await supabase
+            .from('users_profile')
+            .update({ total_xp: Math.max(0, (currentProfile.total_xp ?? 0) - mission.xp_reward) })
+            .eq('id', userId)
+        }
       }
       setDone(false)
     } else {
