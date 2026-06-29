@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -36,12 +36,14 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Deploy to Vercel
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         run: |
-          DEPLOY_FLAGS="--yes --token=${{ secrets.VERCEL_TOKEN }}"
+          PROD_FLAG=""
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            DEPLOY_FLAGS="$DEPLOY_FLAGS --prod"
+            PROD_FLAG="--prod"
           fi
-          npx vercel deploy $DEPLOY_FLAGS \
+          npx vercel deploy --yes $PROD_FLAG \
+            --token="${{ secrets.VERCEL_TOKEN }}" \
             --env NEXT_PUBLIC_SUPABASE_URL="${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" \
             --env NEXT_PUBLIC_SUPABASE_ANON_KEY="${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}"
         env:
