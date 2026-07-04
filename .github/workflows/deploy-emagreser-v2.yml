@@ -1,0 +1,52 @@
+name: Deploy EmagreSer V2 to Vercel
+
+on:
+  push:
+    branches:
+      - main
+      - 'claude/emagreser-v2-*'
+    paths:
+      - 'emagreser-v2/**'
+      - '.github/workflows/deploy-emagreser-v2.yml'
+  workflow_dispatch:
+
+env:
+  VERCEL_ORG_ID: team_auwwxmnE8XNgOiFIlA0lWYlR
+  VERCEL_PROJECT_ID: prj_lDA29IjBvh1LAAEyUpz2m5sY128v
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: emagreser-v2
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: emagreser-v2/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Vercel
+        if: env.VERCEL_TOKEN != ''
+        run: |
+          PROD_FLAG=""
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            PROD_FLAG="--prod"
+          fi
+          npx vercel deploy --yes $PROD_FLAG \
+            --token="$VERCEL_TOKEN" \
+            --env NEXT_PUBLIC_SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL" \
+            --env NEXT_PUBLIC_SUPABASE_ANON_KEY="$NEXT_PUBLIC_SUPABASE_ANON_KEY"

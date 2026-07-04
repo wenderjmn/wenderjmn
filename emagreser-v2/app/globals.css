@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+:root {
+  --background: #faf9f7;
+  --foreground: #1a1a2e;
+  --brand: #16a34a;
+  --brand-light: #4ade80;
+  --accent: #f97316;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --card: #ffffff;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Smooth transitions */
+* { transition-property: color, background-color, border-color, opacity; transition-duration: 150ms; }
